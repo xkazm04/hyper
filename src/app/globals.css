@@ -91,75 +91,75 @@
 }
 
 .halloween {
-  /* Core theme variables - Kiro-inspired: Dark gray/black with purple accents and white text */
-  --background: 240 8% 8%;           /* Very dark gray background (almost black) */
-  --foreground: 0 0% 98%;            /* White text for high contrast */
-  --card: 240 10% 12%;               /* Slightly lighter dark gray for cards */
-  --card-foreground: 0 0% 98%;       /* White text on cards */
-  --popover: 240 10% 12%;            /* Dark gray for popovers */
-  --popover-foreground: 0 0% 98%;    /* White text in popovers */
+  /* Core theme variables - Dark theme: Pure black to dark gray gradient with purple accents */
+  --background: 0 0% 5%;             /* Near pure black background */
+  --foreground: 270 15% 95%;         /* Light purple-tinted white for main text */
+  --card: 270 15% 10%;               /* Very dark gray with purple tint for cards */
+  --card-foreground: 270 15% 95%;    /* Light purple-tinted text on cards */
+  --popover: 270 15% 10%;            /* Very dark gray with purple tint for popovers */
+  --popover-foreground: 270 15% 95%; /* Light purple-tinted text in popovers */
   --primary: 270 70% 60%;            /* Vibrant purple for primary actions */
   --primary-foreground: 0 0% 100%;   /* Pure white text on purple */
-  --secondary: 270 50% 35%;          /* Darker purple for secondary elements */
-  --secondary-foreground: 0 0% 98%;  /* White text on secondary */
-  --muted: 240 8% 18%;               /* Muted dark gray */
-  --muted-foreground: 240 5% 65%;    /* Light gray for muted text */
+  --secondary: 270 50% 40%;          /* Medium purple for secondary elements */
+  --secondary-foreground: 270 10% 98%; /* Light purple-tinted text on secondary */
+  --muted: 270 10% 15%;              /* Muted dark gray with purple hint */
+  --muted-foreground: 270 10% 70%;   /* Light purple-gray for muted text */
   --accent: 270 70% 55%;             /* Purple accent for hover states */
   --accent-foreground: 0 0% 100%;    /* White text on accent */
   --destructive: 0 70% 55%;          /* Red for destructive actions */
   --destructive-foreground: 0 0% 98%; /* White text on destructive */
-  --border: 0 0% 95%;                /* White borders for contrast */
-  --input: 240 8% 20%;               /* Dark gray input backgrounds */
+  --border: 270 40% 35%;             /* Purple borders for decorative styling */
+  --input: 270 15% 15%;              /* Dark gray with purple tint for inputs */
   --ring: 270 70% 60%;               /* Purple focus rings */
 
-  /* Extended color palette - Slate scale (dark gray with subtle purple tint) */
-  --slate-50: 240 8% 95%;
-  --slate-100: 240 8% 90%;
-  --slate-200: 240 8% 80%;
-  --slate-300: 240 8% 65%;
-  --slate-400: 240 8% 50%;
-  --slate-500: 240 8% 35%;
-  --slate-600: 240 8% 25%;
-  --slate-700: 240 8% 18%;
-  --slate-800: 240 8% 12%;
-  --slate-900: 240 8% 8%;
+  /* Extended color palette - Slate scale (purple-tinted dark grays) */
+  --slate-50: 270 15% 95%;
+  --slate-100: 270 15% 90%;
+  --slate-200: 270 15% 80%;
+  --slate-300: 270 15% 65%;
+  --slate-400: 270 15% 50%;
+  --slate-500: 270 15% 35%;
+  --slate-600: 270 15% 25%;
+  --slate-700: 270 15% 15%;
+  --slate-800: 270 15% 10%;
+  --slate-900: 270 15% 5%;
 
-  /* Extended color palette - Gray scale (neutral dark grays) */
-  --gray-50: 0 0% 95%;
-  --gray-100: 0 0% 90%;
-  --gray-200: 0 0% 80%;
-  --gray-300: 0 0% 65%;
-  --gray-400: 0 0% 50%;
-  --gray-500: 0 0% 35%;
-  --gray-600: 0 0% 25%;
-  --gray-700: 0 0% 18%;
-  --gray-800: 0 0% 12%;
-  --gray-900: 0 0% 8%;
+  /* Extended color palette - Gray scale (purple-tinted dark grays) */
+  --gray-50: 270 10% 95%;
+  --gray-100: 270 10% 90%;
+  --gray-200: 270 10% 80%;
+  --gray-300: 270 10% 65%;
+  --gray-400: 270 10% 50%;
+  --gray-500: 270 10% 35%;
+  --gray-600: 270 10% 25%;
+  --gray-700: 270 10% 15%;
+  --gray-800: 270 10% 10%;
+  --gray-900: 270 10% 5%;
 
   /* Semantic colors - Blue (purple-blue for consistency) */
-  --blue-500: 250 70% 60%;
-  --blue-600: 250 75% 55%;
+  --blue-500: 260 70% 60%;
+  --blue-600: 260 75% 55%;
 
   /* Semantic colors - Green (bright for visibility on dark) */
-  --green-50: 240 8% 18%;
-  --green-100: 240 8% 20%;
+  --green-50: 270 10% 15%;
+  --green-100: 270 10% 18%;
   --green-500: 142 65% 50%;
   --green-600: 142 70% 45%;
   --green-800: 142 75% 35%;
 
   /* Semantic colors - Red (bright for visibility) */
-  --red-50: 240 8% 18%;
+  --red-50: 270 10% 15%;
   --red-400: 0 75% 65%;
   --red-500: 0 70% 55%;
   --red-600: 0 75% 50%;
 
   /* Semantic colors - Yellow (bright for visibility) */
-  --yellow-100: 240 8% 20%;
+  --yellow-100: 270 10% 18%;
   --yellow-500: 45 90% 60%;
 
-  /* Gradient colors - Dark gray to slightly lighter gray */
-  --gradient-from: 240 8% 8%;
-  --gradient-to: 240 10% 12%;
+  /* Gradient colors - Pure black to dark purple-gray */
+  --gradient-from: 270 20% 5%;       /* Near-black with purple tint */
+  --gradient-to: 270 25% 15%;        /* Dark purple-gray */
 }
 
 * {
@@ -244,4 +244,155 @@ html.no-transitions *::after {
 
 .shadow-theme-lg {
   box-shadow: 12px 12px 0px 0px hsl(var(--border));
+}
+
+/*
+ * Halloween Theme Decorative Elements
+ * Elegant, subtle background decorations that enhance the spooky atmosphere
+ */
+
+/* Floating purple particles/stars */
+.halloween body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, hsl(270 70% 60% / 0.3), transparent),
+    radial-gradient(2px 2px at 60% 70%, hsl(270 70% 60% / 0.2), transparent),
+    radial-gradient(1px 1px at 50% 50%, hsl(270 70% 60% / 0.3), transparent),
+    radial-gradient(1px 1px at 80% 10%, hsl(270 70% 60% / 0.25), transparent),
+    radial-gradient(2px 2px at 90% 60%, hsl(270 70% 60% / 0.2), transparent),
+    radial-gradient(1px 1px at 33% 80%, hsl(270 70% 60% / 0.3), transparent),
+    radial-gradient(1px 1px at 15% 90%, hsl(270 70% 60% / 0.25), transparent);
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+  animation: floatingParticles 60s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+/* Subtle corner web pattern - top right */
+.halloween body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    linear-gradient(135deg, transparent 48%, hsl(270 40% 35% / 0.15) 48%, hsl(270 40% 35% / 0.15) 52%, transparent 52%),
+    linear-gradient(45deg, transparent 48%, hsl(270 40% 35% / 0.1) 48%, hsl(270 40% 35% / 0.1) 52%, transparent 52%);
+  background-size: 60px 60px;
+  opacity: 0.4;
+  mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
+}
+
+/* Mystical stars/sparkles in bottom left corner */
+.halloween main::before {
+  content: '✦';
+  position: fixed;
+  bottom: 40px;
+  left: 40px;
+  font-size: 16px;
+  color: hsl(270 70% 60% / 0.4);
+  pointer-events: none;
+  z-index: 1;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.halloween main::after {
+  content: '✦';
+  position: fixed;
+  bottom: 80px;
+  left: 80px;
+  font-size: 12px;
+  color: hsl(270 70% 60% / 0.3);
+  pointer-events: none;
+  z-index: 1;
+  animation: twinkle 3s ease-in-out infinite 1.5s;
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.2);
+  }
+}
+
+/* Subtle glow effect on main content areas */
+.halloween .bg-card {
+  box-shadow:
+    0 0 40px hsl(270 70% 60% / 0.05),
+    0 0 80px hsl(270 70% 60% / 0.02);
+}
+
+/* Purple glow on primary elements */
+.halloween .bg-primary {
+  box-shadow:
+    0 0 20px hsl(270 70% 60% / 0.3),
+    0 0 40px hsl(270 70% 60% / 0.15);
+}
+
+/* Animated floating particles */
+@keyframes floatingParticles {
+  0%, 100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%, 80% 10%, 90% 60%, 33% 80%, 15% 90%;
+    opacity: 0.6;
+  }
+  25% {
+    background-position: 10% 20%, 90% 80%, 60% 40%, 70% 20%, 80% 70%, 43% 70%, 25% 80%;
+    opacity: 0.4;
+  }
+  50% {
+    background-position: 20% 40%, 80% 60%, 70% 30%, 60% 30%, 70% 80%, 53% 60%, 35% 70%;
+    opacity: 0.5;
+  }
+  75% {
+    background-position: 10% 60%, 90% 40%, 40% 60%, 90% 40%, 60% 90%, 23% 90%, 5% 80%;
+    opacity: 0.4;
+  }
+}
+
+/* Add subtle purple glow to borders */
+.halloween .border-border {
+  border-color: hsl(270 40% 35%);
+  filter: drop-shadow(0 0 1px hsl(270 60% 50% / 0.3));
+}
+
+/* Ensure content appears above decorative elements */
+.halloween main,
+.halloween header,
+.halloween [role="main"] {
+  position: relative;
+  z-index: 10;
+}
+
+/* Subtle purple vignette effect */
+.halloween .min-h-screen {
+  position: relative;
+}
+
+.halloween .min-h-screen > *:first-child::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 50%,
+    hsl(270 50% 10% / 0.3) 100%
+  );
 }
