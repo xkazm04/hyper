@@ -1,0 +1,247 @@
+@import "tailwindcss";
+
+/**
+ * Theme System CSS Variables
+ * 
+ * This file defines CSS custom properties for the theme system.
+ * All colors are defined in HSL format without the hsl() wrapper for Tailwind compatibility.
+ * 
+ * Usage in components:
+ * - Use Tailwind classes: bg-background, text-foreground, border-border, etc.
+ * - Use in custom CSS: background-color: hsl(var(--background));
+ * 
+ * Color Format: H S% L% (Hue Saturation Lightness)
+ * Example: 270 30% 8% = Purple hue, 30% saturation, 8% lightness
+ */
+
+:root {
+  /* 
+   * Core theme variables - Light Theme
+   * These are the primary colors used throughout the application
+   */
+  --background: 0 0% 100%;           /* Main page background - white */
+  --foreground: 0 0% 3.9%;           /* Main text color - near black */
+  --card: 0 0% 100%;                 /* Card/panel backgrounds - white */
+  --card-foreground: 0 0% 3.9%;     /* Text on cards - near black */
+  --popover: 0 0% 100%;              /* Dropdown/popover backgrounds - white */
+  --popover-foreground: 0 0% 3.9%;  /* Text in popovers - near black */
+  --primary: 0 0% 9%;                /* Primary action color - dark gray */
+  --primary-foreground: 0 0% 98%;   /* Text on primary buttons - near white */
+  --secondary: 0 0% 96.1%;           /* Secondary elements - light gray */
+  --secondary-foreground: 0 0% 9%;  /* Text on secondary elements - dark gray */
+  --muted: 0 0% 96.1%;               /* Muted/disabled backgrounds - light gray */
+  --muted-foreground: 0 0% 45.1%;   /* Muted/disabled text - medium gray */
+  --accent: 0 0% 96.1%;              /* Accent/hover backgrounds - light gray */
+  --accent-foreground: 0 0% 9%;     /* Text on accent elements - dark gray */
+  --destructive: 0 84.2% 60.2%;     /* Error/destructive actions - red */
+  --destructive-foreground: 0 0% 98%; /* Text on destructive buttons - near white */
+  --border: 0 0% 89.8%;              /* Border color - light gray */
+  --input: 0 0% 89.8%;               /* Input border color - light gray */
+  --ring: 0 0% 3.9%;                 /* Focus ring color - near black */
+  --radius: 0.5rem;                  /* Border radius for rounded elements */
+
+  /* Extended color palette - Slate scale */
+  --slate-50: 210 40% 98%;
+  --slate-100: 210 40% 96.1%;
+  --slate-200: 214 32% 91%;
+  --slate-300: 213 27% 84%;
+  --slate-400: 215 20% 65%;
+  --slate-500: 215 16% 47%;
+  --slate-600: 215 16% 47%;
+  --slate-700: 215 19% 35%;
+  --slate-800: 217 19% 27%;
+  --slate-900: 222 47% 11%;
+
+  /* Extended color palette - Gray scale */
+  --gray-50: 0 0% 98%;
+  --gray-100: 0 0% 96.1%;
+  --gray-200: 0 0% 89.8%;
+  --gray-300: 0 0% 83.1%;
+  --gray-400: 0 0% 63.9%;
+  --gray-500: 0 0% 45.1%;
+  --gray-600: 0 0% 32.2%;
+  --gray-700: 0 0% 25.1%;
+  --gray-800: 0 0% 14.9%;
+  --gray-900: 0 0% 9%;
+
+  /* Semantic colors - Blue */
+  --blue-500: 217 91% 60%;
+  --blue-600: 221 83% 53%;
+
+  /* Semantic colors - Green */
+  --green-50: 138 76% 97%;
+  --green-100: 141 84% 93%;
+  --green-500: 142 71% 45%;
+  --green-600: 142 76% 36%;
+  --green-800: 143 64% 24%;
+
+  /* Semantic colors - Red */
+  --red-50: 0 86% 97%;
+  --red-400: 0 91% 71%;
+  --red-500: 0 84% 60%;
+  --red-600: 0 72% 51%;
+
+  /* Semantic colors - Yellow */
+  --yellow-100: 48 96% 89%;
+  --yellow-500: 45 93% 47%;
+
+  /* Gradient colors */
+  --gradient-from: 210 40% 98%;
+  --gradient-to: 210 40% 96.1%;
+}
+
+.halloween {
+  /* Core theme variables - Kiro-inspired: Dark gray/black with purple accents and white text */
+  --background: 240 8% 8%;           /* Very dark gray background (almost black) */
+  --foreground: 0 0% 98%;            /* White text for high contrast */
+  --card: 240 10% 12%;               /* Slightly lighter dark gray for cards */
+  --card-foreground: 0 0% 98%;       /* White text on cards */
+  --popover: 240 10% 12%;            /* Dark gray for popovers */
+  --popover-foreground: 0 0% 98%;    /* White text in popovers */
+  --primary: 270 70% 60%;            /* Vibrant purple for primary actions */
+  --primary-foreground: 0 0% 100%;   /* Pure white text on purple */
+  --secondary: 270 50% 35%;          /* Darker purple for secondary elements */
+  --secondary-foreground: 0 0% 98%;  /* White text on secondary */
+  --muted: 240 8% 18%;               /* Muted dark gray */
+  --muted-foreground: 240 5% 65%;    /* Light gray for muted text */
+  --accent: 270 70% 55%;             /* Purple accent for hover states */
+  --accent-foreground: 0 0% 100%;    /* White text on accent */
+  --destructive: 0 70% 55%;          /* Red for destructive actions */
+  --destructive-foreground: 0 0% 98%; /* White text on destructive */
+  --border: 0 0% 95%;                /* White borders for contrast */
+  --input: 240 8% 20%;               /* Dark gray input backgrounds */
+  --ring: 270 70% 60%;               /* Purple focus rings */
+
+  /* Extended color palette - Slate scale (dark gray with subtle purple tint) */
+  --slate-50: 240 8% 95%;
+  --slate-100: 240 8% 90%;
+  --slate-200: 240 8% 80%;
+  --slate-300: 240 8% 65%;
+  --slate-400: 240 8% 50%;
+  --slate-500: 240 8% 35%;
+  --slate-600: 240 8% 25%;
+  --slate-700: 240 8% 18%;
+  --slate-800: 240 8% 12%;
+  --slate-900: 240 8% 8%;
+
+  /* Extended color palette - Gray scale (neutral dark grays) */
+  --gray-50: 0 0% 95%;
+  --gray-100: 0 0% 90%;
+  --gray-200: 0 0% 80%;
+  --gray-300: 0 0% 65%;
+  --gray-400: 0 0% 50%;
+  --gray-500: 0 0% 35%;
+  --gray-600: 0 0% 25%;
+  --gray-700: 0 0% 18%;
+  --gray-800: 0 0% 12%;
+  --gray-900: 0 0% 8%;
+
+  /* Semantic colors - Blue (purple-blue for consistency) */
+  --blue-500: 250 70% 60%;
+  --blue-600: 250 75% 55%;
+
+  /* Semantic colors - Green (bright for visibility on dark) */
+  --green-50: 240 8% 18%;
+  --green-100: 240 8% 20%;
+  --green-500: 142 65% 50%;
+  --green-600: 142 70% 45%;
+  --green-800: 142 75% 35%;
+
+  /* Semantic colors - Red (bright for visibility) */
+  --red-50: 240 8% 18%;
+  --red-400: 0 75% 65%;
+  --red-500: 0 70% 55%;
+  --red-600: 0 75% 50%;
+
+  /* Semantic colors - Yellow (bright for visibility) */
+  --yellow-100: 240 8% 20%;
+  --yellow-500: 45 90% 60%;
+
+  /* Gradient colors - Dark gray to slightly lighter gray */
+  --gradient-from: 240 8% 8%;
+  --gradient-to: 240 10% 12%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* 
+ * Theme transition styles
+ * Optimized for performance using GPU-accelerated properties
+ * Duration: 200ms (fast enough to feel responsive, slow enough to be smooth)
+ */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 200ms ease-in-out,
+              color 200ms ease-in-out,
+              border-color 200ms ease-in-out !important;
+  transition-delay: 0ms !important;
+  /* Use will-change sparingly to hint browser about upcoming changes */
+  will-change: background-color, color, border-color;
+}
+
+/* Remove will-change after transition completes to free resources */
+html:not(.theme-transitioning) * {
+  will-change: auto;
+}
+
+/* Disable transitions on initial load to prevent flash of unstyled content */
+html.no-transitions,
+html.no-transitions *,
+html.no-transitions *::before,
+html.no-transitions *::after {
+  transition: none !important;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition: none !important;
+  }
+}
+
+/* Theme-aware gradient utilities */
+.bg-gradient-theme {
+  background: linear-gradient(to bottom right, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
+}
+
+.bg-gradient-theme-vertical {
+  background: linear-gradient(to bottom, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
+}
+
+.bg-gradient-theme-horizontal {
+  background: linear-gradient(to right, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
+}
+
+/* Theme-aware overlay utilities */
+.overlay-dark {
+  background-color: hsl(var(--background) / 0.8);
+}
+
+.overlay-light {
+  background-color: hsl(var(--foreground) / 0.1);
+}
+
+/* Theme-aware shadow utilities */
+.shadow-theme {
+  box-shadow: 8px 8px 0px 0px hsl(var(--border));
+}
+
+.shadow-theme-sm {
+  box-shadow: 4px 4px 0px 0px hsl(var(--border));
+}
+
+.shadow-theme-lg {
+  box-shadow: 12px 12px 0px 0px hsl(var(--border));
+}
