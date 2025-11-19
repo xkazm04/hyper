@@ -1,68 +1,113 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { StoryService } from '@/lib/services/story'
-import { StoryStack, StoryCard, CreateStoryCardInput } from '@/lib/types'
+import { StoryStack, StoryCard, CreateStoryCardInput, Choice } from '@/lib/types'
+
+// Query key factory for consistent cache keys
+export const storyEditorKeys = {
+  all: ['storyEditor'] as const,
+  story: (storyId: string) => [...storyEditorKeys.all, 'story', storyId] as const,
+  data: (storyId: string) => [...storyEditorKeys.all, 'data', storyId] as const,
+}
+
+// Combined data type for parallel fetch result
+interface StoryEditorData {
+  story: StoryStack
+  cards: StoryCard[]
+  choices: Choice[]
+}
+
+// Fetch function that runs queries in parallel
+async function fetchStoryEditorData(storyId: string, storyService: StoryService): Promise<StoryEditorData> {
+  // Execute all fetches concurrently using Promise.all
+  const [storyData, cardsData] = await Promise.all([
+    storyService.getStoryStack(storyId),
+    storyService.getStoryCards(storyId),
+  ])
+
+  if (!storyData) {
+    throw new Error('Story not found')
+  }
+
+  // Fetch choices for all cards in parallel
+  const choicePromises = cardsData.map(card => storyService.getChoices(card.id))
+  const choicesArrays = await Promise.all(choicePromises)
+  const allChoices = choicesArrays.flat()
+
+  return {
+    story: storyData,
+    cards: cardsData,
+    choices: allChoices,
+  }
+}
 
 export function useStoryEditor(storyId: string) {
-  const [story, setStory] = useState<StoryStack | null>(null)
-  const [cards, setCards] = useState<StoryCard[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const queryClient = useQueryClient()
   const storyService = new StoryService()
 
-  const loadStoryData = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      // Load story stack
-      const storyData = await storyService.getStoryStack(storyId)
-      if (!storyData) {
-        throw new Error('Story not found')
-      }
-      setStory(storyData)
-      
-      // Load story cards
-      const cardsData = await storyService.getStoryCards(storyId)
-      setCards(cardsData)
-    } catch (err) {
-      setError(err as Error)
-      console.error('Failed to load story data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [storyId])
+  // Main query that fetches all data in parallel
+  const {
+    data,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: storyEditorKeys.data(storyId),
+    queryFn: () => fetchStoryEditorData(storyId, storyService),
+    enabled: !!storyId,
+  })
 
-  useEffect(() => {
-    loadStoryData()
-  }, [loadStoryData])
-
-  const createCard = async (input: Omit<CreateStoryCardInput, 'storyStackId'>): Promise<StoryCard> => {
-    try {
+  // Create card mutation
+  const createCardMutation = useMutation({
+    mutationFn: async (input: Omit<CreateStoryCardInput, 'storyStackId'>): Promise<StoryCard> => {
       const newCard = await storyService.createStoryCard({
         ...input,
         storyStackId: storyId,
-        orderIndex: cards.length,
+        orderIndex: data?.cards.length ?? 0,
       })
-      setCards(prev => [...prev, newCard])
       return newCard
-    } catch (err) {
-      setError(err as Error)
-      throw err
-    }
-  }
+    },
+    onSuccess: (newCard) => {
+      // Optimistically update the cache with the new card
+      queryClient.setQueryData<StoryEditorData>(
+        storyEditorKeys.data(storyId),
+        (oldData) => {
+          if (!oldData) return oldData
+          return {
+            ...oldData,
+            cards: [...oldData.cards, newCard],
+          }
+        }
+      )
+    },
+  })
 
-  const refresh = () => {
-    loadStoryData()
-  }
+  const createCard = useCallback(
+    async (input: Omit<CreateStoryCardInput, 'storyStackId'>): Promise<StoryCard> => {
+      return createCardMutation.mutateAsync(input)
+    },
+    [createCardMutation]
+  )
+
+  const refresh = useCallback(() => {
+    refetch()
+  }, [refetch])
+
+  // Invalidate cache (useful for external updates)
+  const invalidateCache = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: storyEditorKeys.data(storyId) })
+  }, [queryClient, storyId])
 
   return {
-    story,
-    cards,
+    story: data?.story ?? null,
+    cards: data?.cards ?? [],
+    choices: data?.choices ?? [],
     loading,
-    error,
+    error: error as Error | null,
     createCard,
     refresh,
+    invalidateCache,
   }
 }

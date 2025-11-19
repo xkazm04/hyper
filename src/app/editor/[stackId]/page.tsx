@@ -4,11 +4,12 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EditorProvider, useEditor } from '@/contexts/EditorContext'
 import { useStoryEditor } from '@/lib/hooks/useStoryEditor'
+import { useMoodTheme } from '@/lib/hooks/useMoodTheme'
 import StoryEditorLayout from '@/components/editor/story/StoryEditorLayout'
 import StoryEditorToolbar from '@/components/editor/story/StoryEditorToolbar'
 import CardList from '@/components/editor/story/CardList'
 import CardEditor from '@/components/editor/story/CardEditor'
-import StoryGraph from '@/components/editor/story/StoryGraph'
+import CardPreview from '@/components/editor/story/CardPreview'
 import PublishDialog from '@/components/editor/story/PublishDialog'
 import { StoryService } from '@/lib/services/story'
 import { Button } from '@/components/ui/button'
@@ -30,15 +31,23 @@ export default function EditorPage({ params }: { params: Promise<{ stackId: stri
 }
 
 function EditorContent({ stackId }: { stackId: string }) {
-  const { story, cards, loading, error, createCard } = useStoryEditor(stackId)
+  const { story, cards, choices, loading, error, createCard } = useStoryEditor(stackId)
   const {
     setStoryStack,
     setStoryCards,
     setCurrentCardId,
+    setChoices,
     storyCards,
   } = useEditor()
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const storyService = new StoryService()
+
+  // Mood-based theme sync
+  const { moodColors, isLoading: isMoodLoading, refresh: refreshMood } = useMoodTheme({
+    storyStack: story,
+    storyCards: cards,
+    enabled: true,
+  })
 
   // Initialize editor context when data loads
   useEffect(() => {
@@ -56,6 +65,12 @@ function EditorContent({ stackId }: { stackId: string }) {
       }
     }
   }, [cards, setStoryCards])
+
+  useEffect(() => {
+    if (choices.length > 0) {
+      setChoices(choices)
+    }
+  }, [choices, setChoices])
 
   const handleAddCard = async () => {
     try {
@@ -96,10 +111,10 @@ function EditorContent({ stackId }: { stackId: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background" data-testid="editor-loading">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading editor...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-border mx-auto mb-4" data-testid="editor-loading-spinner"></div>
+          <p className="text-muted-foreground">Loading editor...</p>
         </div>
       </div>
     )
@@ -117,11 +132,14 @@ function EditorContent({ stackId }: { stackId: string }) {
             onAddCard={handleAddCard}
             onPreview={handlePreview}
             onPublish={handlePublish}
+            moodColors={moodColors}
+            isMoodLoading={isMoodLoading}
+            onMoodRefresh={refreshMood}
           />
         }
         cardList={<CardList onAddCard={handleAddCard} />}
         cardEditor={<CardEditor />}
-        storyGraph={<StoryGraph />}
+        cardPreview={<CardPreview />}
       />
       
       <PublishDialog
@@ -142,14 +160,15 @@ function ErrorState({ message }: { message: string }) {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-background" data-testid="editor-error">
       <div className="text-center p-8">
-        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" data-testid="editor-error-icon" />
         <h2 className="text-2xl font-bold mb-2">Error</h2>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <p className="text-muted-foreground mb-6" data-testid="editor-error-message">{message}</p>
         <Button
           onClick={() => router.push('/dashboard')}
-          className="border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+          className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+          data-testid="editor-back-to-dashboard-btn"
         >
           Back to Dashboard
         </Button>

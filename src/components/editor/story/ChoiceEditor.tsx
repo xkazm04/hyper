@@ -222,7 +222,7 @@ export default function ChoiceEditor({
         <div className="flex items-center justify-between">
           <Label className="text-sm font-semibold">Choices</Label>
         </div>
-        <p className="text-sm text-gray-500">Loading choices...</p>
+        <p className="text-sm text-muted-foreground">Loading choices...</p>
       </div>
     )
   }
@@ -244,9 +244,9 @@ export default function ChoiceEditor({
       </div>
 
       {choices.length === 0 ? (
-        <div className="text-center py-6 sm:py-8 border-2 border-dashed border-gray-200 rounded-lg">
-          <p className="text-xs sm:text-sm text-gray-500 mb-2">No choices yet</p>
-          <p className="text-xs text-gray-400">
+        <div className="text-center py-6 sm:py-8 border-2 border-dashed border-border rounded-lg">
+          <p className="text-xs sm:text-sm text-muted-foreground mb-2">No choices yet</p>
+          <p className="text-xs text-muted-foreground/70">
             Add choices to let players navigate to other cards
           </p>
         </div>
@@ -259,11 +259,11 @@ export default function ChoiceEditor({
             return (
               <div
                 key={choice.id}
-                className="border rounded-lg p-2.5 sm:p-3 bg-white hover:shadow-sm transition-shadow"
+                className="border border-border rounded-lg p-2.5 sm:p-3 bg-card hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-start gap-1.5 sm:gap-2">
                   <button
-                    className="mt-2 cursor-move text-gray-400 hover:text-gray-600 touch-manipulation hidden sm:block"
+                    className="mt-2 cursor-move text-muted-foreground hover:text-foreground touch-manipulation hidden sm:block"
                     title="Drag to reorder"
                   >
                     <GripVertical className="w-4 h-4" />
@@ -271,7 +271,7 @@ export default function ChoiceEditor({
 
                   <div className="flex-1 space-y-2 min-w-0">
                     <div>
-                      <Label className="text-xs text-gray-600 mb-1">
+                      <Label className="text-xs text-muted-foreground mb-1">
                         Choice Label
                       </Label>
                       <Input
@@ -298,7 +298,7 @@ export default function ChoiceEditor({
                     </div>
 
                     <div>
-                      <Label className="text-xs text-gray-600 mb-1">
+                      <Label className="text-xs text-muted-foreground mb-1">
                         Target Card
                       </Label>
                       <Select

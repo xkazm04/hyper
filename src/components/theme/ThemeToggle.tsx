@@ -3,6 +3,7 @@
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
+import { ThemeRipple, useThemeRipple, RippleDirection } from './ThemeRipple'
 
 /**
  * ThemeToggle component - A button that allows users to cycle through available themes
@@ -12,10 +13,12 @@ import { useState, useEffect } from 'react'
  * - Retro aesthetic with border and shadow effects
  * - Accessible with keyboard navigation and screen reader support
  * - Minimum 44x44px touch target
+ * - Circular ripple animation on theme change
  */
 export function ThemeToggle() {
   const { theme, toggleTheme, availableThemes } = useTheme()
   const [announcement, setAnnouncement] = useState('')
+  const { rippleProps, triggerRipple } = useThemeRipple()
 
   // Get current and next theme for accessibility labels
   const currentThemeIndex = availableThemes.findIndex(t => t.name === theme)
@@ -23,7 +26,14 @@ export function ThemeToggle() {
   const nextThemeIndex = (currentThemeIndex + 1) % availableThemes.length
   const nextTheme = availableThemes[nextThemeIndex]
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Determine ripple direction based on current theme
+    // If current theme is light, we're going to dark/halloween
+    const rippleDirection: RippleDirection = theme === 'light' ? 'to-dark' : 'to-light'
+
+    // Trigger the ripple animation from the click position
+    triggerRipple(e, rippleDirection)
+
     toggleTheme()
     // Announce theme change to screen readers
     setAnnouncement(`Switched to ${nextTheme.label} theme`)
@@ -42,6 +52,7 @@ export function ThemeToggle() {
       <button
         onClick={handleToggle}
         aria-label={`Switch to ${nextTheme.label} theme. Current theme: ${currentTheme.label}`}
+        data-testid="theme-toggle-btn"
         className={cn(
           // Base styles - retro aesthetic
           'relative inline-flex items-center justify-center',
@@ -73,13 +84,14 @@ export function ThemeToggle() {
         type="button"
       >
         {/* Theme icon */}
-        <span 
-          className="text-2xl leading-none select-none" 
+        <span
+          className="text-2xl leading-none select-none"
           aria-hidden="true"
+          data-testid="theme-toggle-icon"
         >
           {currentTheme.icon}
         </span>
-        
+
         {/* Screen reader only text for current theme */}
         <span className="sr-only">
           {currentTheme.label} theme active
@@ -92,9 +104,13 @@ export function ThemeToggle() {
         aria-live="polite"
         aria-atomic="true"
         className="sr-only"
+        data-testid="theme-toggle-announcement"
       >
         {announcement}
       </div>
+
+      {/* Theme ripple animation overlay */}
+      <ThemeRipple {...rippleProps} />
     </>
   )
 }

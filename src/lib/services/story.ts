@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { SupabaseClient } from '@supabase/supabase-js'
 import {
   StoryStack,
   StoryCard,
@@ -19,7 +20,12 @@ import {
 } from '@/lib/types'
 
 export class StoryService {
-  private supabase = createClient()
+  private supabase: SupabaseClient
+
+  constructor(supabaseClient?: SupabaseClient) {
+    // Use provided client (for server-side) or create browser client (for client-side)
+    this.supabase = supabaseClient || createClient()
+  }
 
   // ============================================================================
   // Story Stack Operations
@@ -321,6 +327,7 @@ export class StoryService {
           story_stack_id: input.storyStackId,
           title: input.title || 'Untitled Card',
           content: input.content || '',
+          script: input.script || '',
           image_url: input.imageUrl || null,
           image_prompt: input.imagePrompt || null,
           order_index: nextOrderIndex,
@@ -342,9 +349,10 @@ export class StoryService {
   async updateStoryCard(id: string, input: UpdateStoryCardInput): Promise<StoryCard> {
     try {
       const updateData: any = {}
-      
+
       if (input.title !== undefined) updateData.title = input.title
       if (input.content !== undefined) updateData.content = input.content
+      if (input.script !== undefined) updateData.script = input.script
       if (input.imageUrl !== undefined) updateData.image_url = input.imageUrl
       if (input.imagePrompt !== undefined) updateData.image_prompt = input.imagePrompt
       if (input.orderIndex !== undefined) updateData.order_index = input.orderIndex
@@ -693,6 +701,7 @@ export class StoryService {
       storyStackId: data.story_stack_id,
       title: data.title,
       content: data.content,
+      script: data.script || '',
       imageUrl: data.image_url,
       imagePrompt: data.image_prompt,
       orderIndex: data.order_index,

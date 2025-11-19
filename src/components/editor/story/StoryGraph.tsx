@@ -13,7 +13,7 @@ import ReactFlow, {
   Panel,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { AlertCircle, AlertTriangle } from 'lucide-react'
+import { AlertCircle, AlertTriangle, Network } from 'lucide-react'
 
 export default function StoryGraph() {
   const { storyCards, choices, currentCardId, setCurrentCardId, storyStack } = useEditor()
@@ -64,7 +64,7 @@ export default function StoryGraph() {
       let borderWidth = 2
 
       if (isSelected) {
-        borderColor = '#3b82f6' // blue
+        borderColor = 'hsl(var(--primary))'
         borderWidth = 3
       } else if (isOrphaned && !isFirstCard) {
         backgroundColor = '#fef3c7' // yellow-100
@@ -87,7 +87,7 @@ export default function StoryGraph() {
               <div className="font-semibold text-sm mb-1 truncate">
                 {card.title || 'Untitled Card'}
               </div>
-              <div className="text-xs text-gray-600 flex items-center gap-1">
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
                 {isFirstCard && (
                   <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium">
                     START
@@ -131,17 +131,17 @@ export default function StoryGraph() {
         type: ConnectionLineType.SmoothStep,
         animated: true,
         style: {
-          stroke: '#6b7280',
+          stroke: 'hsl(var(--muted-foreground))',
           strokeWidth: 2,
         },
         label: choice.label,
         labelStyle: {
           fontSize: '10px',
-          fill: '#374151',
+          fill: 'hsl(var(--foreground))',
           fontWeight: 500,
         },
         labelBgStyle: {
-          fill: '#f3f4f6',
+          fill: 'hsl(var(--muted))',
           fillOpacity: 0.9,
         },
       }))
@@ -169,16 +169,11 @@ export default function StoryGraph() {
 
   if (storyCards.length === 0) {
     return (
-      <div className="h-full flex flex-col bg-background border-l-2 border-border">
-        <div className="p-4 border-b-2 border-border">
-          <h3 className="font-bold text-sm uppercase tracking-wide">Story Graph</h3>
-          <p className="text-xs text-muted-foreground mt-1">Visual flow of your story</p>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">
-              Add cards to see the story flow
-            </div>
+      <div className="h-full flex items-center justify-center bg-background p-4">
+        <div className="text-center">
+          <Network className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+          <div className="text-sm text-muted-foreground">
+            Add cards to see the story flow
           </div>
         </div>
       </div>
@@ -186,13 +181,7 @@ export default function StoryGraph() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background lg:border-l-2 border-border">
-      {/* Header */}
-      <div className="p-3 sm:p-4 border-b-2 border-border">
-        <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wide">Story Graph</h3>
-        <p className="text-xs text-muted-foreground mt-1">Visual flow of your story</p>
-      </div>
-
+    <div className="h-full flex flex-col bg-background">
       {/* Graph */}
       <div className="flex-1 relative">
         <ReactFlow
@@ -231,7 +220,7 @@ export default function StoryGraph() {
                 <span className="leading-tight">Dead End</span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-white border-3 border-blue-500 rounded shrink-0"></div>
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-card border-3 border-primary rounded shrink-0"></div>
                 <span className="leading-tight">Selected</span>
               </div>
             </div>

@@ -26,7 +26,7 @@ export async function GET(
     }
 
     // Verify ownership of story stack
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
@@ -105,7 +105,7 @@ export async function PATCH(
     }
 
     // Verify ownership of story stack
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
@@ -141,12 +141,13 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json()
-    const { title, content, imageUrl, imagePrompt, orderIndex } = body
+    const { title, content, script, imageUrl, imagePrompt, orderIndex } = body
 
     // Update story card
     const storyCard = await storyService.updateStoryCard(cardId, {
       title,
       content,
+      script,
       imageUrl,
       imagePrompt,
       orderIndex,
@@ -203,7 +204,7 @@ export async function DELETE(
     }
 
     // Verify ownership of story stack
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {

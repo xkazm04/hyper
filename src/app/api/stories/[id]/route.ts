@@ -26,7 +26,7 @@ export async function GET(
     }
 
     // Get story stack
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
@@ -88,7 +88,7 @@ export async function PATCH(
     }
 
     // Verify ownership
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {
@@ -175,7 +175,7 @@ export async function DELETE(
     }
 
     // Verify ownership
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {

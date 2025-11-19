@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's story stacks
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStacks = await storyService.getStoryStacks(user.id)
 
     return NextResponse.json({
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create story stack
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStack = await storyService.createStoryStack({
       name: name.trim(),
       description: description?.trim() || null,

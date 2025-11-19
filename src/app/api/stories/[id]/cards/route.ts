@@ -26,7 +26,7 @@ export async function GET(
     }
 
     // Verify ownership
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
@@ -90,7 +90,7 @@ export async function POST(
     }
 
     // Verify ownership
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {

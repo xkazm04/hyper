@@ -211,6 +211,104 @@ html.no-transitions *::after {
   }
 }
 
+/*
+ * Mood-Based Theme Sync Transitions
+ * Smooth transitions when mood colors update based on story content
+ */
+
+/* Mood color CSS custom properties */
+:root {
+  --mood-primary: 210 70% 50%;
+  --mood-secondary: 210 50% 60%;
+  --mood-muted: 210 20% 92%;
+  --mood-accent: 210 80% 55%;
+}
+
+/* Smooth transition when mood colors change */
+html.mood-transitioning,
+html.mood-transitioning *,
+html.mood-transitioning *::before,
+html.mood-transitioning *::after {
+  transition: background-color 400ms ease-in-out,
+              color 400ms ease-in-out,
+              border-color 400ms ease-in-out,
+              box-shadow 400ms ease-in-out !important;
+  transition-delay: 0ms !important;
+}
+
+/* Disable mood transitions with reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html.mood-transitioning,
+  html.mood-transitioning *,
+  html.mood-transitioning *::before,
+  html.mood-transitioning *::after {
+    transition: none !important;
+  }
+}
+
+/* Mood-aware utility classes for editor components */
+.bg-mood-primary {
+  background-color: hsl(var(--mood-primary));
+}
+
+.text-mood-primary {
+  color: hsl(var(--mood-primary));
+}
+
+.border-mood-primary {
+  border-color: hsl(var(--mood-primary));
+}
+
+.bg-mood-secondary {
+  background-color: hsl(var(--mood-secondary));
+}
+
+.bg-mood-muted {
+  background-color: hsl(var(--mood-muted));
+}
+
+.bg-mood-accent {
+  background-color: hsl(var(--mood-accent));
+}
+
+/* Mood-aware focus ring */
+.ring-mood {
+  --tw-ring-color: hsl(var(--mood-primary));
+}
+
+/* Mood gradient effect */
+.bg-gradient-mood {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--mood-primary) / 0.1) 0%,
+    hsl(var(--mood-secondary) / 0.05) 100%
+  );
+}
+
+/* Subtle mood indicator in editor toolbar */
+.mood-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: hsl(var(--mood-primary));
+  transition: background-color 400ms ease-in-out;
+}
+
+.mood-indicator-pulse {
+  animation: moodPulse 2s ease-in-out infinite;
+}
+
+@keyframes moodPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
 /* Theme-aware gradient utilities */
 .bg-gradient-theme {
   background: linear-gradient(to bottom right, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
@@ -395,4 +493,99 @@ html.no-transitions *::after {
     transparent 50%,
     hsl(270 50% 10% / 0.3) 100%
   );
+}
+
+/*
+ * Theme Ripple Animation
+ * Circular ripple effect that expands from the theme toggle button
+ * Uses clip-path for smooth morphing animation
+ */
+
+/* Ripple overlay container */
+.theme-ripple-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* The actual ripple element */
+.theme-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Light theme ripple (expanding to dark/halloween) */
+.theme-ripple-to-dark {
+  background: hsl(270 15% 10%);
+}
+
+/* Dark/Halloween theme ripple (expanding to light) */
+.theme-ripple-to-light {
+  background: hsl(0 0% 100%);
+}
+
+/* Ripple expansion animation */
+@keyframes rippleExpand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Apply animation class */
+.theme-ripple-animate {
+  animation: rippleExpand 500ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Alternative clip-path based ripple for smoother effect */
+.theme-ripple-clip {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+  will-change: clip-path;
+}
+
+.theme-ripple-clip-to-dark {
+  background: hsl(270 15% 10%);
+}
+
+.theme-ripple-clip-to-light {
+  background: hsl(0 0% 100%);
+}
+
+@keyframes clipRippleExpand {
+  0% {
+    clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+    opacity: 0.9;
+  }
+  100% {
+    clip-path: circle(150% at var(--ripple-x, 50%) var(--ripple-y, 50%));
+    opacity: 0;
+  }
+}
+
+.theme-ripple-clip-animate {
+  animation: clipRippleExpand 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .theme-ripple-animate,
+  .theme-ripple-clip-animate {
+    animation: none !important;
+  }
 }

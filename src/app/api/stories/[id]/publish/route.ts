@@ -26,7 +26,7 @@ export async function POST(
     }
 
     // Verify ownership
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {
@@ -107,7 +107,7 @@ export async function DELETE(
     }
 
     // Verify ownership
-    const storyService = new StoryService()
+    const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {

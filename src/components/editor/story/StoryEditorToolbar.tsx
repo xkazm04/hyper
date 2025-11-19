@@ -2,20 +2,35 @@
 
 import { useEditor } from '@/contexts/EditorContext'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Plus, Play, Upload, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Play, Upload, CheckCircle, Columns2, LayoutList } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import MoodIndicator from '@/components/editor/story/MoodIndicator'
+import { MoodColors } from '@/lib/services/mood'
+import { SyncStatus } from '@/components/ui/SyncStatus'
+
+export type ViewMode = 'default' | 'split'
 
 interface StoryEditorToolbarProps {
   onAddCard: () => void
   onPreview: () => void
   onPublish: () => void
+  moodColors?: MoodColors
+  isMoodLoading?: boolean
+  onMoodRefresh?: () => void
+  viewMode?: ViewMode
+  onViewModeChange?: (mode: ViewMode) => void
 }
 
 export default function StoryEditorToolbar({
   onAddCard,
   onPreview,
   onPublish,
+  moodColors,
+  isMoodLoading = false,
+  onMoodRefresh,
+  viewMode = 'default',
+  onViewModeChange,
 }: StoryEditorToolbarProps) {
   const { storyStack, isSaving } = useEditor()
 
@@ -32,6 +47,7 @@ export default function StoryEditorToolbar({
             variant="ghost"
             size="sm"
             className="hover:bg-muted touch-manipulation"
+            data-testid="toolbar-back-btn"
           >
             <ArrowLeft className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Back</span>
@@ -59,14 +75,43 @@ export default function StoryEditorToolbar({
         {isSaving && (
           <span className="text-xs text-muted-foreground mr-1 sm:mr-2 hidden sm:inline">Saving...</span>
         )}
-        
+
+        {moodColors && onMoodRefresh && (
+          <MoodIndicator
+            moodColors={moodColors}
+            isLoading={isMoodLoading}
+            onRefresh={onMoodRefresh}
+          />
+        )}
+
+        <SyncStatus />
         <ThemeToggle />
-        
+
+        {/* View Mode Toggle */}
+        {onViewModeChange && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onViewModeChange(viewMode === 'default' ? 'split' : 'default')}
+            className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:-translate-x-px hover:-translate-y-px transition-all touch-manipulation text-xs sm:text-sm"
+            data-testid="toolbar-view-mode-btn"
+            title={viewMode === 'default' ? 'Switch to Split View' : 'Switch to Default View'}
+          >
+            {viewMode === 'default' ? (
+              <Columns2 className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+            ) : (
+              <LayoutList className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">{viewMode === 'default' ? 'Split' : 'Default'}</span>
+          </Button>
+        )}
+
         <Button
           size="sm"
           variant="outline"
           onClick={onAddCard}
           className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:-translate-x-px hover:-translate-y-px transition-all touch-manipulation text-xs sm:text-sm"
+          data-testid="toolbar-add-card-btn"
         >
           <Plus className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
           <span className="hidden sm:inline">Add Card</span>
@@ -78,6 +123,7 @@ export default function StoryEditorToolbar({
           onClick={onPreview}
           disabled={!storyStack.isPublished}
           className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:-translate-x-px hover:-translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-xs sm:text-sm"
+          data-testid="toolbar-preview-btn"
         >
           <Play className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
           <span className="hidden sm:inline">Preview</span>
@@ -92,6 +138,7 @@ export default function StoryEditorToolbar({
               ? 'bg-[hsl(var(--green-500))] text-primary-foreground hover:bg-[hsl(var(--green-600))]'
               : 'bg-[hsl(var(--blue-500))] text-primary-foreground hover:bg-[hsl(var(--blue-600))]'
           }`}
+          data-testid="toolbar-publish-btn"
         >
           {storyStack.isPublished ? (
             <>

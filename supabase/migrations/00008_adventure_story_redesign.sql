@@ -231,7 +231,7 @@ CREATE TRIGGER update_choices_updated_at
 
 -- Function to generate unique slug for story stacks
 CREATE OR REPLACE FUNCTION generate_story_slug(story_name TEXT, story_id UUID)
-RETURNS TEXT AS $
+RETURNS TEXT AS $$
 DECLARE
   base_slug TEXT;
   final_slug TEXT;
@@ -256,11 +256,11 @@ BEGIN
   
   RETURN final_slug;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Function to reorder cards when one is deleted
 CREATE OR REPLACE FUNCTION reorder_story_cards_on_delete()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
   UPDATE story_cards
   SET order_index = order_index - 1
@@ -268,7 +268,7 @@ BEGIN
   AND order_index > OLD.order_index;
   RETURN OLD;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER reorder_story_cards_after_delete
   AFTER DELETE ON story_cards
@@ -277,7 +277,7 @@ CREATE TRIGGER reorder_story_cards_after_delete
 
 -- Function to reorder choices when one is deleted
 CREATE OR REPLACE FUNCTION reorder_choices_on_delete()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
   UPDATE choices
   SET order_index = order_index - 1
@@ -285,7 +285,7 @@ BEGIN
   AND order_index > OLD.order_index;
   RETURN OLD;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER reorder_choices_after_delete
   AFTER DELETE ON choices

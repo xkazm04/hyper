@@ -32,6 +32,7 @@ export interface StoryCard {
   storyStackId: string
   title: string  // Scene title
   content: string  // Story text content
+  script: string  // Custom JavaScript code for card interactivity
   imageUrl: string | null  // AI-generated or uploaded image
   imagePrompt: string | null  // Prompt used to generate the image
   orderIndex: number  // For editor organization
@@ -68,6 +69,7 @@ export interface CreateStoryCardInput {
   storyStackId: string
   title?: string
   content?: string
+  script?: string
   imageUrl?: string | null
   imagePrompt?: string | null
   orderIndex?: number
@@ -76,6 +78,7 @@ export interface CreateStoryCardInput {
 export interface UpdateStoryCardInput {
   title?: string
   content?: string
+  script?: string
   imageUrl?: string | null
   imagePrompt?: string | null
   orderIndex?: number

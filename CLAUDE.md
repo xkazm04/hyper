@@ -30,6 +30,9 @@ npm start
 
 # Linting
 npm run lint
+
+# Type checking
+npx tsc --noEmit
 ```
 
 ## Architecture
