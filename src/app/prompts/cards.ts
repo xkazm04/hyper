@@ -1,36 +1,20 @@
 /**
- * Prompt Composer Data
- * Visual prompt builder for story card image generation
- * Max total prompt length: 1618 characters (Leonardo limit)
+ * Card Prompt Data
+ * Prompt options for story card image generation
+ * Settings and moods that work with any art style
  */
 
-export type PromptDimension = 'style' | 'setting' | 'mood';
+import { PromptOption, PromptColumn } from './types';
+import { ART_STYLES, getArtStyleById, LLM_ARTSTYLE_GUIDANCE } from './artstyles';
 
-export interface PromptOption {
-  id: string;
-  label: string;
-  description: string;
-  tags: string[];
-  icon: string;
-  prompt: string;
-  isCustom?: boolean;
-}
-
-export interface PromptColumn {
-  id: PromptDimension;
-  label: string;
-  icon: string;
-  description: string;
-}
-
-export const MAX_PROMPT_LENGTH = 1618;
+export type CardDimension = 'style' | 'setting' | 'mood';
 
 export const PROMPT_COLUMNS: PromptColumn[] = [
   {
     id: 'style',
     label: 'Art Style',
     icon: '🎨',
-    description: 'Hand-drawn illustration style',
+    description: 'Visual rendering style',
   },
   {
     id: 'setting',
@@ -46,32 +30,15 @@ export const PROMPT_COLUMNS: PromptColumn[] = [
   },
 ];
 
-export const STYLE_OPTIONS: PromptOption[] = [
-  {
-    id: 'adventure-journal',
-    label: 'Adventure Journal',
-    description: 'Rough pencil-and-ink sketch with adventure-book feel',
-    tags: ['sketch', 'pencil', 'journal'],
-    icon: '📔',
-    prompt: `Masterful pencil-and-ink sketch with expressive hand-drawn imperfection. Thin deliberate linework, soft cross-hatching, subtle blended shading. Light muted color accents like worn colored pencils on monochrome sketchbook aesthetic. Lightly textured paper, visible strokes, organic imperfections. Adventure-book illustration feel, artistic and authentically handcrafted.`,
-  },
-  {
-    id: 'expedition-sketch',
-    label: 'Expedition Sketch',
-    description: 'Field journal style on weathered parchment',
-    tags: ['vintage', 'parchment', 'explorer'],
-    icon: '🗺️',
-    prompt: `Expedition-style sketch blending fine ink contours with rough textured pencil shading. Weathered parchment feel with gentle smudges, uneven line pressure, faint paper grain. Soft desaturated color touches like old field journal pencils. Predominantly monochrome, expressive detail, lived-in adventure sense. Timeless and authentically analog artifact.`,
-  },
-  {
-    id: 'artisan-illustration',
-    label: 'Artisan Illustration',
-    description: 'Master illustrator sketchbook with elegant detail',
-    tags: ['elegant', 'detailed', 'artistic'],
-    icon: '✒️',
-    prompt: `Elegantly detailed artisan sketch merging delicate pencil gradients with confident ink strokes. Master illustrator sketchbook style: layered cross-hatching, nuanced shading, faint hand-brushed color accents. Subtle grainy paper texture with visible stroke direction. Rich, expressive, deliberately imperfect traditional pencil-and-ink artistry.`,
-  },
-];
+// Legacy style options converted from art styles
+export const STYLE_OPTIONS: PromptOption[] = ART_STYLES.map(artStyle => ({
+  id: artStyle.id,
+  label: artStyle.label,
+  description: artStyle.description,
+  tags: artStyle.tags,
+  icon: artStyle.icon,
+  prompt: artStyle.stylePrompt,
+}));
 
 export const SETTING_OPTIONS: PromptOption[] = [
   {
@@ -207,69 +174,29 @@ export const MOOD_OPTIONS: PromptOption[] = [
   },
 ];
 
-export const dimensionOptions: Record<PromptDimension, PromptOption[]> = {
+export const dimensionOptions: Record<CardDimension, PromptOption[]> = {
   style: STYLE_OPTIONS,
   setting: SETTING_OPTIONS,
   mood: MOOD_OPTIONS,
 };
 
 /**
- * Create a custom prompt option for user input
+ * Get complete LLM instructions with art style context
+ * Used when enriching user prompts with art style awareness
  */
-export function createCustomOption(dimension: PromptDimension, customPrompt: string): PromptOption {
-  return {
-    id: `custom-${dimension}`,
-    label: 'Custom',
-    description: 'Your custom prompt',
-    tags: ['custom'],
-    icon: '✏️',
-    prompt: customPrompt,
-    isCustom: true,
-  };
-}
-
-/**
- * Compose the final prompt from selections
- * Ensures total length stays within MAX_PROMPT_LENGTH
- */
-export function composePrompt(
-  selections: Partial<Record<PromptDimension, PromptOption | undefined>>
-): string {
-  const parts: string[] = [];
-
-  // Start with style prompt (the main instruction)
-  if (selections.style) {
-    parts.push(selections.style.prompt);
+export function getCompleteLLMInstructions(artStyleId: string): string {
+  const artStyle = getArtStyleById(artStyleId);
+  if (!artStyle) {
+    return '';
   }
 
-  // Add setting description
-  if (selections.setting) {
-    parts.push(`\n\nScene: ${selections.setting.prompt}`);
-  }
+  return `${LLM_ARTSTYLE_GUIDANCE}
 
-  // Add mood/atmosphere
-  if (selections.mood) {
-    parts.push(`\n\nMood: ${selections.mood.prompt}`);
-  }
+Current Art Style: ${artStyle.label}
+- Style Prompt: ${artStyle.stylePrompt}
+- Color Palette: ${artStyle.colorPalette}
+- Rendering Technique: ${artStyle.renderingTechnique}
+- Visual Features: ${artStyle.visualFeatures}
 
-  const result = parts.join('');
-  
-  // Truncate if exceeds limit (should rarely happen with reduced prompts)
-  if (result.length > MAX_PROMPT_LENGTH) {
-    return result.substring(0, MAX_PROMPT_LENGTH - 3) + '...';
-  }
-  
-  return result;
-}
-
-export function getAllTags(): string[] {
-  const tagSet = new Set<string>();
-
-  Object.values(dimensionOptions).forEach(options => {
-    options.forEach(option => {
-      option.tags.forEach(tag => tagSet.add(tag));
-    });
-  });
-
-  return Array.from(tagSet).sort();
+Ensure the setting and mood descriptions complement this art style's aesthetic.`;
 }

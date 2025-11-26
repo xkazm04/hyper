@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import { EditorProvider, useEditor } from '@/contexts/EditorContext'
 import { useStoryEditor } from '@/lib/hooks/useStoryEditor'
 import { useMoodTheme } from '@/lib/hooks/useMoodTheme'
-import StoryEditorLayout from '@/components/editor/story/StoryEditorLayout'
-import StoryEditorToolbar from '@/components/editor/story/StoryEditorToolbar'
-import CardList from '@/components/editor/story/CardList'
-import CardEditor from '@/components/editor/story/CardEditor'
-import CardPreview from '@/components/editor/story/CardPreview'
-import PublishDialog from '@/components/editor/story/PublishDialog'
+import StoryEditorLayout from '@/app/features/editor/story/StoryEditorLayout'
+import StoryEditorToolbar from '@/app/features/editor/story/StoryEditorToolbar'
+import CardList from '@/app/features/editor/story/CardList'
+import { StoryCardEditor, PublishDialog } from '@/app/features/editor/story/sub_StoryCardEditor'
+import CharacterList from '@/app/features/editor/story/sub_Characters/CharacterList'
+import CharacterEditor from '@/app/features/editor/story/sub_Characters/CharacterEditor'
+import CardPreview from '@/app/features/editor/story/CardPreview'
 import { StoryService } from '@/lib/services/story'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
@@ -38,6 +39,9 @@ function EditorContent({ stackId }: { stackId: string }) {
     setCurrentCardId,
     setChoices,
     storyCards,
+    setCharacters,
+    setCurrentCharacterId,
+    addCharacter,
   } = useEditor()
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const storyService = new StoryService()
@@ -72,6 +76,21 @@ function EditorContent({ stackId }: { stackId: string }) {
     }
   }, [choices, setChoices])
 
+  // Load characters
+  useEffect(() => {
+    const loadCharacters = async () => {
+      if (story) {
+        try {
+          const characters = await storyService.getCharacters(story.id)
+          setCharacters(characters)
+        } catch (err) {
+          console.error('Failed to load characters:', err)
+        }
+      }
+    }
+    loadCharacters()
+  }, [story?.id])
+
   const handleAddCard = async () => {
     try {
       const newCard = await createCard({
@@ -82,6 +101,22 @@ function EditorContent({ stackId }: { stackId: string }) {
       setCurrentCardId(newCard.id)
     } catch (err) {
       console.error('Failed to create card:', err)
+    }
+  }
+
+  const handleAddCharacter = async () => {
+    if (!story) return
+
+    try {
+      const newCharacter = await storyService.createCharacter({
+        storyStackId: story.id,
+        name: 'Unnamed Character',
+        appearance: '',
+      })
+      addCharacter(newCharacter)
+      setCurrentCharacterId(newCharacter.id)
+    } catch (err) {
+      console.error('Failed to create character:', err)
     }
   }
 
@@ -138,10 +173,12 @@ function EditorContent({ stackId }: { stackId: string }) {
           />
         }
         cardList={<CardList onAddCard={handleAddCard} />}
-        cardEditor={<CardEditor />}
+        characterList={<CharacterList onAddCharacter={handleAddCharacter} />}
+        cardEditor={<StoryCardEditor />}
+        characterEditor={<CharacterEditor />}
         cardPreview={<CardPreview />}
       />
-      
+
       <PublishDialog
         open={publishDialogOpen}
         onOpenChange={setPublishDialogOpen}

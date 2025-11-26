@@ -320,6 +320,7 @@ export function useCreateStoryCard() {
         storyStackId: input.storyStackId,
         title: input.title || 'Untitled Card',
         content: input.content || '',
+        script: '',
         imageUrl: input.imageUrl || null,
         imagePrompt: input.imagePrompt || null,
         orderIndex,

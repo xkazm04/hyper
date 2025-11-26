@@ -46,7 +46,7 @@ export async function streamAICompletion(
   const { prompt, systemPrompt, maxTokens = 1024 } = request
 
   const stream = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: maxTokens,
     system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],

@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
       numImages = 2,
       width = 512,
       height = 512,
-      provider = 'bria'
+      provider = 'leonardo',
+      model,
+      referenceImages,  // Optional array of reference image URLs
+      referenceStrength = 0.75,  // How strongly to apply reference influence
     } = body
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
@@ -37,25 +40,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Get image service URL from environment
-    const imageServiceUrl = process.env.IMAGE_SERVICE_URL || 'http://localhost:8000'
+    const imageServiceUrl = process.env.IMAGE_SERVICE_URL || 'http://localhost:8003'
 
     // Generate a project ID for the image service
     const projectId = uuidv4()
 
+    // Build the request payload
+    const requestPayload: Record<string, unknown> = {
+      prompt: prompt.trim(),
+      project_id: projectId,
+      width,
+      height,
+      num_images: Math.min(Math.max(numImages, 1), 10), // Clamp between 1-10
+      provider,
+      model_id: model, // Pass model as model_id
+    }
+
+    // Add reference images if provided
+    if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+      requestPayload.reference_images = referenceImages.slice(0, 4) // Max 4 references
+      requestPayload.reference_strength = referenceStrength
+    }
+
     // Call the FastAPI image generation service
-    const response = await fetch(`${imageServiceUrl}/api/unified/generate/quick`, {
+    const response = await fetch(`${imageServiceUrl}/unified/generate/quick`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        prompt: prompt.trim(),
-        project_id: projectId,
-        width,
-        height,
-        num_images: Math.min(Math.max(numImages, 1), 10), // Clamp between 1-10
-        provider,
-      }),
+      body: JSON.stringify(requestPayload),
     })
 
     if (!response.ok) {

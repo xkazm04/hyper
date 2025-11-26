@@ -51,6 +51,43 @@ export interface Choice {
   updatedAt: string
 }
 
+// Character - for story characters
+export interface Character {
+  id: string
+  storyStackId: string
+  name: string
+  appearance: string  // Description of character's appearance
+  imageUrls: string[]  // Up to 4 AI-generated character images
+  imagePrompts: string[]  // Prompts used to generate the images
+  avatarUrl: string | null  // Small RPG-style avatar image
+  avatarPrompt: string | null  // Prompt used to generate the avatar
+  orderIndex: number  // For editor organization
+  createdAt: string
+  updatedAt: string
+}
+
+// Character archetype options
+export type CharacterArchetype = 
+  | 'knight'
+  | 'wizard'
+  | 'assassin'
+  | 'ranger'
+  | 'cleric'
+  | 'barbarian'
+  | 'bard'
+  | 'custom'
+
+// Character pose options
+export type CharacterPose = 
+  | 'heroic_stance'
+  | 'battle_ready'
+  | 'casual_standing'
+  | 'sitting'
+  | 'walking'
+  | 'action_pose'
+  | 'mysterious'
+  | 'regal'
+
 // Input types for creating/updating entities
 export interface CreateStoryStackInput {
   name: string
@@ -97,6 +134,27 @@ export interface UpdateChoiceInput {
   orderIndex?: number
 }
 
+export interface CreateCharacterInput {
+  storyStackId: string
+  name: string
+  appearance?: string
+  imageUrls?: string[]
+  imagePrompts?: string[]
+  avatarUrl?: string | null
+  avatarPrompt?: string | null
+  orderIndex?: number
+}
+
+export interface UpdateCharacterInput {
+  name?: string
+  appearance?: string
+  imageUrls?: string[]
+  imagePrompts?: string[]
+  avatarUrl?: string | null
+  avatarPrompt?: string | null
+  orderIndex?: number
+}
+
 // Story graph validation types
 export interface ValidationResult {
   isValid: boolean
@@ -135,6 +193,13 @@ export class ChoiceNotFoundError extends Error {
   constructor(id: string) {
     super(`Choice not found: ${id}`)
     this.name = 'ChoiceNotFoundError'
+  }
+}
+
+export class CharacterNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Character not found: ${id}`)
+    this.name = 'CharacterNotFoundError'
   }
 }
 

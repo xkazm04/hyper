@@ -4,18 +4,22 @@ import {
   StoryStack,
   StoryCard,
   Choice,
+  Character,
   CreateStoryStackInput,
   UpdateStoryStackInput,
   CreateStoryCardInput,
   UpdateStoryCardInput,
   CreateChoiceInput,
   UpdateChoiceInput,
+  CreateCharacterInput,
+  UpdateCharacterInput,
   ValidationResult,
   ValidationError,
   ValidationWarning,
   StoryNotFoundError,
   CardNotFoundError,
   ChoiceNotFoundError,
+  CharacterNotFoundError,
   DatabaseError,
 } from '@/lib/types'
 
@@ -509,6 +513,149 @@ export class StoryService {
   }
 
   // ============================================================================
+  // Character Operations
+  // ============================================================================
+
+  /**
+   * Get all characters for a story stack
+   */
+  async getCharacters(storyStackId: string): Promise<Character[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('characters')
+        .select('*')
+        .eq('story_stack_id', storyStackId)
+        .order('order_index', { ascending: true })
+
+      if (error) throw new DatabaseError(error.message)
+      return this.mapCharacters(data || [])
+    } catch (error) {
+      if (error instanceof DatabaseError) throw error
+      throw new DatabaseError('Failed to fetch characters')
+    }
+  }
+
+  /**
+   * Get a single character by ID
+   */
+  async getCharacter(id: string): Promise<Character | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('characters')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') return null // Not found
+        throw new DatabaseError(error.message)
+      }
+
+      return this.mapCharacter(data)
+    } catch (error) {
+      if (error instanceof DatabaseError) throw error
+      throw new DatabaseError('Failed to fetch character')
+    }
+  }
+
+  /**
+   * Create a new character
+   */
+  async createCharacter(input: CreateCharacterInput): Promise<Character> {
+    try {
+      // Get the max order_index for this stack
+      const { data: maxOrderData } = await this.supabase
+        .from('characters')
+        .select('order_index')
+        .eq('story_stack_id', input.storyStackId)
+        .order('order_index', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      const nextOrderIndex = input.orderIndex !== undefined
+        ? input.orderIndex
+        : maxOrderData
+          ? (maxOrderData as any).order_index + 1
+          : 0
+
+      const { data, error } = await (this.supabase
+        .from('characters') as any)
+        .insert({
+          story_stack_id: input.storyStackId,
+          name: input.name,
+          appearance: input.appearance || '',
+          image_urls: input.imageUrls || [],
+          image_prompts: input.imagePrompts || [],
+          avatar_url: input.avatarUrl || null,
+          avatar_prompt: input.avatarPrompt || null,
+          order_index: nextOrderIndex,
+        })
+        .select()
+        .single()
+
+      if (error) throw new DatabaseError(error.message)
+      return this.mapCharacter(data)
+    } catch (error) {
+      if (error instanceof DatabaseError) throw error
+      throw new DatabaseError('Failed to create character')
+    }
+  }
+
+  /**
+   * Update a character
+   */
+  async updateCharacter(id: string, input: UpdateCharacterInput): Promise<Character> {
+    try {
+      const updateData: any = {}
+
+      if (input.name !== undefined) updateData.name = input.name
+      if (input.appearance !== undefined) updateData.appearance = input.appearance
+      if (input.imageUrls !== undefined) updateData.image_urls = input.imageUrls
+      if (input.imagePrompts !== undefined) updateData.image_prompts = input.imagePrompts
+      if (input.avatarUrl !== undefined) updateData.avatar_url = input.avatarUrl
+      if (input.avatarPrompt !== undefined) updateData.avatar_prompt = input.avatarPrompt
+      if (input.orderIndex !== undefined) updateData.order_index = input.orderIndex
+
+      // Always update the updated_at timestamp
+      updateData.updated_at = new Date().toISOString()
+
+      const { data, error } = await (this.supabase
+        .from('characters') as any)
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') throw new CharacterNotFoundError(id)
+        throw new DatabaseError(error.message)
+      }
+
+      return this.mapCharacter(data)
+    } catch (error) {
+      if (error instanceof CharacterNotFoundError || error instanceof DatabaseError) throw error
+      throw new DatabaseError('Failed to update character')
+    }
+  }
+
+  /**
+   * Delete a character
+   */
+  async deleteCharacter(id: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('characters')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw new DatabaseError(error.message)
+    } catch (error) {
+      if (error instanceof DatabaseError) throw error
+      throw new DatabaseError('Failed to delete character')
+    }
+  }
+
+  // ============================================================================
   // Utility Operations
   // ============================================================================
 
@@ -728,5 +875,25 @@ export class StoryService {
 
   private mapChoices(data: any[]): Choice[] {
     return data.map(d => this.mapChoice(d))
+  }
+
+  private mapCharacter(data: any): Character {
+    return {
+      id: data.id,
+      storyStackId: data.story_stack_id,
+      name: data.name,
+      appearance: data.appearance,
+      imageUrls: data.image_urls || [],
+      imagePrompts: data.image_prompts || [],
+      avatarUrl: data.avatar_url,
+      avatarPrompt: data.avatar_prompt,
+      orderIndex: data.order_index,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    }
+  }
+
+  private mapCharacters(data: any[]): Character[] {
+    return data.map(d => this.mapCharacter(d))
   }
 }

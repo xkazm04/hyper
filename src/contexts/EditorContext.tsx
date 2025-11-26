@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { StoryStack, StoryCard, Choice } from '@/lib/types'
+import { StoryStack, StoryCard, Choice, Character } from '@/lib/types'
 
 interface EditorContextType {
   // Story data
@@ -10,7 +10,10 @@ interface EditorContextType {
   currentCard: StoryCard | null
   currentCardId: string | null
   choices: Choice[]
-  
+  characters: Character[]
+  currentCharacter: Character | null
+  currentCharacterId: string | null
+
   // Actions
   setStoryStack: (stack: StoryStack) => void
   setStoryCards: (cards: StoryCard[]) => void
@@ -22,7 +25,12 @@ interface EditorContextType {
   addChoice: (choice: Choice) => void
   updateChoice: (choiceId: string, updates: Partial<Choice>) => void
   deleteChoice: (choiceId: string) => void
-  
+  setCharacters: (characters: Character[]) => void
+  setCurrentCharacterId: (characterId: string | null) => void
+  addCharacter: (character: Character) => void
+  updateCharacter: (characterId: string, updates: Partial<Character>) => void
+  deleteCharacter: (characterId: string) => void
+
   // UI state
   isSaving: boolean
   setIsSaving: (saving: boolean) => void
@@ -35,9 +43,12 @@ export function EditorProvider({ children }: { children: ReactNode }) {
   const [storyCards, setStoryCards] = useState<StoryCard[]>([])
   const [currentCardId, setCurrentCardId] = useState<string | null>(null)
   const [choices, setChoices] = useState<Choice[]>([])
+  const [characters, setCharacters] = useState<Character[]>([])
+  const [currentCharacterId, setCurrentCharacterId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   const currentCard = storyCards.find(card => card.id === currentCardId) || null
+  const currentCharacter = characters.find(char => char.id === currentCharacterId) || null
 
   const addCard = useCallback((card: StoryCard) => {
     setStoryCards(prev => [...prev, card])
@@ -74,6 +85,25 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setChoices(prev => prev.filter(choice => choice.id !== choiceId))
   }, [])
 
+  const addCharacter = useCallback((character: Character) => {
+    setCharacters(prev => [...prev, character])
+  }, [])
+
+  const updateCharacter = useCallback((characterId: string, updates: Partial<Character>) => {
+    setCharacters(prev =>
+      prev.map(character =>
+        character.id === characterId ? { ...character, ...updates, updatedAt: new Date().toISOString() } : character
+      )
+    )
+  }, [])
+
+  const deleteCharacter = useCallback((characterId: string) => {
+    setCharacters(prev => prev.filter(character => character.id !== characterId))
+    if (currentCharacterId === characterId) {
+      setCurrentCharacterId(null)
+    }
+  }, [currentCharacterId])
+
   return (
     <EditorContext.Provider
       value={{
@@ -82,6 +112,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         currentCard,
         currentCardId,
         choices,
+        characters,
+        currentCharacter,
+        currentCharacterId,
         setStoryStack,
         setStoryCards,
         setCurrentCardId,
@@ -92,6 +125,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         addChoice,
         updateChoice,
         deleteChoice,
+        setCharacters,
+        setCurrentCharacterId,
+        addCharacter,
+        updateCharacter,
+        deleteCharacter,
         isSaving,
         setIsSaving,
       }}
