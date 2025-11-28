@@ -1,0 +1,272 @@
+/**
+ * Halloween Connection Line Styles
+ * 
+ * This file contains connection line styles for the Halloween theme enrichment.
+ * Effects include ghostly gradients, hover glow intensification, and particle flow.
+ * All effects include prefers-reduced-motion fallbacks.
+ * 
+ * Line Styles by Choice Type:
+ * 1. default - Ghostly purple gradient
+ * 2. positive - Spectral green gradient
+ * 3. negative - Blood red gradient
+ * 4. neutral - Misty gray gradient
+ * 
+ * **Feature: halloween-theme-enrichment**
+ * **Validates: Requirements 2.1, 2.3, 2.4**
+ */
+
+/* ==========================================================================
+   Base Connection Line Styles
+   Common styles for all Halloween connection lines
+   Requirements: 2.1
+   ========================================================================== */
+
+.halloween .halloween-connection-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: filter 0.3s ease-out, stroke-width 0.3s ease-out;
+}
+
+/* ==========================================================================
+   1. Default Ghostly Line (Purple)
+   Ghostly gradient from purple to transparent
+   Requirements: 2.1, 2.4
+   ========================================================================== */
+
+.halloween .halloween-line-default {
+  stroke: url(#halloween-gradient-default);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 3px hsl(270 70% 60% / 0.4));
+}
+
+.halloween .halloween-line-default:hover {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px hsl(270 70% 60% / 0.6));
+}
+
+/* ==========================================================================
+   2. Positive Spectral Line (Green)
+   Spectral green gradient for positive choices
+   Requirements: 2.1, 2.4
+   ========================================================================== */
+
+.halloween .halloween-line-positive {
+  stroke: url(#halloween-gradient-positive);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 3px hsl(142 65% 50% / 0.4));
+}
+
+.halloween .halloween-line-positive:hover {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px hsl(142 65% 50% / 0.6));
+}
+
+/* ==========================================================================
+   3. Negative Blood Line (Red)
+   Blood red gradient for negative choices
+   Requirements: 2.1, 2.4
+   ========================================================================== */
+
+.halloween .halloween-line-negative {
+  stroke: url(#halloween-gradient-negative);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 3px hsl(0 70% 55% / 0.4));
+}
+
+.halloween .halloween-line-negative:hover {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 6px hsl(0 70% 55% / 0.6));
+}
+
+/* ==========================================================================
+   4. Neutral Misty Line (Gray)
+   Misty gray gradient for neutral choices
+   Requirements: 2.1, 2.4
+   ========================================================================== */
+
+.halloween .halloween-line-neutral {
+  stroke: url(#halloween-gradient-neutral);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 2px hsl(270 10% 60% / 0.3));
+}
+
+.halloween .halloween-line-neutral:hover {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px hsl(270 10% 60% / 0.5));
+}
+
+/* ==========================================================================
+   Particle Flow Animation
+   Animated particles flowing along connection lines
+   Requirements: 2.3
+   ========================================================================== */
+
+@keyframes particleFlowDefault {
+  0% {
+    stroke-dashoffset: 20;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+}
+
+@keyframes particleFlowPositive {
+  0% {
+    stroke-dashoffset: 20;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+}
+
+@keyframes particleFlowNegative {
+  0% {
+    stroke-dashoffset: 20;
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+}
+
+.halloween .halloween-line-particles {
+  stroke-dasharray: 4 8;
+  animation: particleFlowDefault 2s linear infinite;
+}
+
+.halloween .halloween-line-particles.halloween-line-positive {
+  animation-name: particleFlowPositive;
+}
+
+.halloween .halloween-line-particles.halloween-line-negative {
+  animation-name: particleFlowNegative;
+}
+
+/* ==========================================================================
+   Hover Glow Intensification
+   Enhanced glow effect on hover
+   Requirements: 2.3
+   ========================================================================== */
+
+.halloween .halloween-line-glow-hover {
+  transition: filter 0.3s ease-out;
+}
+
+.halloween .halloween-line-glow-hover:hover {
+  filter: drop-shadow(0 0 8px hsl(270 70% 60% / 0.7))
+          drop-shadow(0 0 16px hsl(270 70% 60% / 0.4));
+}
+
+.halloween .halloween-line-glow-hover.halloween-line-positive:hover {
+  filter: drop-shadow(0 0 8px hsl(142 65% 50% / 0.7))
+          drop-shadow(0 0 16px hsl(142 65% 50% / 0.4));
+}
+
+.halloween .halloween-line-glow-hover.halloween-line-negative:hover {
+  filter: drop-shadow(0 0 8px hsl(0 70% 55% / 0.7))
+          drop-shadow(0 0 16px hsl(0 70% 55% / 0.4));
+}
+
+.halloween .halloween-line-glow-hover.halloween-line-neutral:hover {
+  filter: drop-shadow(0 0 6px hsl(270 10% 60% / 0.6))
+          drop-shadow(0 0 12px hsl(270 10% 60% / 0.35));
+}
+
+/* ==========================================================================
+   SVG Gradient Definitions (to be included in SVG defs)
+   These CSS classes style the gradient stops
+   Requirements: 2.1, 2.4
+   ========================================================================== */
+
+/* Default purple gradient colors */
+.halloween-gradient-stop-default-start {
+  stop-color: hsl(270 70% 60%);
+  stop-opacity: 0.8;
+}
+
+.halloween-gradient-stop-default-end {
+  stop-color: hsl(270 70% 60%);
+  stop-opacity: 0.2;
+}
+
+/* Positive green gradient colors */
+.halloween-gradient-stop-positive-start {
+  stop-color: hsl(142 65% 50%);
+  stop-opacity: 0.8;
+}
+
+.halloween-gradient-stop-positive-end {
+  stop-color: hsl(142 65% 50%);
+  stop-opacity: 0.2;
+}
+
+/* Negative red gradient colors */
+.halloween-gradient-stop-negative-start {
+  stop-color: hsl(0 70% 55%);
+  stop-opacity: 0.8;
+}
+
+.halloween-gradient-stop-negative-end {
+  stop-color: hsl(0 70% 55%);
+  stop-opacity: 0.2;
+}
+
+/* Neutral gray gradient colors */
+.halloween-gradient-stop-neutral-start {
+  stop-color: hsl(270 10% 60%);
+  stop-opacity: 0.8;
+}
+
+.halloween-gradient-stop-neutral-end {
+  stop-color: hsl(270 10% 60%);
+  stop-opacity: 0.2;
+}
+
+/* ==========================================================================
+   Reduced Motion Fallbacks
+   Static alternatives for users who prefer reduced motion
+   Requirements: 2.3
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-line-particles {
+    animation: none;
+    stroke-dasharray: none;
+  }
+
+  .halloween .halloween-connection-line,
+  .halloween .halloween-line-glow-hover {
+    transition: none;
+  }
+
+  /* Maintain static glow for visibility */
+  .halloween .halloween-line-default {
+    filter: drop-shadow(0 0 4px hsl(270 70% 60% / 0.5));
+  }
+
+  .halloween .halloween-line-positive {
+    filter: drop-shadow(0 0 4px hsl(142 65% 50% / 0.5));
+  }
+
+  .halloween .halloween-line-negative {
+    filter: drop-shadow(0 0 4px hsl(0 70% 55% / 0.5));
+  }
+
+  .halloween .halloween-line-neutral {
+    filter: drop-shadow(0 0 3px hsl(270 10% 60% / 0.4));
+  }
+}

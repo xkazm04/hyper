@@ -1,166 +1,22 @@
 @import "tailwindcss";
+@import "../styles/theme-variables.css";
+@import "../styles/halloween/effects.css";
+@import "../styles/halloween/borders.css";
+@import "../styles/halloween/backgrounds.css";
+@import "../styles/halloween/lines.css";
+@import "../styles/halloween/dividers.css";
+@import "../styles/halloween/nodes.css";
+@import "../styles/halloween/interactive.css";
+@import "../styles/halloween/components.css";
+@import "../styles/halloween/accessibility.css";
 
 /**
- * Theme System CSS Variables
+ * Global Base Styles
  * 
- * This file defines CSS custom properties for the theme system.
- * All colors are defined in HSL format without the hsl() wrapper for Tailwind compatibility.
- * 
- * Usage in components:
- * - Use Tailwind classes: bg-background, text-foreground, border-border, etc.
- * - Use in custom CSS: background-color: hsl(var(--background));
- * 
- * Color Format: H S% L% (Hue Saturation Lightness)
- * Example: 270 30% 8% = Purple hue, 30% saturation, 8% lightness
+ * This file contains only essential base styles and utility classes.
+ * Theme variables are defined in ../styles/theme-variables.css
+ * Halloween effects are defined in ../styles/halloween/effects.css
  */
-
-:root {
-  /* 
-   * Core theme variables - Light Theme
-   * These are the primary colors used throughout the application
-   */
-  --background: 0 0% 100%;           /* Main page background - white */
-  --foreground: 0 0% 3.9%;           /* Main text color - near black */
-  --card: 0 0% 100%;                 /* Card/panel backgrounds - white */
-  --card-foreground: 0 0% 3.9%;     /* Text on cards - near black */
-  --popover: 0 0% 100%;              /* Dropdown/popover backgrounds - white */
-  --popover-foreground: 0 0% 3.9%;  /* Text in popovers - near black */
-  --primary: 0 0% 9%;                /* Primary action color - dark gray */
-  --primary-foreground: 0 0% 98%;   /* Text on primary buttons - near white */
-  --secondary: 0 0% 96.1%;           /* Secondary elements - light gray */
-  --secondary-foreground: 0 0% 9%;  /* Text on secondary elements - dark gray */
-  --muted: 0 0% 96.1%;               /* Muted/disabled backgrounds - light gray */
-  --muted-foreground: 0 0% 45.1%;   /* Muted/disabled text - medium gray */
-  --accent: 0 0% 96.1%;              /* Accent/hover backgrounds - light gray */
-  --accent-foreground: 0 0% 9%;     /* Text on accent elements - dark gray */
-  --destructive: 0 84.2% 60.2%;     /* Error/destructive actions - red */
-  --destructive-foreground: 0 0% 98%; /* Text on destructive buttons - near white */
-  --border: 0 0% 89.8%;              /* Border color - light gray */
-  --input: 0 0% 89.8%;               /* Input border color - light gray */
-  --ring: 0 0% 3.9%;                 /* Focus ring color - near black */
-  --radius: 0.5rem;                  /* Border radius for rounded elements */
-
-  /* Extended color palette - Slate scale */
-  --slate-50: 210 40% 98%;
-  --slate-100: 210 40% 96.1%;
-  --slate-200: 214 32% 91%;
-  --slate-300: 213 27% 84%;
-  --slate-400: 215 20% 65%;
-  --slate-500: 215 16% 47%;
-  --slate-600: 215 16% 47%;
-  --slate-700: 215 19% 35%;
-  --slate-800: 217 19% 27%;
-  --slate-900: 222 47% 11%;
-
-  /* Extended color palette - Gray scale */
-  --gray-50: 0 0% 98%;
-  --gray-100: 0 0% 96.1%;
-  --gray-200: 0 0% 89.8%;
-  --gray-300: 0 0% 83.1%;
-  --gray-400: 0 0% 63.9%;
-  --gray-500: 0 0% 45.1%;
-  --gray-600: 0 0% 32.2%;
-  --gray-700: 0 0% 25.1%;
-  --gray-800: 0 0% 14.9%;
-  --gray-900: 0 0% 9%;
-
-  /* Semantic colors - Blue */
-  --blue-500: 217 91% 60%;
-  --blue-600: 221 83% 53%;
-
-  /* Semantic colors - Green */
-  --green-50: 138 76% 97%;
-  --green-100: 141 84% 93%;
-  --green-500: 142 71% 45%;
-  --green-600: 142 76% 36%;
-  --green-800: 143 64% 24%;
-
-  /* Semantic colors - Red */
-  --red-50: 0 86% 97%;
-  --red-400: 0 91% 71%;
-  --red-500: 0 84% 60%;
-  --red-600: 0 72% 51%;
-
-  /* Semantic colors - Yellow */
-  --yellow-100: 48 96% 89%;
-  --yellow-500: 45 93% 47%;
-
-  /* Gradient colors */
-  --gradient-from: 210 40% 98%;
-  --gradient-to: 210 40% 96.1%;
-}
-
-.halloween {
-  /* Core theme variables - Dark theme: Pure black to dark gray gradient with purple accents */
-  --background: 0 0% 5%;             /* Near pure black background */
-  --foreground: 270 15% 95%;         /* Light purple-tinted white for main text */
-  --card: 270 15% 10%;               /* Very dark gray with purple tint for cards */
-  --card-foreground: 270 15% 95%;    /* Light purple-tinted text on cards */
-  --popover: 270 15% 10%;            /* Very dark gray with purple tint for popovers */
-  --popover-foreground: 270 15% 95%; /* Light purple-tinted text in popovers */
-  --primary: 270 70% 60%;            /* Vibrant purple for primary actions */
-  --primary-foreground: 0 0% 100%;   /* Pure white text on purple */
-  --secondary: 270 50% 40%;          /* Medium purple for secondary elements */
-  --secondary-foreground: 270 10% 98%; /* Light purple-tinted text on secondary */
-  --muted: 270 10% 15%;              /* Muted dark gray with purple hint */
-  --muted-foreground: 270 10% 70%;   /* Light purple-gray for muted text */
-  --accent: 270 70% 55%;             /* Purple accent for hover states */
-  --accent-foreground: 0 0% 100%;    /* White text on accent */
-  --destructive: 0 70% 55%;          /* Red for destructive actions */
-  --destructive-foreground: 0 0% 98%; /* White text on destructive */
-  --border: 270 40% 35%;             /* Purple borders for decorative styling */
-  --input: 270 15% 15%;              /* Dark gray with purple tint for inputs */
-  --ring: 270 70% 60%;               /* Purple focus rings */
-
-  /* Extended color palette - Slate scale (purple-tinted dark grays) */
-  --slate-50: 270 15% 95%;
-  --slate-100: 270 15% 90%;
-  --slate-200: 270 15% 80%;
-  --slate-300: 270 15% 65%;
-  --slate-400: 270 15% 50%;
-  --slate-500: 270 15% 35%;
-  --slate-600: 270 15% 25%;
-  --slate-700: 270 15% 15%;
-  --slate-800: 270 15% 10%;
-  --slate-900: 270 15% 5%;
-
-  /* Extended color palette - Gray scale (purple-tinted dark grays) */
-  --gray-50: 270 10% 95%;
-  --gray-100: 270 10% 90%;
-  --gray-200: 270 10% 80%;
-  --gray-300: 270 10% 65%;
-  --gray-400: 270 10% 50%;
-  --gray-500: 270 10% 35%;
-  --gray-600: 270 10% 25%;
-  --gray-700: 270 10% 15%;
-  --gray-800: 270 10% 10%;
-  --gray-900: 270 10% 5%;
-
-  /* Semantic colors - Blue (purple-blue for consistency) */
-  --blue-500: 260 70% 60%;
-  --blue-600: 260 75% 55%;
-
-  /* Semantic colors - Green (bright for visibility on dark) */
-  --green-50: 270 10% 15%;
-  --green-100: 270 10% 18%;
-  --green-500: 142 65% 50%;
-  --green-600: 142 70% 45%;
-  --green-800: 142 75% 35%;
-
-  /* Semantic colors - Red (bright for visibility) */
-  --red-50: 270 10% 15%;
-  --red-400: 0 75% 65%;
-  --red-500: 0 70% 55%;
-  --red-600: 0 75% 50%;
-
-  /* Semantic colors - Yellow (bright for visibility) */
-  --yellow-100: 270 10% 18%;
-  --yellow-500: 45 90% 60%;
-
-  /* Gradient colors - Pure black to dark purple-gray */
-  --gradient-from: 270 20% 5%;       /* Near-black with purple tint */
-  --gradient-to: 270 25% 15%;        /* Dark purple-gray */
-}
 
 * {
   border-color: hsl(var(--border));
@@ -174,7 +30,6 @@ body {
 /* 
  * Theme transition styles
  * Optimized for performance using GPU-accelerated properties
- * Duration: 200ms (fast enough to feel responsive, slow enough to be smooth)
  */
 html.theme-transitioning,
 html.theme-transitioning *,
@@ -184,16 +39,13 @@ html.theme-transitioning *::after {
               color 200ms ease-in-out,
               border-color 200ms ease-in-out !important;
   transition-delay: 0ms !important;
-  /* Use will-change sparingly to hint browser about upcoming changes */
   will-change: background-color, color, border-color;
 }
 
-/* Remove will-change after transition completes to free resources */
 html:not(.theme-transitioning) * {
   will-change: auto;
 }
 
-/* Disable transitions on initial load to prevent flash of unstyled content */
 html.no-transitions,
 html.no-transitions *,
 html.no-transitions *::before,
@@ -201,7 +53,6 @@ html.no-transitions *::after {
   transition: none !important;
 }
 
-/* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   html.theme-transitioning,
   html.theme-transitioning *,
@@ -211,20 +62,10 @@ html.no-transitions *::after {
   }
 }
 
+
 /*
  * Mood-Based Theme Sync Transitions
- * Smooth transitions when mood colors update based on story content
  */
-
-/* Mood color CSS custom properties */
-:root {
-  --mood-primary: 210 70% 50%;
-  --mood-secondary: 210 50% 60%;
-  --mood-muted: 210 20% 92%;
-  --mood-accent: 210 80% 55%;
-}
-
-/* Smooth transition when mood colors change */
 html.mood-transitioning,
 html.mood-transitioning *,
 html.mood-transitioning *::before,
@@ -236,7 +77,6 @@ html.mood-transitioning *::after {
   transition-delay: 0ms !important;
 }
 
-/* Disable mood transitions with reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   html.mood-transitioning,
   html.mood-transitioning *,
@@ -246,37 +86,15 @@ html.mood-transitioning *::after {
   }
 }
 
-/* Mood-aware utility classes for editor components */
-.bg-mood-primary {
-  background-color: hsl(var(--mood-primary));
-}
+/* Mood-aware utility classes */
+.bg-mood-primary { background-color: hsl(var(--mood-primary)); }
+.text-mood-primary { color: hsl(var(--mood-primary)); }
+.border-mood-primary { border-color: hsl(var(--mood-primary)); }
+.bg-mood-secondary { background-color: hsl(var(--mood-secondary)); }
+.bg-mood-muted { background-color: hsl(var(--mood-muted)); }
+.bg-mood-accent { background-color: hsl(var(--mood-accent)); }
+.ring-mood { --tw-ring-color: hsl(var(--mood-primary)); }
 
-.text-mood-primary {
-  color: hsl(var(--mood-primary));
-}
-
-.border-mood-primary {
-  border-color: hsl(var(--mood-primary));
-}
-
-.bg-mood-secondary {
-  background-color: hsl(var(--mood-secondary));
-}
-
-.bg-mood-muted {
-  background-color: hsl(var(--mood-muted));
-}
-
-.bg-mood-accent {
-  background-color: hsl(var(--mood-accent));
-}
-
-/* Mood-aware focus ring */
-.ring-mood {
-  --tw-ring-color: hsl(var(--mood-primary));
-}
-
-/* Mood gradient effect */
 .bg-gradient-mood {
   background: linear-gradient(
     135deg,
@@ -285,7 +103,6 @@ html.mood-transitioning *::after {
   );
 }
 
-/* Subtle mood indicator in editor toolbar */
 .mood-indicator {
   width: 8px;
   height: 8px;
@@ -299,209 +116,45 @@ html.mood-transitioning *::after {
 }
 
 @keyframes moodPulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.1);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+/* Halloween decorative float animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 /* Theme-aware gradient utilities */
 .bg-gradient-theme {
   background: linear-gradient(to bottom right, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
 }
-
 .bg-gradient-theme-vertical {
   background: linear-gradient(to bottom, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
 }
-
 .bg-gradient-theme-horizontal {
   background: linear-gradient(to right, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
 }
 
 /* Theme-aware overlay utilities */
-.overlay-dark {
-  background-color: hsl(var(--background) / 0.8);
-}
-
-.overlay-light {
-  background-color: hsl(var(--foreground) / 0.1);
-}
+.overlay-dark { background-color: hsl(var(--background) / 0.8); }
+.overlay-light { background-color: hsl(var(--foreground) / 0.1); }
 
 /* Theme-aware shadow utilities */
-.shadow-theme {
-  box-shadow: 8px 8px 0px 0px hsl(var(--border));
+.shadow-theme { box-shadow: 8px 8px 0px 0px hsl(var(--border)); }
+.shadow-theme-sm { box-shadow: 4px 4px 0px 0px hsl(var(--border)); }
+.shadow-theme-lg { box-shadow: 12px 12px 0px 0px hsl(var(--border)); }
+
+/* Radial gradient utility */
+.bg-gradient-radial {
+  background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
 }
 
-.shadow-theme-sm {
-  box-shadow: 4px 4px 0px 0px hsl(var(--border));
-}
-
-.shadow-theme-lg {
-  box-shadow: 12px 12px 0px 0px hsl(var(--border));
-}
-
-/*
- * Halloween Theme Decorative Elements
- * Elegant, subtle background decorations that enhance the spooky atmosphere
- */
-
-/* Floating purple particles/stars */
-.halloween body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-  background-image:
-    radial-gradient(2px 2px at 20% 30%, hsl(270 70% 60% / 0.3), transparent),
-    radial-gradient(2px 2px at 60% 70%, hsl(270 70% 60% / 0.2), transparent),
-    radial-gradient(1px 1px at 50% 50%, hsl(270 70% 60% / 0.3), transparent),
-    radial-gradient(1px 1px at 80% 10%, hsl(270 70% 60% / 0.25), transparent),
-    radial-gradient(2px 2px at 90% 60%, hsl(270 70% 60% / 0.2), transparent),
-    radial-gradient(1px 1px at 33% 80%, hsl(270 70% 60% / 0.3), transparent),
-    radial-gradient(1px 1px at 15% 90%, hsl(270 70% 60% / 0.25), transparent);
-  background-size: 200% 200%;
-  background-position: 0% 0%;
-  animation: floatingParticles 60s ease-in-out infinite;
-  opacity: 0.6;
-}
-
-/* Subtle corner web pattern - top right */
-.halloween body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 300px;
-  height: 300px;
-  pointer-events: none;
-  z-index: 1;
-  background-image:
-    linear-gradient(135deg, transparent 48%, hsl(270 40% 35% / 0.15) 48%, hsl(270 40% 35% / 0.15) 52%, transparent 52%),
-    linear-gradient(45deg, transparent 48%, hsl(270 40% 35% / 0.1) 48%, hsl(270 40% 35% / 0.1) 52%, transparent 52%);
-  background-size: 60px 60px;
-  opacity: 0.4;
-  mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
-}
-
-/* Mystical stars/sparkles in bottom left corner */
-.halloween main::before {
-  content: '✦';
-  position: fixed;
-  bottom: 40px;
-  left: 40px;
-  font-size: 16px;
-  color: hsl(270 70% 60% / 0.4);
-  pointer-events: none;
-  z-index: 1;
-  animation: twinkle 3s ease-in-out infinite;
-}
-
-.halloween main::after {
-  content: '✦';
-  position: fixed;
-  bottom: 80px;
-  left: 80px;
-  font-size: 12px;
-  color: hsl(270 70% 60% / 0.3);
-  pointer-events: none;
-  z-index: 1;
-  animation: twinkle 3s ease-in-out infinite 1.5s;
-}
-
-@keyframes twinkle {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.2);
-  }
-}
-
-/* Subtle glow effect on main content areas */
-.halloween .bg-card {
-  box-shadow:
-    0 0 40px hsl(270 70% 60% / 0.05),
-    0 0 80px hsl(270 70% 60% / 0.02);
-}
-
-/* Purple glow on primary elements */
-.halloween .bg-primary {
-  box-shadow:
-    0 0 20px hsl(270 70% 60% / 0.3),
-    0 0 40px hsl(270 70% 60% / 0.15);
-}
-
-/* Animated floating particles */
-@keyframes floatingParticles {
-  0%, 100% {
-    background-position: 0% 0%, 100% 100%, 50% 50%, 80% 10%, 90% 60%, 33% 80%, 15% 90%;
-    opacity: 0.6;
-  }
-  25% {
-    background-position: 10% 20%, 90% 80%, 60% 40%, 70% 20%, 80% 70%, 43% 70%, 25% 80%;
-    opacity: 0.4;
-  }
-  50% {
-    background-position: 20% 40%, 80% 60%, 70% 30%, 60% 30%, 70% 80%, 53% 60%, 35% 70%;
-    opacity: 0.5;
-  }
-  75% {
-    background-position: 10% 60%, 90% 40%, 40% 60%, 90% 40%, 60% 90%, 23% 90%, 5% 80%;
-    opacity: 0.4;
-  }
-}
-
-/* Add subtle purple glow to borders */
-.halloween .border-border {
-  border-color: hsl(270 40% 35%);
-  filter: drop-shadow(0 0 1px hsl(270 60% 50% / 0.3));
-}
-
-/* Ensure content appears above decorative elements */
-.halloween main,
-.halloween header,
-.halloween [role="main"] {
-  position: relative;
-  z-index: 10;
-}
-
-/* Subtle purple vignette effect */
-.halloween .min-h-screen {
-  position: relative;
-}
-
-.halloween .min-h-screen > *:first-child::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 0%,
-    transparent 50%,
-    hsl(270 50% 10% / 0.3) 100%
-  );
-}
 
 /*
  * Theme Ripple Animation
- * Circular ripple effect that expands from the theme toggle button
- * Uses clip-path for smooth morphing animation
  */
-
-/* Ripple overlay container */
 .theme-ripple-overlay {
   position: fixed;
   inset: 0;
@@ -510,7 +163,6 @@ html.mood-transitioning *::after {
   overflow: hidden;
 }
 
-/* The actual ripple element */
 .theme-ripple {
   position: absolute;
   border-radius: 50%;
@@ -519,37 +171,19 @@ html.mood-transitioning *::after {
   will-change: transform, opacity;
 }
 
-/* Light theme ripple (expanding to dark/halloween) */
-.theme-ripple-to-dark {
-  background: hsl(270 15% 10%);
-}
+.theme-ripple-to-dark { background: hsl(270 15% 10%); }
+.theme-ripple-to-light { background: hsl(0 0% 100%); }
 
-/* Dark/Halloween theme ripple (expanding to light) */
-.theme-ripple-to-light {
-  background: hsl(0 0% 100%);
-}
-
-/* Ripple expansion animation */
 @keyframes rippleExpand {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 1;
-  }
-  70% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0;
-  }
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
-/* Apply animation class */
 .theme-ripple-animate {
   animation: rippleExpand 500ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Alternative clip-path based ripple for smoother effect */
 .theme-ripple-clip {
   position: fixed;
   inset: 0;
@@ -559,33 +193,479 @@ html.mood-transitioning *::after {
   will-change: clip-path;
 }
 
-.theme-ripple-clip-to-dark {
-  background: hsl(270 15% 10%);
-}
-
-.theme-ripple-clip-to-light {
-  background: hsl(0 0% 100%);
-}
+.theme-ripple-clip-to-dark { background: hsl(270 15% 10%); }
+.theme-ripple-clip-to-light { background: hsl(0 0% 100%); }
 
 @keyframes clipRippleExpand {
-  0% {
-    clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%));
-    opacity: 0.9;
-  }
-  100% {
-    clip-path: circle(150% at var(--ripple-x, 50%) var(--ripple-y, 50%));
-    opacity: 0;
-  }
+  0% { clip-path: circle(0% at var(--ripple-x, 50%) var(--ripple-y, 50%)); opacity: 0.9; }
+  100% { clip-path: circle(150% at var(--ripple-x, 50%) var(--ripple-y, 50%)); opacity: 0; }
 }
 
 .theme-ripple-clip-animate {
   animation: clipRippleExpand 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .theme-ripple-animate,
   .theme-ripple-clip-animate {
     animation: none !important;
+  }
+}
+
+/*
+ * Card Hover Micro-Animations
+ */
+@keyframes storyCardGlow {
+  0%, 100% { box-shadow: 4px 4px 0px 0px hsl(var(--border)); }
+  50% { box-shadow: 4px 4px 0px 0px hsl(var(--border)), 0 0 12px 2px hsl(var(--primary) / 0.15); }
+}
+.animate-story-card-hover:hover { animation: storyCardGlow 1.5s ease-in-out infinite; }
+
+@keyframes imageCardZoom {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+.animate-image-zoom { transition: transform 0.3s ease-out; }
+.animate-image-zoom:hover { transform: scale(1.03); }
+.group:hover .animate-image-card-zoom,
+.animate-image-card-zoom:hover { animation: imageCardZoom 2s ease-in-out infinite; }
+
+@keyframes typingIndicator {
+  0%, 80%, 100% { opacity: 0; transform: translateY(2px); }
+  40% { opacity: 1; transform: translateY(0); }
+}
+.animate-typing-indicator::after {
+  content: '▌';
+  display: inline-block;
+  margin-left: 2px;
+  opacity: 0;
+  font-weight: normal;
+  color: hsl(var(--primary));
+}
+.group:hover .animate-typing-indicator::after,
+.animate-typing-indicator:hover::after { animation: typingIndicator 1.2s steps(1) infinite; }
+
+@keyframes nodeBorderPulse {
+  0%, 100% { border-color: hsl(var(--border)); }
+  50% { border-color: hsl(var(--primary)); }
+}
+.animate-node-pulse:hover { animation: nodeBorderPulse 1.5s ease-in-out infinite; }
+
+@keyframes choiceBounce {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-1px); }
+  75% { transform: translateY(1px); }
+}
+.animate-choice-hover:hover { animation: choiceBounce 0.4s ease-in-out; }
+
+@keyframes cardNavSlide {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+.animate-nav-card:hover { animation: cardNavSlide 0.5s ease-in-out; }
+
+@keyframes previewFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.animate-preview-float:hover { animation: previewFloat 2s ease-in-out infinite; }
+
+@keyframes badgeSparkle {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(142 71% 45% / 0.4); }
+  50% { box-shadow: 0 0 8px 2px hsl(142 71% 45% / 0.3); }
+}
+.animate-badge-sparkle:hover { animation: badgeSparkle 1.5s ease-in-out infinite; }
+
+@keyframes progressShimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 100% 0; }
+}
+.animate-progress-shimmer {
+  background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.7) 50%, hsl(var(--primary)) 100%);
+  background-size: 200% 100%;
+}
+.group:hover .animate-progress-shimmer { animation: progressShimmer 1.5s ease-in-out infinite; }
+
+@keyframes iconSpin {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+.animate-icon-wiggle:hover { animation: iconSpin 0.5s ease-in-out; }
+
+@keyframes stackLift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(0.5deg); }
+}
+.animate-stack-lift:hover { animation: stackLift 0.8s ease-in-out; }
+
+.hover\:scale-102:hover { transform: scale(1.02); }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-story-card-hover:hover,
+  .animate-image-zoom:hover,
+  .animate-image-card-zoom:hover,
+  .animate-typing-indicator::after,
+  .animate-node-pulse:hover,
+  .animate-choice-hover:hover,
+  .animate-nav-card:hover,
+  .animate-preview-float:hover,
+  .animate-badge-sparkle:hover,
+  .group:hover .animate-progress-shimmer,
+  .animate-icon-wiggle:hover,
+  .animate-stack-lift:hover {
+    animation: none !important;
+    transform: none !important;
+  }
+  .animate-image-zoom:hover { transform: scale(1) !important; }
+}
+
+/*
+ * AI Suggestion Animations
+ */
+@keyframes suggestionSpawn {
+  0% { opacity: 0; transform: translateX(30px) scale(0.8); filter: blur(4px); }
+  50% { opacity: 0.8; transform: translateX(-5px) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+}
+.animate-suggestion-spawn { animation: suggestionSpawn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes suggestionDismiss {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8) translateX(-20px); }
+}
+.animate-suggestion-dismiss { animation: suggestionDismiss 0.3s ease-out forwards; }
+
+@keyframes suggestionPulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  50% { box-shadow: 0 0 15px 3px hsl(var(--primary) / 0.15); }
+}
+.animate-suggestion-pulse { animation: suggestionPulse 2s ease-in-out infinite; }
+
+@keyframes wireConnect {
+  0% { width: 0; opacity: 0; }
+  30% { opacity: 1; }
+  100% { width: 24px; opacity: 1; }
+}
+.animate-wire-connect { animation: wireConnect 0.4s ease-out forwards; animation-delay: 0.2s; }
+
+@keyframes acceptBounce {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.animate-accept-bounce { animation: acceptBounce 0.4s ease-out; }
+
+@keyframes declineShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.animate-decline-shake { animation: declineShake 0.4s ease-out; }
+
+@keyframes aiThinking {
+  0% { transform: rotate(0deg); opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { transform: rotate(360deg); opacity: 0.5; }
+}
+.animate-ai-thinking { animation: aiThinking 2s linear infinite; }
+
+@keyframes confidenceRingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(142 71% 45% / 0.4); }
+  50% { box-shadow: 0 0 0 6px hsl(142 71% 45% / 0); }
+}
+.animate-confidence-ring-high { animation: confidenceRingPulse 2s ease-in-out infinite; }
+
+@keyframes edgeFlow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+.animate-edge-flow { animation: edgeFlow 1s linear infinite; }
+
+/*
+ * Path Glow Animations - Highlight lineage from root to selected node
+ */
+@keyframes pathNodeGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0),
+                0 0 0 0 hsl(var(--primary) / 0);
+  }
+  50% {
+    box-shadow: 0 0 12px 3px hsl(var(--primary) / 0.4),
+                0 0 24px 6px hsl(var(--primary) / 0.2);
+  }
+}
+
+@keyframes pathNodeGlowHalloween {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(270, 70%, 60%, 0),
+                0 0 0 0 hsl(25, 95%, 53%, 0);
+  }
+  50% {
+    box-shadow: 0 0 14px 4px hsl(270, 70%, 60%, 0.5),
+                0 0 28px 8px hsl(25, 95%, 53%, 0.25);
+  }
+}
+
+@keyframes nodeClickBounce {
+  0% { transform: scale(1); }
+  15% { transform: scale(0.95); }
+  30% { transform: scale(1.08); }
+  45% { transform: scale(0.98); }
+  60% { transform: scale(1.02); }
+  75% { transform: scale(0.99); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pathEdgeGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 transparent);
+    opacity: 0.8;
+  }
+  50% {
+    filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.6));
+    opacity: 1;
+  }
+}
+
+@keyframes pathEdgeGlowHalloween {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 transparent);
+    opacity: 0.8;
+  }
+  50% {
+    filter: drop-shadow(0 0 6px hsl(270, 70%, 60%, 0.7));
+    opacity: 1;
+  }
+}
+
+/* Path glow classes for nodes */
+.path-node-glow {
+  animation: pathNodeGlow 2s ease-in-out infinite;
+  z-index: 10;
+}
+
+.halloween .path-node-glow {
+  animation: pathNodeGlowHalloween 2s ease-in-out infinite;
+}
+
+/* Node click bounce animation */
+.node-click-bounce {
+  animation: nodeClickBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Path edge glow - applied via React Flow edge styles */
+.path-edge-glow path {
+  animation: pathEdgeGlow 2s ease-in-out infinite;
+}
+
+.halloween .path-edge-glow path {
+  animation: pathEdgeGlowHalloween 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .path-node-glow,
+  .halloween .path-node-glow {
+    animation: none;
+    box-shadow: 0 0 8px 2px hsl(var(--primary) / 0.3);
+  }
+
+  .node-click-bounce {
+    animation: none;
+  }
+
+  .path-edge-glow path,
+  .halloween .path-edge-glow path {
+    animation: none;
+    filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.4));
+  }
+}
+
+@keyframes suggestionLift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.animate-suggestion-lift:hover { animation: suggestionLift 0.6s ease-in-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-suggestion-spawn,
+  .animate-suggestion-dismiss,
+  .animate-suggestion-pulse,
+  .animate-wire-connect,
+  .animate-accept-bounce,
+  .animate-decline-shake,
+  .animate-ai-thinking,
+  .animate-confidence-ring-high,
+  .animate-edge-flow,
+  .animate-suggestion-lift:hover {
+    animation: none !important;
+  }
+}
+
+
+/*
+ * Accessibility Focus Styles
+ */
+.focus-outline {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) { outline: none; }
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="option"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[tabindex]:focus-visible:not([tabindex="-1"]) {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable]:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 0;
+  border-color: hsl(var(--primary));
+}
+
+.halloween :focus-visible {
+  outline-color: hsl(270 70% 60%);
+  box-shadow: 0 0 0 3px hsl(270 70% 60% / 0.3);
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  padding: 0.75rem 1.5rem;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 2px solid hsl(var(--border));
+  box-shadow: 4px 4px 0px 0px hsl(var(--border));
+  text-decoration: none;
+  transition: top 0.2s ease-in-out;
+}
+
+.skip-link:focus {
+  top: 1rem;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.focus-trap-container { position: relative; }
+
+[role="listbox"]:focus-within,
+[role="grid"]:focus-within {
+  box-shadow: inset 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+[role="option"][aria-selected="true"],
+[role="gridcell"][aria-selected="true"] {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: -2px;
+}
+
+[role="tabpanel"]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 4px;
+}
+
+/* High contrast focus indicators */
+.high-contrast :focus-visible {
+  outline: 3px solid hsl(var(--ring)) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px hsl(var(--background)), 0 0 0 9px hsl(var(--ring)) !important;
+}
+
+.high-contrast button:hover,
+.high-contrast [role="button"]:hover { filter: brightness(0.85); }
+
+.high-contrast button:active,
+.high-contrast [role="button"]:active { filter: brightness(0.7); }
+
+.high-contrast a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.high-contrast a:hover { text-decoration-thickness: 2px; }
+
+.high-contrast ::selection {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select { border-width: 2px !important; }
+
+.high-contrast .bg-card { border: 2px solid hsl(var(--border)) !important; }
+
+.high-contrast [disabled],
+.high-contrast :disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  border-style: dashed !important;
+}
+
+html.high-contrast-transitioning,
+html.high-contrast-transitioning *,
+html.high-contrast-transitioning *::before,
+html.high-contrast-transitioning *::after {
+  transition: background-color 200ms ease-in-out,
+              color 200ms ease-in-out,
+              border-color 200ms ease-in-out,
+              outline-color 200ms ease-in-out !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.high-contrast-transitioning,
+  html.high-contrast-transitioning *,
+  html.high-contrast-transitioning *::before,
+  html.high-contrast-transitioning *::after {
+    transition: none !important;
+  }
+}
+
+/* Windows High Contrast Mode compatibility */
+@media (forced-colors: active) {
+  .bg-card, .bg-background, .bg-muted {
+    forced-color-adjust: none;
+    background-color: Canvas !important;
+    color: CanvasText !important;
+    border-color: CanvasText !important;
+  }
+  button, [role="button"] {
+    forced-color-adjust: none;
+    background-color: ButtonFace !important;
+    color: ButtonText !important;
+    border: 2px solid ButtonText !important;
+  }
+  button:hover, [role="button"]:hover {
+    background-color: Highlight !important;
+    color: HighlightText !important;
+  }
+  a { color: LinkText !important; }
+  :focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px !important;
   }
 }

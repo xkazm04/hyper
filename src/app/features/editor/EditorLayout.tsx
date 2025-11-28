@@ -40,7 +40,7 @@ export default function EditorLayout({
     : toolbar
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="h-screen flex flex-col bg-gray-100 halloween-vignette">
       {/* Toolbar */}
       <div className="h-16 bg-white border-b-2 border-black">
         {toolbarWithProps}

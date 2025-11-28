@@ -141,7 +141,7 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json()
-    const { title, content, script, imageUrl, imagePrompt, orderIndex } = body
+    const { title, content, script, imageUrl, imagePrompt, message, speaker, speakerType, orderIndex } = body
 
     // Update story card
     const storyCard = await storyService.updateStoryCard(cardId, {
@@ -150,6 +150,9 @@ export async function PATCH(
       script,
       imageUrl,
       imagePrompt,
+      message,
+      speaker,
+      speakerType,
       orderIndex,
     })
 

@@ -1,0 +1,316 @@
+/**
+ * Halloween Accessibility and Performance Configuration
+ * 
+ * This file contains CSS custom properties and classes for toggling Halloween decorations
+ * and ensuring accessibility compliance.
+ * 
+ * Features:
+ * 1. Decoration toggle via CSS custom property --halloween-decorations-enabled
+ * 2. Decoration disable class .halloween-no-decorations
+ * 3. Performance optimizations for GPU-accelerated properties
+ * 
+ * **Feature: halloween-theme-enrichment**
+ * **Validates: Requirements 7.3, 7.4, 7.5**
+ */
+
+/* ==========================================================================
+   1. CSS Custom Property for Decoration Toggle
+   Default: decorations enabled (1), disabled (0)
+   Requirements: 7.5
+   ========================================================================== */
+
+:root {
+  --halloween-decorations-enabled: 1;
+}
+
+/* ==========================================================================
+   2. Decoration Disable Class
+   When applied, disables all Halloween decorative effects
+   Requirements: 7.5
+   ========================================================================== */
+
+.halloween.halloween-no-decorations,
+.halloween .halloween-no-decorations {
+  --halloween-decorations-enabled: 0;
+}
+
+/* Hide all pseudo-element decorations when disabled */
+.halloween.halloween-no-decorations *::before,
+.halloween.halloween-no-decorations *::after,
+.halloween .halloween-no-decorations *::before,
+.halloween .halloween-no-decorations *::after {
+  /* Only hide decoration-specific pseudo-elements, not functional ones */
+}
+
+/* Border effects disabled */
+.halloween.halloween-no-decorations .halloween-drip-border::after,
+.halloween.halloween-no-decorations .halloween-ethereal-glow::before,
+.halloween.halloween-no-decorations .halloween-spectral-outline::before,
+.halloween .halloween-no-decorations .halloween-drip-border::after,
+.halloween .halloween-no-decorations .halloween-ethereal-glow::before,
+.halloween .halloween-no-decorations .halloween-spectral-outline::before {
+  display: none;
+}
+
+.halloween.halloween-no-decorations .halloween-ethereal-glow,
+.halloween.halloween-no-decorations .halloween-spectral-outline,
+.halloween.halloween-no-decorations .halloween-candle-flicker-focus:focus,
+.halloween.halloween-no-decorations .halloween-candle-flicker-focus:focus-within,
+.halloween .halloween-no-decorations .halloween-ethereal-glow,
+.halloween .halloween-no-decorations .halloween-spectral-outline,
+.halloween .halloween-no-decorations .halloween-candle-flicker-focus:focus,
+.halloween .halloween-no-decorations .halloween-candle-flicker-focus:focus-within {
+  animation: none;
+  box-shadow: none;
+}
+
+/* Background decorations disabled */
+.halloween.halloween-no-decorations .halloween-fog-layer::before,
+.halloween.halloween-no-decorations .halloween-dust-particles::after,
+.halloween.halloween-no-decorations .halloween-cobweb::before,
+.halloween.halloween-no-decorations .halloween-cobweb::after,
+.halloween.halloween-no-decorations .halloween-vignette::before,
+.halloween .halloween-no-decorations .halloween-fog-layer::before,
+.halloween .halloween-no-decorations .halloween-dust-particles::after,
+.halloween .halloween-no-decorations .halloween-cobweb::before,
+.halloween .halloween-no-decorations .halloween-cobweb::after,
+.halloween .halloween-no-decorations .halloween-vignette::before {
+  display: none;
+}
+
+/* Line effects disabled */
+.halloween.halloween-no-decorations .halloween-line-particles,
+.halloween .halloween-no-decorations .halloween-line-particles {
+  animation: none;
+  stroke-dasharray: none;
+}
+
+.halloween.halloween-no-decorations .halloween-line-default,
+.halloween.halloween-no-decorations .halloween-line-positive,
+.halloween.halloween-no-decorations .halloween-line-negative,
+.halloween.halloween-no-decorations .halloween-line-neutral,
+.halloween .halloween-no-decorations .halloween-line-default,
+.halloween .halloween-no-decorations .halloween-line-positive,
+.halloween .halloween-no-decorations .halloween-line-negative,
+.halloween .halloween-no-decorations .halloween-line-neutral {
+  filter: none;
+}
+
+/* Interactive effects disabled */
+.halloween.halloween-no-decorations .halloween-smoke-wisp::before,
+.halloween.halloween-no-decorations .halloween-smoke-wisp::after,
+.halloween.halloween-no-decorations .halloween-spectral-ripple::before,
+.halloween.halloween-no-decorations .halloween-ember-focus::before,
+.halloween.halloween-no-decorations .halloween-ember-focus::after,
+.halloween.halloween-no-decorations .halloween-ghost-trail::before,
+.halloween .halloween-no-decorations .halloween-smoke-wisp::before,
+.halloween .halloween-no-decorations .halloween-smoke-wisp::after,
+.halloween .halloween-no-decorations .halloween-spectral-ripple::before,
+.halloween .halloween-no-decorations .halloween-ember-focus::before,
+.halloween .halloween-no-decorations .halloween-ember-focus::after,
+.halloween .halloween-no-decorations .halloween-ghost-trail::before {
+  display: none;
+}
+
+.halloween.halloween-no-decorations .halloween-smoke-wisp:hover,
+.halloween.halloween-no-decorations .halloween-ember-focus:focus,
+.halloween.halloween-no-decorations .halloween-ember-focus:focus-within,
+.halloween .halloween-no-decorations .halloween-smoke-wisp:hover,
+.halloween .halloween-no-decorations .halloween-ember-focus:focus,
+.halloween .halloween-no-decorations .halloween-ember-focus:focus-within {
+  animation: none;
+  box-shadow: none;
+}
+
+/* Node decorations disabled */
+.halloween.halloween-no-decorations .halloween-corner-decoration::before,
+.halloween.halloween-no-decorations .halloween-corner-decoration::after,
+.halloween.halloween-no-decorations .halloween-node-selected::before,
+.halloween.halloween-no-decorations .halloween-crack-hover::after,
+.halloween.halloween-no-decorations .halloween-portal-border::before,
+.halloween.halloween-no-decorations .halloween-portal-border::after,
+.halloween .halloween-no-decorations .halloween-corner-decoration::before,
+.halloween .halloween-no-decorations .halloween-corner-decoration::after,
+.halloween .halloween-no-decorations .halloween-node-selected::before,
+.halloween .halloween-no-decorations .halloween-crack-hover::after,
+.halloween .halloween-no-decorations .halloween-portal-border::before,
+.halloween .halloween-no-decorations .halloween-portal-border::after {
+  display: none;
+}
+
+.halloween.halloween-no-decorations .halloween-node-selected,
+.halloween.halloween-no-decorations .halloween-portal-border,
+.halloween .halloween-no-decorations .halloween-node-selected,
+.halloween .halloween-no-decorations .halloween-portal-border {
+  animation: none;
+}
+
+/* Divider decorations disabled */
+.halloween.halloween-no-decorations .halloween-torn-divider::before,
+.halloween.halloween-no-decorations .halloween-torn-divider::after,
+.halloween.halloween-no-decorations .halloween-drip-divider::before,
+.halloween.halloween-no-decorations .halloween-drip-divider::after,
+.halloween.halloween-no-decorations .halloween-header-icon::before,
+.halloween.halloween-no-decorations .halloween-header-icon::after,
+.halloween.halloween-no-decorations .halloween-header-icon-bat::before,
+.halloween.halloween-no-decorations .halloween-header-icon-spider::before,
+.halloween.halloween-no-decorations .halloween-header-icon-skull::before,
+.halloween .halloween-no-decorations .halloween-torn-divider::before,
+.halloween .halloween-no-decorations .halloween-torn-divider::after,
+.halloween .halloween-no-decorations .halloween-drip-divider::before,
+.halloween .halloween-no-decorations .halloween-drip-divider::after,
+.halloween .halloween-no-decorations .halloween-header-icon::before,
+.halloween .halloween-no-decorations .halloween-header-icon::after,
+.halloween .halloween-no-decorations .halloween-header-icon-bat::before,
+.halloween .halloween-no-decorations .halloween-header-icon-spider::before,
+.halloween .halloween-no-decorations .halloween-header-icon-skull::before {
+  display: none;
+}
+
+/* Component-specific decorations disabled */
+.halloween.halloween-no-decorations .halloween-tree-sidebar::before,
+.halloween.halloween-no-decorations .halloween-branch-divider::before,
+.halloween.halloween-no-decorations .halloween-branch-divider::after,
+.halloween.halloween-no-decorations .halloween-cauldron-container::before,
+.halloween.halloween-no-decorations .halloween-bubbling-border::after,
+.halloween.halloween-no-decorations .halloween-spellbook-page::before,
+.halloween.halloween-no-decorations .halloween-spellbook-page::after,
+.halloween.halloween-no-decorations .halloween-crystal-glow::before,
+.halloween.halloween-no-decorations .halloween-crystal-glow::after,
+.halloween.halloween-no-decorations .halloween-potion-bottle::before,
+.halloween.halloween-no-decorations .halloween-potion-bottle::after,
+.halloween.halloween-no-decorations .halloween-potion-bubbles::before,
+.halloween.halloween-no-decorations .halloween-potion-bubbles::after,
+.halloween .halloween-no-decorations .halloween-tree-sidebar::before,
+.halloween .halloween-no-decorations .halloween-branch-divider::before,
+.halloween .halloween-no-decorations .halloween-branch-divider::after,
+.halloween .halloween-no-decorations .halloween-cauldron-container::before,
+.halloween .halloween-no-decorations .halloween-bubbling-border::after,
+.halloween .halloween-no-decorations .halloween-spellbook-page::before,
+.halloween .halloween-no-decorations .halloween-spellbook-page::after,
+.halloween .halloween-no-decorations .halloween-crystal-glow::before,
+.halloween .halloween-no-decorations .halloween-crystal-glow::after,
+.halloween .halloween-no-decorations .halloween-potion-bottle::before,
+.halloween .halloween-no-decorations .halloween-potion-bottle::after,
+.halloween .halloween-no-decorations .halloween-potion-bubbles::before,
+.halloween .halloween-no-decorations .halloween-potion-bubbles::after {
+  display: none;
+}
+
+.halloween.halloween-no-decorations .halloween-cauldron-container,
+.halloween.halloween-no-decorations .halloween-crystal-glow,
+.halloween.halloween-no-decorations .halloween-potion-bottle::after,
+.halloween .halloween-no-decorations .halloween-cauldron-container,
+.halloween .halloween-no-decorations .halloween-crystal-glow,
+.halloween .halloween-no-decorations .halloween-potion-bottle::after {
+  animation: none;
+}
+
+/* Effects catalog decorations disabled */
+.halloween.halloween-no-decorations .halloween-ghost-float,
+.halloween.halloween-no-decorations .halloween-candle-flicker,
+.halloween.halloween-no-decorations .halloween-pumpkin-glow,
+.halloween.halloween-no-decorations .halloween-skeleton-rattle:hover,
+.halloween .halloween-no-decorations .halloween-ghost-float,
+.halloween .halloween-no-decorations .halloween-candle-flicker,
+.halloween .halloween-no-decorations .halloween-pumpkin-glow,
+.halloween .halloween-no-decorations .halloween-skeleton-rattle:hover {
+  animation: none;
+}
+
+.halloween.halloween-no-decorations .halloween-spider-web-corner::before,
+.halloween.halloween-no-decorations .halloween-bat-silhouette::after,
+.halloween.halloween-no-decorations .halloween-cauldron-bubble::before,
+.halloween.halloween-no-decorations .halloween-cauldron-bubble::after,
+.halloween.halloween-no-decorations .halloween-fog-overlay::before,
+.halloween .halloween-no-decorations .halloween-spider-web-corner::before,
+.halloween .halloween-no-decorations .halloween-bat-silhouette::after,
+.halloween .halloween-no-decorations .halloween-cauldron-bubble::before,
+.halloween .halloween-no-decorations .halloween-cauldron-bubble::after,
+.halloween .halloween-no-decorations .halloween-fog-overlay::before {
+  display: none;
+}
+
+/* Global body decorations disabled */
+.halloween.halloween-no-decorations body::before,
+.halloween.halloween-no-decorations body::after,
+.halloween.halloween-no-decorations main::before,
+.halloween.halloween-no-decorations main::after {
+  display: none;
+}
+
+/* ==========================================================================
+   3. GPU-Accelerated Properties Enforcement
+   Ensure animations use transform and opacity for performance
+   Requirements: 7.3
+   ========================================================================== */
+
+/* Force GPU acceleration on animated elements */
+.halloween [class*="halloween-"] {
+  will-change: auto;
+}
+
+/* Animated elements that benefit from GPU acceleration */
+.halloween .halloween-ghost-float,
+.halloween .halloween-fog-layer::before,
+.halloween .halloween-dust-particles::after,
+.halloween .halloween-smoke-wisp::before,
+.halloween .halloween-smoke-wisp::after,
+.halloween .halloween-ember-focus::before,
+.halloween .halloween-ember-focus::after,
+.halloween .halloween-ghost-trail::before,
+.halloween .halloween-corner-decoration::before,
+.halloween .halloween-corner-decoration::after,
+.halloween .halloween-portal-border::before,
+.halloween .halloween-header-icon::before,
+.halloween .halloween-header-icon::after,
+.halloween .halloween-header-icon-bat::before,
+.halloween .halloween-header-icon-spider::before,
+.halloween .halloween-header-icon-skull::before,
+.halloween .halloween-bat-silhouette::after,
+.halloween .halloween-cauldron-bubble::before,
+.halloween .halloween-cauldron-bubble::after,
+.halloween .halloween-bubbling-border::after,
+.halloween .halloween-potion-bubbles::before,
+.halloween .halloween-potion-bubbles::after {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ==========================================================================
+   4. Overlay Positioning Enforcement
+   Ensure decorative overlays use fixed or absolute positioning
+   Requirements: 7.4
+   ========================================================================== */
+
+/* All decorative pseudo-elements should use absolute positioning */
+.halloween .halloween-fog-layer::before,
+.halloween .halloween-dust-particles::after,
+.halloween .halloween-cobweb::before,
+.halloween .halloween-cobweb::after,
+.halloween .halloween-vignette::before,
+.halloween .halloween-drip-border::after,
+.halloween .halloween-ethereal-glow::before,
+.halloween .halloween-corner-decoration::before,
+.halloween .halloween-corner-decoration::after,
+.halloween .halloween-node-selected::before,
+.halloween .halloween-crack-hover::after,
+.halloween .halloween-portal-border::before,
+.halloween .halloween-portal-border::after,
+.halloween .halloween-smoke-wisp::before,
+.halloween .halloween-smoke-wisp::after,
+.halloween .halloween-spectral-ripple::before,
+.halloween .halloween-ember-focus::before,
+.halloween .halloween-ember-focus::after,
+.halloween .halloween-ghost-trail::before {
+  position: absolute;
+}
+
+/* Global decorations use fixed positioning */
+.halloween body::before,
+.halloween body::after,
+.halloween main::before,
+.halloween main::after {
+  position: fixed;
+}
+

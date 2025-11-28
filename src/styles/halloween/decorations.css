@@ -1,0 +1,76 @@
+/**
+ * Halloween Decorations - Barrel File
+ * 
+ * This file imports all Halloween decoration CSS modules in the correct cascade order.
+ * Import this single file to include all Halloween theme enrichment effects.
+ * 
+ * Import Order (cascade priority):
+ * 1. Base effects catalog (foundational effects)
+ * 2. Border effects (dripping, glow, outline)
+ * 3. Background decorations (fog, dust, cobweb, vignette)
+ * 4. Connection line styles (ghostly gradients, particles)
+ * 5. Divider decorations (torn edges, drips, icons)
+ * 6. Node & card decorations (corners, states, special borders)
+ * 7. Interactive effects (smoke, ripple, ember, trail)
+ * 8. Component-specific theming (sidebar, composer, editor, palette, assistant)
+ * 9. Accessibility & performance (toggle, GPU acceleration)
+ * 
+ * **Feature: halloween-theme-enrichment**
+ * **Validates: Requirements 1.4**
+ */
+
+/* ==========================================================================
+   1. Base Effects Catalog
+   Foundational Halloween effects (ghost float, spider web, candle flicker, etc.)
+   ========================================================================== */
+@import './effects.css';
+
+/* ==========================================================================
+   2. Border Effects
+   Dripping borders, ethereal glow, spectral outline, candle flicker focus
+   ========================================================================== */
+@import './borders.css';
+
+/* ==========================================================================
+   3. Background Decorations
+   Fog layer, dust particles, cobweb pattern, vignette effect
+   ========================================================================== */
+@import './backgrounds.css';
+
+/* ==========================================================================
+   4. Connection Line Styles
+   Ghostly gradients, particle flow, hover glow for StoryGraph connections
+   ========================================================================== */
+@import './lines.css';
+
+/* ==========================================================================
+   5. Divider Decorations
+   Torn-edge horizontal dividers, dripping vertical dividers, header icons
+   ========================================================================== */
+@import './dividers.css';
+
+/* ==========================================================================
+   6. Node & Card Decorations
+   Corner decorations, selected state, crack hover, tombstone, portal borders
+   ========================================================================== */
+@import './nodes.css';
+
+/* ==========================================================================
+   7. Interactive Effects
+   Smoke wisp, spectral ripple, ember focus, ghost trail
+   ========================================================================== */
+@import './interactive.css';
+
+/* ==========================================================================
+   8. Component-Specific Theming
+   OutlineSidebar, PromptComposer, StoryCardEditor, CommandPalette, 
+   ScriptQualityAssistant unique decorations
+   ========================================================================== */
+@import './components.css';
+
+/* ==========================================================================
+   9. Accessibility & Performance Configuration
+   Decoration toggle, GPU acceleration, overlay positioning
+   Must be last to ensure overrides work correctly
+   ========================================================================== */
+@import './accessibility.css';

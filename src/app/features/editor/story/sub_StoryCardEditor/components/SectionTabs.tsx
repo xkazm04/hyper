@@ -1,16 +1,16 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { FileText, ImageIcon, Code, GitBranch } from 'lucide-react'
+import { FileText, ImageIcon, Code } from 'lucide-react'
 
-export type CardSection = 'content' | 'image' | 'script' | 'choices'
+export type CardSection = 'content' | 'image' | 'script'
 
 interface SectionTabsProps {
   activeSection: CardSection
   onSectionChange: (section: CardSection) => void
   hasImage?: boolean
   hasScript?: boolean
-  choiceCount?: number
+  choiceCount?: number // Kept for backward compat but not used in tabs anymore
 }
 
 const sections: Array<{
@@ -22,7 +22,6 @@ const sections: Array<{
   { id: 'content', label: 'Content', icon: FileText, shortLabel: 'Content' },
   { id: 'image', label: 'Image', icon: ImageIcon, shortLabel: 'Image' },
   { id: 'script', label: 'Script', icon: Code, shortLabel: 'Script' },
-  { id: 'choices', label: 'Choices', icon: GitBranch, shortLabel: 'Choices' },
 ]
 
 export function SectionTabs({
@@ -30,7 +29,6 @@ export function SectionTabs({
   onSectionChange,
   hasImage,
   hasScript,
-  choiceCount = 0,
 }: SectionTabsProps) {
   return (
     <div className="flex border-b border-border bg-card/50">
@@ -40,7 +38,6 @@ export function SectionTabs({
         // Status indicators
         const showImageDot = id === 'image' && hasImage
         const showScriptDot = id === 'script' && hasScript
-        const showChoiceCount = id === 'choices' && choiceCount > 0
 
         return (
           <button
@@ -64,11 +61,6 @@ export function SectionTabs({
             )}
             {showScriptDot && (
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            )}
-            {showChoiceCount && (
-              <span className="min-w-[1.25rem] h-5 flex items-center justify-center text-[10px] font-bold bg-primary/20 text-primary rounded-full px-1">
-                {choiceCount}
-              </span>
             )}
           </button>
         )

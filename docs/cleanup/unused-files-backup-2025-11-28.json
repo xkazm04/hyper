@@ -1,0 +1,58 @@
+{
+  "backupDate": "2025-11-28",
+  "description": "Backup of unused code files before deletion",
+  "branch": "cleanup/unused-components-2025-11-28",
+  "files": [
+    {
+      "path": "src/app/features/editor/nodes/CustomNode.tsx",
+      "exports": ["CustomNodeData", "default"],
+      "lineCount": 91,
+      "deletionReason": "No JSX usage or imports found in codebase"
+    },
+    {
+      "path": "src/app/features/editor/StackNotFound.tsx",
+      "exports": ["default"],
+      "lineCount": 55,
+      "deletionReason": "No JSX usage or imports found in codebase"
+    },
+    {
+      "path": "src/app/features/editor/story/MoodIndicator.tsx",
+      "exports": ["default"],
+      "lineCount": 90,
+      "deletionReason": "No JSX usage or imports found in codebase"
+    },
+    {
+      "path": "src/app/features/editor/story/sub_Story/StorySettingsPanel.tsx",
+      "exports": ["StorySettingsPanel"],
+      "lineCount": 0,
+      "deletionReason": "File never existed in repository - flagged in error",
+      "status": "NOT_FOUND"
+    },
+    {
+      "path": "src/app/features/editor/story/sub_StoryCardEditor/components/ChoicesSection.tsx",
+      "exports": ["ChoicesSection"],
+      "lineCount": 303,
+      "deletionReason": "No JSX usage or imports found in codebase - replaced by sub_ChoicesSection components"
+    },
+    {
+      "path": "src/app/features/editor/story/sub_StoryCardEditor/components/sub_ChoicesSection/ChoicePreview.tsx",
+      "exports": ["ChoicePreview"],
+      "lineCount": 0,
+      "deletionReason": "File never existed in repository - flagged in error",
+      "status": "NOT_FOUND"
+    },
+    {
+      "path": "src/app/features/editor/story/sub_StoryGraph/components/MapBackground.tsx",
+      "exports": ["MapBackground"],
+      "lineCount": 45,
+      "deletionReason": "Marked deprecated, replaced by HalloweenMapBackground.tsx"
+    }
+  ],
+  "summary": {
+    "totalFilesAnalyzed": 7,
+    "filesDeleted": 5,
+    "filesNeverExisted": 2,
+    "estimatedLinesRemoved": 584
+  },
+  "note": "Full file contents can be recovered from git using: git show HEAD:<filepath>"
+}

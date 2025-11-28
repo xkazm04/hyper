@@ -1,0 +1,604 @@
+/**
+ * Halloween Effects Catalog
+ * 
+ * This file contains all 8 Halloween-themed visual effects for components.
+ * Each effect uses CSS animations, pseudo-elements, or SVG decorations.
+ * All effects include prefers-reduced-motion fallbacks.
+ * Colors use the 270° hue palette (purple).
+ * 
+ * Effects:
+ * 1. ghost-float - Subtle floating animation with transparency pulse
+ * 2. spider-web-corner - Decorative web pattern in corner
+ * 3. candle-flicker - Flickering glow effect on borders
+ * 4. bat-silhouette - Small bat icon decoration
+ * 5. cauldron-bubble - Rising bubble animation
+ * 6. pumpkin-glow - Orange inner glow pulsing
+ * 7. skeleton-rattle - Subtle shake on hover
+ * 8. fog-overlay - Drifting fog effect
+ */
+
+/* ==========================================================================
+   1. Ghost Float Effect
+   Subtle floating animation with transparency pulse
+   Applicable to: cards, modals
+   ========================================================================== */
+
+@keyframes ghostFloat {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-8px);
+    opacity: 0.85;
+  }
+}
+
+.halloween .halloween-ghost-float {
+  animation: ghostFloat 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-ghost-float {
+    animation: none;
+    opacity: 0.95;
+  }
+}
+
+/* ==========================================================================
+   2. Spider Web Corner Effect
+   Decorative web pattern in corner using pseudo-element
+   Applicable to: cards, sidebars
+   ========================================================================== */
+
+.halloween .halloween-spider-web-corner {
+  position: relative;
+  overflow: hidden;
+}
+
+.halloween .halloween-spider-web-corner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    linear-gradient(135deg, transparent 48%, hsl(270 40% 35% / 0.2) 48%, hsl(270 40% 35% / 0.2) 52%, transparent 52%),
+    linear-gradient(45deg, transparent 48%, hsl(270 40% 35% / 0.15) 48%, hsl(270 40% 35% / 0.15) 52%, transparent 52%),
+    linear-gradient(90deg, transparent 48%, hsl(270 40% 35% / 0.1) 48%, hsl(270 40% 35% / 0.1) 52%, transparent 52%),
+    linear-gradient(0deg, transparent 48%, hsl(270 40% 35% / 0.1) 48%, hsl(270 40% 35% / 0.1) 52%, transparent 52%);
+  background-size: 20px 20px;
+  opacity: 0.6;
+  mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-spider-web-corner::before {
+    opacity: 0.4;
+  }
+}
+
+
+/* ==========================================================================
+   3. Candle Flicker Effect
+   Flickering glow effect on borders
+   Applicable to: inputs, buttons
+   ========================================================================== */
+
+@keyframes candleFlicker {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px hsl(270 70% 60% / 0.3),
+                0 0 16px 4px hsl(270 70% 60% / 0.15);
+  }
+  25% {
+    box-shadow: 0 0 6px 1px hsl(270 70% 60% / 0.25),
+                0 0 12px 3px hsl(270 70% 60% / 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px 3px hsl(270 70% 60% / 0.35),
+                0 0 20px 5px hsl(270 70% 60% / 0.2);
+  }
+  75% {
+    box-shadow: 0 0 5px 1px hsl(270 70% 60% / 0.2),
+                0 0 10px 2px hsl(270 70% 60% / 0.1);
+  }
+}
+
+.halloween .halloween-candle-flicker {
+  animation: candleFlicker 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-candle-flicker {
+    animation: none;
+    box-shadow: 0 0 10px hsl(270 70% 60% / 0.3);
+  }
+}
+
+/* ==========================================================================
+   4. Bat Silhouette Effect
+   Small bat icon decoration using pseudo-element
+   Applicable to: buttons, cards
+   ========================================================================== */
+
+.halloween .halloween-bat-silhouette {
+  position: relative;
+}
+
+.halloween .halloween-bat-silhouette::after {
+  content: '🦇';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.7;
+  transform: rotate(-15deg);
+  animation: batWobble 3s ease-in-out infinite;
+}
+
+@keyframes batWobble {
+  0%, 100% {
+    transform: rotate(-15deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-10deg) translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-bat-silhouette::after {
+    animation: none;
+    transform: rotate(-15deg);
+  }
+}
+
+/* ==========================================================================
+   5. Cauldron Bubble Effect
+   Rising bubble animation
+   Applicable to: canvas, graphs
+   ========================================================================== */
+
+@keyframes cauldronBubble {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-20px) scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-40px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.halloween .halloween-cauldron-bubble {
+  position: relative;
+  overflow: hidden;
+}
+
+.halloween .halloween-cauldron-bubble::before,
+.halloween .halloween-cauldron-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(270 70% 60% / 0.4);
+  pointer-events: none;
+  z-index: 1;
+  animation: cauldronBubble 4s ease-in-out infinite;
+}
+
+.halloween .halloween-cauldron-bubble::before {
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.halloween .halloween-cauldron-bubble::after {
+  left: 70%;
+  width: 6px;
+  height: 6px;
+  animation-delay: 2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-cauldron-bubble::before,
+  .halloween .halloween-cauldron-bubble::after {
+    animation: none;
+    opacity: 0.3;
+    transform: translateY(-10px);
+  }
+}
+
+
+/* ==========================================================================
+   6. Pumpkin Glow Effect
+   Orange inner glow pulsing
+   Applicable to: buttons, cards
+   ========================================================================== */
+
+@keyframes pumpkinGlow {
+  0%, 100% {
+    box-shadow: inset 0 0 15px hsl(30 90% 50% / 0.15),
+                0 0 10px hsl(30 90% 50% / 0.1);
+  }
+  50% {
+    box-shadow: inset 0 0 25px hsl(30 90% 50% / 0.25),
+                0 0 20px hsl(30 90% 50% / 0.15);
+  }
+}
+
+.halloween .halloween-pumpkin-glow {
+  animation: pumpkinGlow 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-pumpkin-glow {
+    animation: none;
+    box-shadow: inset 0 0 20px hsl(30 90% 50% / 0.2);
+  }
+}
+
+/* ==========================================================================
+   7. Skeleton Rattle Effect
+   Subtle shake on hover
+   Applicable to: buttons, cards
+   ========================================================================== */
+
+@keyframes skeletonRattle {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  10% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  20% {
+    transform: translateX(2px) rotate(1deg);
+  }
+  30% {
+    transform: translateX(-2px) rotate(-0.5deg);
+  }
+  40% {
+    transform: translateX(2px) rotate(0.5deg);
+  }
+  50% {
+    transform: translateX(-1px) rotate(-0.5deg);
+  }
+  60% {
+    transform: translateX(1px) rotate(0.5deg);
+  }
+  70%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+.halloween .halloween-skeleton-rattle:hover {
+  animation: skeletonRattle 0.6s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-skeleton-rattle:hover {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   8. Fog Overlay Effect
+   Drifting fog effect
+   Applicable to: canvas, sidebars
+   ========================================================================== */
+
+@keyframes fogDrift {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(20px);
+  }
+}
+
+.halloween .halloween-fog-overlay {
+  position: relative;
+}
+
+.halloween .halloween-fog-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    hsl(270 20% 10% / 0.05) 30%,
+    hsl(270 20% 10% / 0.1) 60%,
+    hsl(270 20% 10% / 0.15) 100%
+  );
+  animation: fogDrift 15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-fog-overlay::before {
+    animation: none;
+    background: linear-gradient(transparent, hsl(270 20% 10% / 0.1));
+  }
+}
+
+
+/* ==========================================================================
+   Halloween Decorative Elements (from original globals.css)
+   Background decorations that enhance the spooky atmosphere
+   ========================================================================== */
+
+/* Floating purple particles/stars */
+.halloween body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, hsl(270 70% 60% / 0.3), transparent),
+    radial-gradient(2px 2px at 60% 70%, hsl(270 70% 60% / 0.2), transparent),
+    radial-gradient(1px 1px at 50% 50%, hsl(270 70% 60% / 0.3), transparent),
+    radial-gradient(1px 1px at 80% 10%, hsl(270 70% 60% / 0.25), transparent),
+    radial-gradient(2px 2px at 90% 60%, hsl(270 70% 60% / 0.2), transparent),
+    radial-gradient(1px 1px at 33% 80%, hsl(270 70% 60% / 0.3), transparent),
+    radial-gradient(1px 1px at 15% 90%, hsl(270 70% 60% / 0.25), transparent);
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+  animation: floatingParticles 60s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+/* Subtle corner web pattern - top right */
+.halloween body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    linear-gradient(135deg, transparent 48%, hsl(270 40% 35% / 0.15) 48%, hsl(270 40% 35% / 0.15) 52%, transparent 52%),
+    linear-gradient(45deg, transparent 48%, hsl(270 40% 35% / 0.1) 48%, hsl(270 40% 35% / 0.1) 52%, transparent 52%);
+  background-size: 60px 60px;
+  opacity: 0.4;
+  mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at top right, black 20%, transparent 70%);
+}
+
+/* Mystical stars/sparkles */
+.halloween main::before {
+  content: '✦';
+  position: fixed;
+  bottom: 40px;
+  left: 40px;
+  font-size: 16px;
+  color: hsl(270 70% 60% / 0.4);
+  pointer-events: none;
+  z-index: 1;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.halloween main::after {
+  content: '✦';
+  position: fixed;
+  bottom: 80px;
+  left: 80px;
+  font-size: 12px;
+  color: hsl(270 70% 60% / 0.3);
+  pointer-events: none;
+  z-index: 1;
+  animation: twinkle 3s ease-in-out infinite 1.5s;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.2); }
+}
+
+@keyframes floatingParticles {
+  0%, 100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%, 80% 10%, 90% 60%, 33% 80%, 15% 90%;
+    opacity: 0.6;
+  }
+  25% {
+    background-position: 10% 20%, 90% 80%, 60% 40%, 70% 20%, 80% 70%, 43% 70%, 25% 80%;
+    opacity: 0.4;
+  }
+  50% {
+    background-position: 20% 40%, 80% 60%, 70% 30%, 60% 30%, 70% 80%, 53% 60%, 35% 70%;
+    opacity: 0.5;
+  }
+  75% {
+    background-position: 10% 60%, 90% 40%, 40% 60%, 90% 40%, 60% 90%, 23% 90%, 5% 80%;
+    opacity: 0.4;
+  }
+}
+
+/* Subtle glow on cards and primary elements */
+.halloween .bg-card {
+  box-shadow:
+    0 0 40px hsl(270 70% 60% / 0.05),
+    0 0 80px hsl(270 70% 60% / 0.02);
+}
+
+.halloween .bg-primary {
+  box-shadow:
+    0 0 20px hsl(270 70% 60% / 0.3),
+    0 0 40px hsl(270 70% 60% / 0.15);
+}
+
+/* Purple glow on borders */
+.halloween .border-border {
+  border-color: hsl(270 40% 35%);
+  filter: drop-shadow(0 0 1px hsl(270 60% 50% / 0.3));
+}
+
+/* Ensure content appears above decorative elements */
+.halloween main,
+.halloween header,
+.halloween [role="main"] {
+  position: relative;
+  z-index: 10;
+}
+
+/* Subtle purple vignette effect */
+.halloween .min-h-screen { position: relative; }
+
+.halloween .min-h-screen > *:first-child::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 50%,
+    hsl(270 50% 10% / 0.3) 100%
+  );
+}
+
+
+/* ==========================================================================
+   Halloween Story Graph Animations
+   ========================================================================== */
+
+@keyframes halloweenTwinkle {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.animate-halloween-twinkle { animation: halloweenTwinkle 3s ease-in-out infinite; }
+.animate-halloween-twinkle-delay-1 { animation: halloweenTwinkle 3s ease-in-out infinite 1s; }
+.animate-halloween-twinkle-delay-2 { animation: halloweenTwinkle 3s ease-in-out infinite 2s; }
+
+@keyframes halloweenMoonGlow {
+  0%, 100% { opacity: 0.8; filter: blur(0); }
+  50% { opacity: 1; filter: blur(2px); }
+}
+.animate-halloween-moon-glow { animation: halloweenMoonGlow 8s ease-in-out infinite; }
+
+@keyframes halloweenFloatSlow {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  25% { transform: translateY(-5px) translateX(3px); }
+  50% { transform: translateY(-2px) translateX(-2px); }
+  75% { transform: translateY(-7px) translateX(1px); }
+}
+.animate-halloween-float-slow { animation: halloweenFloatSlow 20s ease-in-out infinite; }
+
+@keyframes halloweenFog {
+  0%, 100% { opacity: 0.6; transform: translateX(0); }
+  50% { opacity: 0.4; transform: translateX(10px); }
+}
+.animate-halloween-fog { animation: halloweenFog 15s ease-in-out infinite; }
+
+@keyframes halloweenBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-1px) rotate(-2deg); }
+  75% { transform: translateY(1px) rotate(2deg); }
+}
+.animate-halloween-bob { animation: halloweenBob 2s ease-in-out infinite; }
+
+@keyframes halloweenNodePulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(270, 50%, 40%, 0); }
+  50% { box-shadow: 0 0 10px 2px hsl(270, 50%, 40%, 0.15); }
+}
+.animate-halloween-node-pulse:hover { animation: halloweenNodePulse 1.5s ease-in-out infinite; }
+
+@keyframes halloweenAccentGlow {
+  0%, 100% { box-shadow: 0 0 4px 0 hsl(25, 95%, 53%, 0.4); }
+  50% { box-shadow: 0 0 8px 2px hsl(25, 95%, 53%, 0.6); }
+}
+.animate-halloween-accent-glow { animation: halloweenAccentGlow 2s ease-in-out infinite; }
+
+@keyframes halloweenParticle {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx, 30px), var(--ty, -30px)) scale(0); opacity: 0; }
+}
+.animate-halloween-particle { animation: halloweenParticle 0.6s ease-out forwards; }
+
+@keyframes halloweenPumpkinBurst {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.8; }
+  100% { transform: translate(-50%, -80%) scale(0.3); opacity: 0; }
+}
+.animate-halloween-pumpkin-burst { animation: halloweenPumpkinBurst 0.8s ease-out forwards; }
+
+.halloween-node-selected {
+  box-shadow: 0 0 20px 4px hsl(25, 95%, 53%, 0.3),
+              0 0 40px 8px hsl(270, 70%, 60%, 0.15) !important;
+}
+
+.halloween-node-glow {
+  box-shadow: inset 0 0 20px hsl(25, 95%, 53%, 0.1);
+}
+
+.halloween-stars {
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, hsl(45, 100%, 90%), transparent),
+    radial-gradient(1px 1px at 30% 60%, hsl(270, 70%, 80%), transparent),
+    radial-gradient(1px 1px at 50% 10%, hsl(25, 100%, 80%), transparent),
+    radial-gradient(1px 1px at 70% 40%, hsl(45, 100%, 90%), transparent),
+    radial-gradient(1px 1px at 90% 80%, hsl(270, 70%, 80%), transparent),
+    radial-gradient(1px 1px at 20% 90%, hsl(25, 100%, 80%), transparent),
+    radial-gradient(1px 1px at 40% 30%, hsl(45, 100%, 90%), transparent),
+    radial-gradient(1px 1px at 60% 70%, hsl(270, 70%, 80%), transparent),
+    radial-gradient(1px 1px at 80% 15%, hsl(25, 100%, 80%), transparent),
+    radial-gradient(1px 1px at 15% 55%, hsl(45, 100%, 90%), transparent),
+    radial-gradient(1px 1px at 35% 85%, hsl(270, 70%, 80%), transparent),
+    radial-gradient(1px 1px at 55% 45%, hsl(25, 100%, 80%), transparent),
+    radial-gradient(1px 1px at 75% 5%, hsl(45, 100%, 90%), transparent),
+    radial-gradient(1px 1px at 95% 35%, hsl(270, 70%, 80%), transparent),
+    radial-gradient(1px 1px at 5% 75%, hsl(25, 100%, 80%), transparent),
+    radial-gradient(1px 1px at 25% 25%, hsl(45, 100%, 90%), transparent),
+    radial-gradient(1px 1px at 45% 95%, hsl(270, 70%, 80%), transparent),
+    radial-gradient(1px 1px at 65% 55%, hsl(25, 100%, 80%), transparent),
+    radial-gradient(1px 1px at 85% 65%, hsl(45, 100%, 90%), transparent);
+  animation: halloweenStarsShimmer 30s ease-in-out infinite;
+}
+
+@keyframes halloweenStarsShimmer {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.8; }
+}
+
+/* Reduced motion preferences for all Halloween animations */
+@media (prefers-reduced-motion: reduce) {
+  .halloween body::before,
+  .halloween body::after,
+  .halloween main::before,
+  .halloween main::after,
+  .animate-halloween-twinkle,
+  .animate-halloween-twinkle-delay-1,
+  .animate-halloween-twinkle-delay-2,
+  .animate-halloween-moon-glow,
+  .animate-halloween-float-slow,
+  .animate-halloween-fog,
+  .animate-halloween-bob,
+  .animate-halloween-node-pulse:hover,
+  .animate-halloween-accent-glow,
+  .animate-halloween-particle,
+  .animate-halloween-pumpkin-burst,
+  .halloween-stars {
+    animation: none !important;
+  }
+}

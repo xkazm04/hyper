@@ -13,6 +13,8 @@ export interface UpdateCardPayload {
   script?: string
   imageUrl?: string | null
   imagePrompt?: string | null
+  message?: string | null
+  speaker?: string | null
 }
 
 export async function updateCard(

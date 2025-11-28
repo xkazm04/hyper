@@ -2,29 +2,17 @@
 
 import { useEditor } from '@/contexts/EditorContext'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Plus, Play, Upload, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Upload, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
-import MoodIndicator from '@/app/features/editor/story/MoodIndicator'
-import { MoodColors } from '@/lib/services/mood'
 import { SyncStatus } from '@/components/ui/SyncStatus'
 
 interface StoryEditorToolbarProps {
-  onAddCard: () => void
-  onPreview: () => void
   onPublish: () => void
-  moodColors?: MoodColors
-  isMoodLoading?: boolean
-  onMoodRefresh?: () => void
 }
 
 export default function StoryEditorToolbar({
-  onAddCard,
-  onPreview,
   onPublish,
-  moodColors,
-  isMoodLoading = false,
-  onMoodRefresh,
 }: StoryEditorToolbarProps) {
   const { storyStack, isSaving } = useEditor()
 
@@ -34,7 +22,7 @@ export default function StoryEditorToolbar({
 
   return (
     <div className="min-h-16 bg-background border-b-2 border-border px-2 sm:px-4 py-2 sm:py-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-      {/* Left Section - Back & Story Name */}
+      {/* Left Section - Back, Story Settings & Story Name */}
       <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
         <Link href="/dashboard">
           <Button
@@ -70,39 +58,8 @@ export default function StoryEditorToolbar({
           <span className="text-xs text-muted-foreground mr-1 sm:mr-2 hidden sm:inline">Saving...</span>
         )}
 
-        {moodColors && onMoodRefresh && (
-          <MoodIndicator
-            moodColors={moodColors}
-            isLoading={isMoodLoading}
-            onRefresh={onMoodRefresh}
-          />
-        )}
-
         <SyncStatus />
         <ThemeToggle />
-
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onAddCard}
-          className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:-translate-x-px hover:-translate-y-px transition-all touch-manipulation text-xs sm:text-sm"
-          data-testid="toolbar-add-card-btn"
-        >
-          <Plus className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-          <span className="hidden sm:inline">Add Card</span>
-        </Button>
-
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onPreview}
-          disabled={!storyStack.isPublished}
-          className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))] hover:shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:-translate-x-px hover:-translate-y-px transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-xs sm:text-sm"
-          data-testid="toolbar-preview-btn"
-        >
-          <Play className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
-          <span className="hidden sm:inline">Preview</span>
-        </Button>
 
         <Button
           size="sm"

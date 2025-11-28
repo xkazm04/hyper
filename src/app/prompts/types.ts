@@ -14,7 +14,7 @@ export interface PromptOption {
 }
 
 export interface PromptColumn {
-  id: string;
+  id: PromptDimension;
   label: string;
   icon: string;
   description: string;
@@ -28,6 +28,8 @@ export interface ArtStyle {
   description: string;
   tags: string[];
   icon: string;
+  /** Image URL for the art style preview */
+  imageUrl: string;
   /** Full art style prompt for image generation */
   stylePrompt: string;
   /** Color palette description */

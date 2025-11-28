@@ -1,29 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { v4 as uuidv4 } from 'uuid'
-import { StoryService } from '@/lib/services/story'
-import { syncService } from '@/lib/services/sync'
 import {
-  saveStoryStack,
-  saveStoryCards,
-  saveChoices,
-  getStoryStackFromDB,
-  getAllStoryStacksFromDB,
-  getStoryCardsFromDB,
-  getChoicesFromDB,
-  getAllChoicesForStack,
-  deleteStoryStackFromDB,
-  deleteStoryCardFromDB,
-  deleteChoiceFromDB,
-  deleteStoryCardsForStack,
-  deleteChoicesForCard,
-  isIndexedDBAvailable,
-} from '@/lib/services/indexeddb'
-import {
-  StoryStack,
-  StoryCard,
-  Choice,
   CreateStoryStackInput,
   UpdateStoryStackInput,
   CreateStoryCardInput,
@@ -31,6 +9,12 @@ import {
   CreateChoiceInput,
   UpdateChoiceInput,
 } from '@/lib/types'
+import {
+  useOfflineStorage,
+  useOfflineSync,
+  useOfflineQueue,
+  useOfflineConflict,
+} from './sub_useOfflineStory'
 
 // Query keys
 export const storyKeys = {
@@ -44,8 +28,6 @@ export const storyKeys = {
   allChoices: (stackId: string) => [...storyKeys.detail(stackId), 'allChoices'] as const,
 }
 
-const storyService = new StoryService()
-
 // =============================================================================
 // Story Stack Hooks
 // =============================================================================
@@ -54,35 +36,12 @@ const storyService = new StoryService()
  * Hook to fetch all story stacks with offline support
  */
 export function useStoryStacks(userId?: string) {
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+
   return useQuery({
     queryKey: storyKeys.list(userId || 'all'),
-    queryFn: async () => {
-      // Try to get from network first
-      if (syncService.isOnline) {
-        try {
-          const stacks = await storyService.getStoryStacks(userId)
-
-          // Cache in IndexedDB
-          if (isIndexedDBAvailable()) {
-            for (const stack of stacks) {
-              await saveStoryStack(stack)
-            }
-          }
-
-          return stacks
-        } catch (error) {
-          // Fall through to offline cache
-          console.warn('Failed to fetch from network, using offline cache:', error)
-        }
-      }
-
-      // Fall back to IndexedDB
-      if (isIndexedDBAvailable()) {
-        return getAllStoryStacksFromDB(userId)
-      }
-
-      return []
-    },
+    queryFn: () => sync.fetchStacksWithSync(userId),
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -91,32 +50,12 @@ export function useStoryStacks(userId?: string) {
  * Hook to fetch a single story stack with offline support
  */
 export function useStoryStack(id: string) {
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+
   return useQuery({
     queryKey: storyKeys.detail(id),
-    queryFn: async () => {
-      // Try to get from network first
-      if (syncService.isOnline) {
-        try {
-          const stack = await storyService.getStoryStack(id)
-
-          // Cache in IndexedDB
-          if (stack && isIndexedDBAvailable()) {
-            await saveStoryStack(stack)
-          }
-
-          return stack
-        } catch (error) {
-          console.warn('Failed to fetch from network, using offline cache:', error)
-        }
-      }
-
-      // Fall back to IndexedDB
-      if (isIndexedDBAvailable()) {
-        return getStoryStackFromDB(id) || null
-      }
-
-      return null
-    },
+    queryFn: () => sync.fetchStackWithSync(id),
     enabled: !!id,
   })
 }
@@ -126,42 +65,20 @@ export function useStoryStack(id: string) {
  */
 export function useCreateStoryStack() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
+  const conflict = useOfflineConflict(storage)
 
   return useMutation({
     mutationFn: async (input: CreateStoryStackInput) => {
-      if (syncService.isOnline) {
-        // Create online
-        const stack = await storyService.createStoryStack(input)
-
-        // Cache in IndexedDB
-        if (isIndexedDBAvailable()) {
-          await saveStoryStack(stack)
-        }
-
-        return stack
+      if (sync.isOnline) {
+        return sync.createStackOnline(input)
       }
 
       // Create offline with temp ID
-      const tempId = uuidv4()
-      const tempStack: StoryStack = {
-        id: tempId,
-        ownerId: '', // Will be set on sync
-        name: input.name,
-        description: input.description || null,
-        isPublished: false,
-        publishedAt: null,
-        slug: null,
-        firstCardId: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-
-      // Save to IndexedDB
-      if (isIndexedDBAvailable()) {
-        await saveStoryStack(tempStack)
-        await syncService.queueStoryStackCreate(input, tempId)
-      }
-
+      const tempStack = await conflict.createTempStack(input)
+      await queue.queueStackCreate(input, tempStack.id)
       return tempStack
     },
     onSuccess: () => {
@@ -175,34 +92,22 @@ export function useCreateStoryStack() {
  */
 export function useUpdateStoryStack() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
+  const conflict = useOfflineConflict(storage)
 
   return useMutation({
     mutationFn: async ({ id, input }: { id: string; input: UpdateStoryStackInput }) => {
-      if (syncService.isOnline) {
-        // Update online
-        const stack = await storyService.updateStoryStack(id, input)
-
-        // Cache in IndexedDB
-        if (isIndexedDBAvailable()) {
-          await saveStoryStack(stack)
-        }
-
-        return stack
+      if (sync.isOnline) {
+        return sync.updateStackOnline(id, input)
       }
 
       // Update offline
-      if (isIndexedDBAvailable()) {
-        const existing = await getStoryStackFromDB(id)
-        if (existing) {
-          const updated: StoryStack = {
-            ...existing,
-            ...input,
-            updatedAt: new Date().toISOString(),
-          }
-          await saveStoryStack(updated)
-          await syncService.queueStoryStackUpdate(id, input)
-          return updated
-        }
+      const updated = await conflict.updateStackOffline(id, input)
+      if (updated) {
+        await queue.queueStackUpdate(id, input)
+        return updated
       }
 
       throw new Error('Story stack not found')
@@ -219,23 +124,18 @@ export function useUpdateStoryStack() {
  */
 export function useDeleteStoryStack() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
 
   return useMutation({
     mutationFn: async (id: string) => {
-      if (syncService.isOnline) {
-        // Delete online
-        await storyService.deleteStoryStack(id)
+      if (sync.isOnline) {
+        await sync.deleteStackOnline(id)
       } else {
-        // Queue for sync
-        await syncService.queueStoryStackDelete(id)
+        await queue.queueStackDelete(id)
+        await storage.deleteStack(id)
       }
-
-      // Delete from IndexedDB
-      if (isIndexedDBAvailable()) {
-        await deleteStoryStackFromDB(id)
-        await deleteStoryCardsForStack(id)
-      }
-
       return id
     },
     onSuccess: (id) => {
@@ -253,32 +153,12 @@ export function useDeleteStoryStack() {
  * Hook to fetch story cards with offline support
  */
 export function useStoryCards(storyStackId: string) {
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+
   return useQuery({
     queryKey: storyKeys.cards(storyStackId),
-    queryFn: async () => {
-      // Try to get from network first
-      if (syncService.isOnline) {
-        try {
-          const cards = await storyService.getStoryCards(storyStackId)
-
-          // Cache in IndexedDB
-          if (isIndexedDBAvailable()) {
-            await saveStoryCards(cards)
-          }
-
-          return cards
-        } catch (error) {
-          console.warn('Failed to fetch from network, using offline cache:', error)
-        }
-      }
-
-      // Fall back to IndexedDB
-      if (isIndexedDBAvailable()) {
-        return getStoryCardsFromDB(storyStackId)
-      }
-
-      return []
-    },
+    queryFn: () => sync.fetchCardsWithSync(storyStackId),
     enabled: !!storyStackId,
   })
 }
@@ -288,52 +168,21 @@ export function useStoryCards(storyStackId: string) {
  */
 export function useCreateStoryCard() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
+  const conflict = useOfflineConflict(storage)
 
   return useMutation({
     mutationFn: async (input: CreateStoryCardInput) => {
-      if (syncService.isOnline) {
-        // Create online
-        const card = await storyService.createStoryCard(input)
-
-        // Cache in IndexedDB
-        if (isIndexedDBAvailable()) {
-          await saveStoryCards([card])
-        }
-
-        return card
+      if (sync.isOnline) {
+        return sync.createCardOnline(input)
       }
 
-      // Create offline with temp ID
-      const tempId = uuidv4()
-
-      // Get max order index from cache
-      let orderIndex = input.orderIndex || 0
-      if (orderIndex === 0 && isIndexedDBAvailable()) {
-        const existingCards = await getStoryCardsFromDB(input.storyStackId)
-        orderIndex = existingCards.length > 0
-          ? Math.max(...existingCards.map(c => c.orderIndex)) + 1
-          : 0
-      }
-
-      const tempCard: StoryCard = {
-        id: tempId,
-        storyStackId: input.storyStackId,
-        title: input.title || 'Untitled Card',
-        content: input.content || '',
-        script: '',
-        imageUrl: input.imageUrl || null,
-        imagePrompt: input.imagePrompt || null,
-        orderIndex,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-
-      // Save to IndexedDB
-      if (isIndexedDBAvailable()) {
-        await saveStoryCards([tempCard])
-        await syncService.queueStoryCardCreate(input, tempId)
-      }
-
+      // Get existing cards for order calculation
+      const existingCards = await storage.getCards(input.storyStackId)
+      const tempCard = await conflict.createTempCard(input, existingCards)
+      await queue.queueCardCreate(input, tempCard.id)
       return tempCard
     },
     onSuccess: (data) => {
@@ -347,6 +196,10 @@ export function useCreateStoryCard() {
  */
 export function useUpdateStoryCard() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
+  const conflict = useOfflineConflict(storage)
 
   return useMutation({
     mutationFn: async ({ id, storyStackId, input }: {
@@ -354,32 +207,15 @@ export function useUpdateStoryCard() {
       storyStackId: string
       input: UpdateStoryCardInput
     }) => {
-      if (syncService.isOnline) {
-        // Update online
-        const card = await storyService.updateStoryCard(id, input)
-
-        // Cache in IndexedDB
-        if (isIndexedDBAvailable()) {
-          await saveStoryCards([card])
-        }
-
-        return card
+      if (sync.isOnline) {
+        return sync.updateCardOnline(id, input)
       }
 
       // Update offline
-      if (isIndexedDBAvailable()) {
-        const cards = await getStoryCardsFromDB(storyStackId)
-        const existing = cards.find(c => c.id === id)
-        if (existing) {
-          const updated: StoryCard = {
-            ...existing,
-            ...input,
-            updatedAt: new Date().toISOString(),
-          }
-          await saveStoryCards([updated])
-          await syncService.queueStoryCardUpdate(id, input)
-          return updated
-        }
+      const updated = await conflict.updateCardOffline(id, storyStackId, input)
+      if (updated) {
+        await queue.queueCardUpdate(id, input)
+        return updated
       }
 
       throw new Error('Story card not found')
@@ -395,23 +231,18 @@ export function useUpdateStoryCard() {
  */
 export function useDeleteStoryCard() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
 
   return useMutation({
     mutationFn: async ({ id, storyStackId }: { id: string; storyStackId: string }) => {
-      if (syncService.isOnline) {
-        // Delete online
-        await storyService.deleteStoryCard(id)
+      if (sync.isOnline) {
+        await sync.deleteCardOnline(id)
       } else {
-        // Queue for sync
-        await syncService.queueStoryCardDelete(id)
+        await queue.queueCardDelete(id)
       }
-
-      // Delete from IndexedDB
-      if (isIndexedDBAvailable()) {
-        await deleteStoryCardFromDB(id)
-        await deleteChoicesForCard(id)
-      }
-
+      await storage.deleteCard(id)
       return { id, storyStackId }
     },
     onSuccess: (data) => {
@@ -428,32 +259,12 @@ export function useDeleteStoryCard() {
  * Hook to fetch choices for a card with offline support
  */
 export function useChoices(storyCardId: string) {
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+
   return useQuery({
     queryKey: storyKeys.choices(storyCardId),
-    queryFn: async () => {
-      // Try to get from network first
-      if (syncService.isOnline) {
-        try {
-          const choices = await storyService.getChoices(storyCardId)
-
-          // Cache in IndexedDB
-          if (isIndexedDBAvailable()) {
-            await saveChoices(choices)
-          }
-
-          return choices
-        } catch (error) {
-          console.warn('Failed to fetch from network, using offline cache:', error)
-        }
-      }
-
-      // Fall back to IndexedDB
-      if (isIndexedDBAvailable()) {
-        return getChoicesFromDB(storyCardId)
-      }
-
-      return []
-    },
+    queryFn: () => sync.fetchChoicesWithSync(storyCardId),
     enabled: !!storyCardId,
   })
 }
@@ -462,14 +273,11 @@ export function useChoices(storyCardId: string) {
  * Hook to fetch all choices for a stack with offline support
  */
 export function useAllChoicesForStack(storyStackId: string) {
+  const storage = useOfflineStorage()
+
   return useQuery({
     queryKey: storyKeys.allChoices(storyStackId),
-    queryFn: async () => {
-      if (isIndexedDBAvailable()) {
-        return getAllChoicesForStack(storyStackId)
-      }
-      return []
-    },
+    queryFn: () => storage.getAllChoices(storyStackId),
     enabled: !!storyStackId,
   })
 }
@@ -479,49 +287,21 @@ export function useAllChoicesForStack(storyStackId: string) {
  */
 export function useCreateChoice() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
+  const conflict = useOfflineConflict(storage)
 
   return useMutation({
     mutationFn: async (input: CreateChoiceInput) => {
-      if (syncService.isOnline) {
-        // Create online
-        const choice = await storyService.createChoice(input)
-
-        // Cache in IndexedDB
-        if (isIndexedDBAvailable()) {
-          await saveChoices([choice])
-        }
-
-        return choice
+      if (sync.isOnline) {
+        return sync.createChoiceOnline(input)
       }
 
-      // Create offline with temp ID
-      const tempId = uuidv4()
-
-      // Get max order index from cache
-      let orderIndex = input.orderIndex || 0
-      if (orderIndex === 0 && isIndexedDBAvailable()) {
-        const existingChoices = await getChoicesFromDB(input.storyCardId)
-        orderIndex = existingChoices.length > 0
-          ? Math.max(...existingChoices.map(c => c.orderIndex)) + 1
-          : 0
-      }
-
-      const tempChoice: Choice = {
-        id: tempId,
-        storyCardId: input.storyCardId,
-        label: input.label,
-        targetCardId: input.targetCardId,
-        orderIndex,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-
-      // Save to IndexedDB
-      if (isIndexedDBAvailable()) {
-        await saveChoices([tempChoice])
-        await syncService.queueChoiceCreate(input, tempId)
-      }
-
+      // Get existing choices for order calculation
+      const existingChoices = await storage.getChoiceList(input.storyCardId)
+      const tempChoice = await conflict.createTempChoice(input, existingChoices)
+      await queue.queueChoiceCreate(input, tempChoice.id)
       return tempChoice
     },
     onSuccess: (data) => {
@@ -535,6 +315,10 @@ export function useCreateChoice() {
  */
 export function useUpdateChoice() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
+  const conflict = useOfflineConflict(storage)
 
   return useMutation({
     mutationFn: async ({ id, storyCardId, input }: {
@@ -542,32 +326,15 @@ export function useUpdateChoice() {
       storyCardId: string
       input: UpdateChoiceInput
     }) => {
-      if (syncService.isOnline) {
-        // Update online
-        const choice = await storyService.updateChoice(id, input)
-
-        // Cache in IndexedDB
-        if (isIndexedDBAvailable()) {
-          await saveChoices([choice])
-        }
-
-        return choice
+      if (sync.isOnline) {
+        return sync.updateChoiceOnline(id, input)
       }
 
       // Update offline
-      if (isIndexedDBAvailable()) {
-        const choices = await getChoicesFromDB(storyCardId)
-        const existing = choices.find(c => c.id === id)
-        if (existing) {
-          const updated: Choice = {
-            ...existing,
-            ...input,
-            updatedAt: new Date().toISOString(),
-          }
-          await saveChoices([updated])
-          await syncService.queueChoiceUpdate(id, input)
-          return updated
-        }
+      const updated = await conflict.updateChoiceOffline(id, storyCardId, input)
+      if (updated) {
+        await queue.queueChoiceUpdate(id, input)
+        return updated
       }
 
       throw new Error('Choice not found')
@@ -583,22 +350,18 @@ export function useUpdateChoice() {
  */
 export function useDeleteChoice() {
   const queryClient = useQueryClient()
+  const storage = useOfflineStorage()
+  const sync = useOfflineSync(storage)
+  const queue = useOfflineQueue()
 
   return useMutation({
     mutationFn: async ({ id, storyCardId }: { id: string; storyCardId: string }) => {
-      if (syncService.isOnline) {
-        // Delete online
-        await storyService.deleteChoice(id)
+      if (sync.isOnline) {
+        await sync.deleteChoiceOnline(id)
       } else {
-        // Queue for sync
-        await syncService.queueChoiceDelete(id)
+        await queue.queueChoiceDelete(id)
       }
-
-      // Delete from IndexedDB
-      if (isIndexedDBAvailable()) {
-        await deleteChoiceFromDB(id)
-      }
-
+      await storage.deleteChoice(id)
       return { id, storyCardId }
     },
     onSuccess: (data) => {

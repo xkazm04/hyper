@@ -27,17 +27,17 @@ const toastIcons = {
 }
 
 const toastStyles = {
-  success: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-900 dark:text-green-100",
-  error: "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100",
-  warning: "bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-900 dark:text-yellow-100",
-  info: "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100",
+  success: "bg-[hsl(var(--green-50))] border-[hsl(var(--green-500)/0.3)] text-[hsl(var(--green-800))]",
+  error: "bg-[hsl(var(--red-50))] border-[hsl(var(--red-500)/0.3)] text-[hsl(var(--red-600))]",
+  warning: "bg-[hsl(var(--yellow-100))] border-[hsl(var(--yellow-500)/0.3)] text-foreground",
+  info: "bg-[hsl(var(--blue-500)/0.1)] border-[hsl(var(--blue-500)/0.3)] text-foreground",
 }
 
 const iconStyles = {
-  success: "text-green-500 dark:text-green-400",
-  error: "text-red-500 dark:text-red-400",
-  warning: "text-yellow-500 dark:text-yellow-400",
-  info: "text-blue-500 dark:text-blue-400",
+  success: "text-[hsl(var(--green-600))]",
+  error: "text-[hsl(var(--red-500))]",
+  warning: "text-[hsl(var(--yellow-500))]",
+  info: "text-[hsl(var(--blue-500))]",
 }
 
 export function ToastItem({ toast, onClose }: ToastItemProps) {
@@ -60,7 +60,7 @@ export function ToastItem({ toast, onClose }: ToastItemProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-4 shadow-lg backdrop-blur-sm",
+        "flex items-start gap-3 rounded-md border-2 border-border p-4 shadow-theme-sm",
         "min-w-[320px] max-w-[420px]",
         toastStyles[toast.type]
       )}

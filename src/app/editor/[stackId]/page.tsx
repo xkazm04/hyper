@@ -4,7 +4,6 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EditorProvider, useEditor } from '@/contexts/EditorContext'
 import { useStoryEditor } from '@/lib/hooks/useStoryEditor'
-import { useMoodTheme } from '@/lib/hooks/useMoodTheme'
 import StoryEditorLayout from '@/app/features/editor/story/StoryEditorLayout'
 import StoryEditorToolbar from '@/app/features/editor/story/StoryEditorToolbar'
 import CardList from '@/app/features/editor/story/CardList'
@@ -12,6 +11,12 @@ import { StoryCardEditor, PublishDialog } from '@/app/features/editor/story/sub_
 import CharacterList from '@/app/features/editor/story/sub_Characters/CharacterList'
 import CharacterEditor from '@/app/features/editor/story/sub_Characters/CharacterEditor'
 import CardPreview from '@/app/features/editor/story/CardPreview'
+import {
+  CommandPalette,
+  CommandPaletteProvider,
+  useCommands,
+} from '@/app/features/editor/story/sub_CommandPalette'
+import { UndoRedoProvider } from '@/app/features/editor/undo-redo'
 import { StoryService } from '@/lib/services/story'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
@@ -26,8 +31,18 @@ export default function EditorPage({ params }: { params: Promise<{ stackId: stri
 
   return (
     <EditorProvider>
-      <EditorContent stackId={stackId} />
+      <CommandPaletteProvider>
+        <UndoRedoWrapper stackId={stackId} />
+      </CommandPaletteProvider>
     </EditorProvider>
+  )
+}
+
+function UndoRedoWrapper({ stackId }: { stackId: string }) {
+  return (
+    <UndoRedoProvider>
+      <EditorContent stackId={stackId} />
+    </UndoRedoProvider>
   )
 }
 
@@ -45,13 +60,6 @@ function EditorContent({ stackId }: { stackId: string }) {
   } = useEditor()
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const storyService = new StoryService()
-
-  // Mood-based theme sync
-  const { moodColors, isLoading: isMoodLoading, refresh: refreshMood } = useMoodTheme({
-    storyStack: story,
-    storyCards: cards,
-    enabled: true,
-  })
 
   // Initialize editor context when data loads
   useEffect(() => {
@@ -144,6 +152,14 @@ function EditorContent({ stackId }: { stackId: string }) {
     setStoryStack(unpublished)
   }
 
+  // Initialize commands for the command palette (must be called before any early returns)
+  const commands = useCommands({
+    onAddCard: handleAddCard,
+    onAddCharacter: handleAddCharacter,
+    onPreview: handlePreview,
+    onPublish: handlePublish,
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" data-testid="editor-loading">
@@ -161,15 +177,11 @@ function EditorContent({ stackId }: { stackId: string }) {
 
   return (
     <>
+      <CommandPalette commands={commands} />
       <StoryEditorLayout
         toolbar={
           <StoryEditorToolbar
-            onAddCard={handleAddCard}
-            onPreview={handlePreview}
             onPublish={handlePublish}
-            moodColors={moodColors}
-            isMoodLoading={isMoodLoading}
-            onMoodRefresh={refreshMood}
           />
         }
         cardList={<CardList onAddCard={handleAddCard} />}

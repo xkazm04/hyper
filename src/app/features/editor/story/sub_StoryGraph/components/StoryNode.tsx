@@ -1,23 +1,24 @@
-import React, { memo } from 'react'
-import { Handle, Position, NodeProps } from 'reactflow'
+import React, { memo, useCallback, useState } from 'react'
+import { NodeProps } from 'reactflow'
 import { cn } from '@/lib/utils'
-import {
-  AlertCircle,
-  AlertTriangle,
-  Play,
-  ImageIcon,
-  FileText,
-  GitBranch,
-  CheckCircle2,
-  Circle,
-  Type,
-} from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
+import { GitBranch } from 'lucide-react'
+import { useEditor } from '@/contexts/EditorContext'
 import {
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { buildNodeAriaLabel } from '../hooks/useKeyboardNavigation'
+import { PumpkinIcon, CompletionIndicators } from './NodeContent'
+import { NodeConnectors } from './NodeConnectors'
+import { NodeActions } from './NodeActions'
+import { 
+  NodeTooltip, 
+  getNodeStatus, 
+  getSelectionClasses, 
+  getFocusRingClasses 
+} from './sub_StoryNode'
 
 export interface StoryNodeData {
   label: string
@@ -33,117 +34,58 @@ export interface StoryNodeData {
   choiceCount: number
   characters: string[]
   depth: number
-}
-
-/**
- * Compact completion indicator with icons
- * Designed for quick visual scanning of node status
- */
-function CompletionIndicators({
-  hasTitle,
-  hasContent,
-  hasImage,
-  hasChoices,
-}: {
-  hasTitle: boolean
-  hasContent: boolean
-  hasImage: boolean
-  hasChoices: boolean
-}) {
-  const indicators = [
-    { done: hasTitle, icon: Type, label: 'Title' },
-    { done: hasContent, icon: FileText, label: 'Content' },
-    { done: hasImage, icon: ImageIcon, label: 'Image' },
-    { done: hasChoices, icon: GitBranch, label: 'Choices' },
-  ]
-
-  return (
-    <div className="flex items-center gap-1">
-      {indicators.map(({ done, icon: Icon, label }, i) => (
-        <div
-          key={i}
-          className={cn(
-            'w-4 h-4 rounded flex items-center justify-center transition-colors',
-            done
-              ? 'bg-emerald-500/20 text-emerald-600'
-              : 'bg-muted text-muted-foreground/50'
-          )}
-          title={`${label}: ${done ? 'Done' : 'Missing'}`}
-        >
-          <Icon className="w-2.5 h-2.5" />
-        </div>
-      ))}
-    </div>
-  )
+  isCollapsed?: boolean
+  hiddenDescendantCount?: number
+  isOnPath?: boolean
 }
 
 /**
  * StoryNode - Redesigned for large-scale story maps (100+ nodes)
- *
- * Design principles:
- * - Compact but informative
- * - Clear visual hierarchy (status > title > completion)
- * - High contrast status indicators
- * - Minimal but functional handles for connections
  */
-const StoryNode = memo(({ data, selected }: NodeProps<StoryNodeData>) => {
+const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
+  const { theme } = useTheme()
+  const { toggleNodeCollapsed } = useEditor()
+  const isHalloween = theme === 'halloween'
+  const ariaLabel = buildNodeAriaLabel(data)
+  const [isBouncing, setIsBouncing] = useState(false)
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      const target = event.target as HTMLElement
+      target.click()
+    }
+  }, [])
+
+  const handleCollapseToggle = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation()
+    toggleNodeCollapsed(id)
+  }, [id, toggleNodeCollapsed])
+
+  // Handle click to trigger bounce animation
+  const handleClick = useCallback(() => {
+    setIsBouncing(true)
+    // Remove bounce class after animation completes
+    setTimeout(() => setIsBouncing(false), 400)
+  }, [])
+
   const {
-    label,
-    isFirst,
-    isOrphaned,
-    isDeadEnd,
-    isIncomplete,
-    isSelected,
-    hasImage,
-    hasContent,
-    hasTitle,
-    hasChoices,
-    choiceCount,
-    characters,
-    depth,
+    label, isFirst, isOrphaned, isDeadEnd, isSelected, hasImage,
+    hasContent, hasTitle, hasChoices, choiceCount, characters, depth,
+    isCollapsed = false, hiddenDescendantCount = 0, isOnPath = false,
   } = data
 
-  // Calculate completion percentage
+  const canCollapse = choiceCount > 0
   const completionItems = [hasTitle, hasContent, hasImage, hasChoices]
   const completionPercent = Math.round((completionItems.filter(Boolean).length / completionItems.length) * 100)
   const isComplete = completionPercent === 100
 
-  // Determine node status and styling - priority order matters
-  let statusBgClass = 'bg-card'
-  let statusBorderClass = 'border-border'
-  let statusAccentClass = ''
-  let statusIcon = null
-  let statusLabel = depth >= 0 ? `Level ${depth}` : 'Scene'
+  const { statusBgClass, statusBorderClass, statusAccentClass, statusIcon, statusLabel } = 
+    getNodeStatus({ isFirst, isOrphaned, isDeadEnd, isComplete, depth, isHalloween })
 
-  if (isFirst) {
-    statusBgClass = 'bg-primary/5'
-    statusBorderClass = 'border-primary'
-    statusAccentClass = 'shadow-[0_0_0_1px_hsl(var(--primary)/0.3)]'
-    statusIcon = <Play className="w-3 h-3 text-primary fill-primary" />
-    statusLabel = 'START'
-  } else if (isOrphaned) {
-    statusBgClass = 'bg-amber-500/5'
-    statusBorderClass = 'border-amber-500'
-    statusAccentClass = 'shadow-[0_0_0_1px_hsl(45,93%,47%,0.3)]'
-    statusIcon = <AlertTriangle className="w-3 h-3 text-amber-500" />
-    statusLabel = 'Orphaned'
-  } else if (isDeadEnd) {
-    statusBgClass = 'bg-red-500/5'
-    statusBorderClass = 'border-red-500'
-    statusAccentClass = 'shadow-[0_0_0_1px_hsl(0,84%,60%,0.3)]'
-    statusIcon = <AlertCircle className="w-3 h-3 text-red-500" />
-    statusLabel = 'Dead End'
-  } else if (isComplete) {
-    statusBgClass = 'bg-emerald-500/5'
-    statusBorderClass = 'border-emerald-500/50'
-    statusAccentClass = ''
-  }
-
-  // Selection state with prominent visual feedback
   const isNodeSelected = isSelected || selected
-  const selectionClass = isNodeSelected
-    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-xl scale-105 z-50'
-    : 'hover:shadow-lg hover:scale-[1.02] hover:z-10'
+  const selectionClass = getSelectionClasses(isNodeSelected, isHalloween)
+  const focusRingClass = getFocusRingClasses(isHalloween)
 
   return (
     <TooltipProvider delayDuration={400}>
@@ -151,51 +93,72 @@ const StoryNode = memo(({ data, selected }: NodeProps<StoryNodeData>) => {
         <TooltipTrigger asChild>
           <div
             className={cn(
-              'relative w-[140px] rounded-lg border-2 transition-all duration-200 cursor-pointer',
-              'shadow-md',
-              statusBgClass,
-              statusBorderClass,
-              statusAccentClass,
-              selectionClass
+              'relative w-[140px] rounded-lg border-2 transition-all duration-200 cursor-pointer group shadow-md',
+              statusBgClass, statusBorderClass, statusAccentClass, selectionClass, focusRingClass,
+              isHalloween && 'halloween-ghost-float',
+              // Halloween dripping border effect
+              isHalloween && 'halloween-drip-border',
+              // Path glow animation for nodes on the ancestry path
+              isOnPath && !isNodeSelected && 'path-node-glow',
+              // Bounce animation on click
+              isBouncing && 'node-click-bounce'
             )}
+            tabIndex={0}
+            role="treeitem"
+            aria-label={ariaLabel}
+            aria-selected={isNodeSelected}
+            aria-level={data.depth >= 0 ? data.depth + 1 : undefined}
+            data-node-id={id}
+            data-testid={`story-node-${id}`}
+            data-on-path={isOnPath}
+            onKeyDown={handleKeyDown}
+            onClick={handleClick}
           >
-            {/* Colored top accent bar based on status */}
-            <div
-              className={cn(
-                'absolute top-0 left-2 right-2 h-0.5 rounded-b',
-                isFirst && 'bg-primary',
-                isOrphaned && 'bg-amber-500',
-                isDeadEnd && 'bg-red-500',
-                isComplete && !isFirst && !isOrphaned && !isDeadEnd && 'bg-emerald-500',
-                !isFirst && !isOrphaned && !isDeadEnd && !isComplete && 'bg-muted-foreground/30'
-              )}
-            />
+            {/* Colored top accent bar */}
+            <div className={cn(
+              'absolute top-0 left-2 right-2 h-0.5 rounded-b',
+              isHalloween ? (
+                isFirst ? 'bg-orange-500 animate-halloween-accent-glow' :
+                isOrphaned ? 'bg-amber-500' : isDeadEnd ? 'bg-red-600' :
+                isComplete ? 'bg-orange-400' : 'bg-purple-500/40'
+              ) : (
+                isFirst ? 'bg-primary' : isOrphaned ? 'bg-amber-500' :
+                isDeadEnd ? 'bg-red-500' : isComplete ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+              )
+            )} />
 
             {/* Header with status badge */}
             <div className="flex items-center gap-1 px-2 pt-2 pb-1">
               {statusIcon}
               <span className={cn(
                 'text-[9px] font-bold uppercase tracking-wider',
-                isFirst && 'text-primary',
-                isOrphaned && 'text-amber-600',
-                isDeadEnd && 'text-red-600',
-                !isFirst && !isOrphaned && !isDeadEnd && 'text-muted-foreground'
+                isHalloween ? (
+                  isFirst ? 'text-orange-500' : isOrphaned ? 'text-amber-500' :
+                  isDeadEnd ? 'text-red-500' : 'text-purple-300'
+                ) : (
+                  isFirst ? 'text-primary' : isOrphaned ? 'text-amber-600' :
+                  isDeadEnd ? 'text-red-600' : 'text-muted-foreground'
+                )
               )}>
                 {statusLabel}
               </span>
 
-              {/* Completion badge - top right */}
+              {/* Completion badge */}
               <div className="ml-auto">
                 {isComplete ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  isHalloween ? (
+                    <span className="text-sm" role="img" aria-label="pumpkin">{String.fromCodePoint(0x1F383)}</span>
+                  ) : (
+                    <span className="w-3.5 h-3.5 text-emerald-500">✓</span>
+                  )
                 ) : (
                   <div className="flex items-center gap-0.5">
                     <div
-                      className="w-6 h-1.5 bg-muted rounded-full overflow-hidden"
+                      className={cn("w-6 h-1.5 rounded-full overflow-hidden", isHalloween ? "bg-purple-900/50" : "bg-muted")}
                       title={`${completionPercent}% complete`}
                     >
                       <div
-                        className="h-full bg-emerald-500 transition-all"
+                        className={cn("h-full transition-all animate-progress-shimmer", isHalloween ? "bg-orange-500" : "bg-emerald-500")}
                         style={{ width: `${completionPercent}%` }}
                       />
                     </div>
@@ -206,27 +169,34 @@ const StoryNode = memo(({ data, selected }: NodeProps<StoryNodeData>) => {
 
             {/* Main content - Title */}
             <div className="px-2 pb-1.5">
-              <p className="text-xs font-semibold leading-tight line-clamp-2 text-foreground min-h-[2rem]">
+              <p className="text-xs font-semibold leading-tight line-clamp-2 text-foreground min-h-8">
                 {label}
               </p>
             </div>
 
             {/* Footer with completion indicators and choice count */}
-            <div className="flex items-center justify-between px-2 pb-2 pt-1 border-t border-border/30">
+            <div className={cn(
+              "flex items-center justify-between px-2 pb-2 pt-1 border-t",
+              isHalloween ? "border-purple-500/20" : "border-border/30"
+            )}>
               <CompletionIndicators
                 hasTitle={hasTitle}
                 hasContent={hasContent}
                 hasImage={hasImage}
                 hasChoices={hasChoices}
+                isHalloween={isHalloween}
               />
 
-              {/* Choice count badge - important for decision tree viz */}
               {choiceCount > 0 && (
                 <div className={cn(
                   'flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium',
-                  choiceCount === 1 && 'bg-muted text-muted-foreground',
-                  choiceCount === 2 && 'bg-blue-500/10 text-blue-600',
-                  choiceCount >= 3 && 'bg-purple-500/10 text-purple-600'
+                  isHalloween ? (
+                    choiceCount === 1 ? 'bg-purple-900/30 text-purple-300' :
+                    choiceCount === 2 ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'
+                  ) : (
+                    choiceCount === 1 ? 'bg-muted text-muted-foreground' :
+                    choiceCount === 2 ? 'bg-blue-500/10 text-blue-600' : 'bg-purple-500/10 text-purple-600'
+                  )
                 )}>
                   <GitBranch className="w-2.5 h-2.5" />
                   <span>{choiceCount}</span>
@@ -234,137 +204,37 @@ const StoryNode = memo(({ data, selected }: NodeProps<StoryNodeData>) => {
               )}
             </div>
 
-            {/* Connection Handles - styled for visibility */}
-            <Handle
-              type="target"
-              position={Position.Left}
-              className={cn(
-                '!w-3 !h-3 !border-2 !rounded-full transition-colors',
-                '!-left-1.5',
-                '!bg-card !border-border',
-                'hover:!bg-primary hover:!border-primary'
-              )}
+            <NodeConnectors choiceCount={choiceCount} isHalloween={isHalloween} isCollapsed={isCollapsed} />
+            <NodeActions
+              nodeId={id}
+              canCollapse={canCollapse}
+              isCollapsed={isCollapsed}
+              hiddenDescendantCount={hiddenDescendantCount}
+              isHalloween={isHalloween}
+              onCollapseToggle={handleCollapseToggle}
             />
-            <Handle
-              type="source"
-              position={Position.Right}
-              className={cn(
-                '!w-3 !h-3 !border-2 !rounded-full transition-colors',
-                '!-right-1.5',
-                choiceCount > 0
-                  ? '!bg-primary/20 !border-primary'
-                  : '!bg-muted !border-muted-foreground/30',
-                'hover:!bg-primary hover:!border-primary'
-              )}
-            />
-
-            {/* Multi-branch indicator dots for source handle */}
-            {choiceCount > 1 && (
-              <div className="absolute -right-1 top-1/2 -translate-y-1/2 translate-x-full flex flex-col gap-0.5 ml-1">
-                {Array.from({ length: Math.min(choiceCount, 3) }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-1 h-1 rounded-full bg-primary/60"
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </TooltipTrigger>
 
-        {/* Detailed Tooltip for hover inspection */}
-        <TooltipContent
-          side="right"
-          sideOffset={16}
-          className="max-w-[280px] p-0 bg-card border-2 border-border shadow-xl rounded-lg overflow-hidden"
-        >
-          <div className="p-3 space-y-2.5">
-            {/* Title with status badge */}
-            <div className="flex items-start gap-2">
-              {statusIcon && (
-                <div className={cn(
-                  'p-1 rounded',
-                  isFirst && 'bg-primary/10',
-                  isOrphaned && 'bg-amber-500/10',
-                  isDeadEnd && 'bg-red-500/10'
-                )}>
-                  {statusIcon}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground text-sm leading-tight">{label}</p>
-                {(isFirst || isOrphaned || isDeadEnd) && (
-                  <p className={cn(
-                    'text-xs mt-0.5',
-                    isFirst && 'text-primary',
-                    isOrphaned && 'text-amber-600',
-                    isDeadEnd && 'text-red-600'
-                  )}>
-                    {statusLabel}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Completion grid */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <CompletionItem done={hasTitle} label="Title" icon={Type} />
-              <CompletionItem done={hasContent} label="Content" icon={FileText} />
-              <CompletionItem done={hasImage} label="Image" icon={ImageIcon} />
-              <CompletionItem done={hasChoices} label="Choices" icon={GitBranch} />
-            </div>
-
-            {/* Characters if present */}
-            {characters && characters.length > 0 && (
-              <div className="text-xs pt-1.5 border-t border-border/50">
-                <span className="font-medium text-muted-foreground">Characters: </span>
-                <span className="text-foreground">{characters.join(', ')}</span>
-              </div>
-            )}
-
-            {/* Depth and branches info */}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1.5 border-t border-border/50">
-              {depth >= 0 && (
-                <span>Depth: {depth}</span>
-              )}
-              {choiceCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <GitBranch className="w-3 h-3" />
-                  {choiceCount} {choiceCount === 1 ? 'choice' : 'choices'}
-                </span>
-              )}
-            </div>
-          </div>
-        </TooltipContent>
+        <NodeTooltip
+          label={label}
+          statusIcon={statusIcon}
+          statusLabel={statusLabel}
+          isFirst={isFirst}
+          isOrphaned={isOrphaned}
+          isDeadEnd={isDeadEnd}
+          hasTitle={hasTitle}
+          hasContent={hasContent}
+          hasImage={hasImage}
+          hasChoices={hasChoices}
+          characters={characters}
+          depth={depth}
+          choiceCount={choiceCount}
+        />
       </Tooltip>
     </TooltipProvider>
   )
 })
-
-function CompletionItem({
-  done,
-  label,
-  icon: Icon
-}: {
-  done: boolean
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-}) {
-  return (
-    <div className={cn(
-      'flex items-center gap-1.5 px-2 py-1 rounded text-xs',
-      done ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
-    )}>
-      {done ? (
-        <CheckCircle2 className="w-3 h-3" />
-      ) : (
-        <Circle className="w-3 h-3" />
-      )}
-      <Icon className="w-3 h-3" />
-      <span>{label}</span>
-    </div>
-  )
-}
 
 StoryNode.displayName = 'StoryNode'
 export default StoryNode

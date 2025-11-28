@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   PROMPT_COLUMNS,
   PromptDimension,
   PromptOption,
   composePrompt,
 } from '@/lib/promptComposer'
+import { useEditor } from '@/contexts/EditorContext'
+import { getEffectiveArtStylePrompt, getArtStyleDetails } from '../sub_Story/lib/artStyleService'
 import { Header } from './components/Header'
 import { OptionSelector } from './components/OptionSelector'
 import { PromptPreview } from './components/PromptPreview'
@@ -28,11 +30,21 @@ export default function PromptComposer({
   isGenerating: externalGenerating = false,
   cardContent,
 }: PromptComposerProps) {
+  const { storyStack } = useEditor()
   const [selections, setSelections] = useState<SelectionState>({})
   const [copied, setCopied] = useState(false)
   const [expandedColumn, setExpandedColumn] = useState<string | null>('style')
 
-  const handleSelect = (dimension: PromptDimension, option: PromptOption) => {
+  // Get story-level art style info
+  const storyArtStyle = useMemo(() => {
+    if (!storyStack) return null
+    return {
+      prompt: getEffectiveArtStylePrompt(storyStack),
+      details: getArtStyleDetails(storyStack)
+    }
+  }, [storyStack])
+
+  const handleSelect = useCallback((dimension: PromptDimension, option: PromptOption) => {
     setSelections((prev) => {
       // Toggle selection
       const isSelected = prev[dimension]?.id === option.id
@@ -42,43 +54,119 @@ export default function PromptComposer({
 
       return next
     })
-  }
+  }, [])
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setSelections({})
-  }
+  }, [])
 
-  const handleCopyPrompt = async () => {
-    const prompt = composePrompt(selections)
+  const handleCopyPrompt = useCallback(async () => {
+    const prompt = finalPrompt
     if (prompt) {
       await navigator.clipboard.writeText(prompt)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
-  }
+  }, [])
 
-  const handleImageSelect = (imageUrl: string, prompt: string) => {
+  const handleImageSelect = useCallback((imageUrl: string, prompt: string) => {
     onImageSelect?.(imageUrl, prompt)
-  }
+  }, [onImageSelect])
 
-  const finalPrompt = useMemo(() => composePrompt(selections), [selections])
+  // Compose final prompt, using story-level art style as base if available
+  const finalPrompt = useMemo(() => {
+    const basePrompt = composePrompt(selections)
+    
+    // If story has a custom art style set, prepend it to the prompt
+    if (storyArtStyle?.prompt && !selections.style) {
+      // No style selected - use story-level art style
+      const parts: string[] = [storyArtStyle.prompt]
+      
+      if (selections.setting) {
+        parts.push(`\n\nScene: ${selections.setting.prompt}`)
+      }
+      if (selections.mood) {
+        parts.push(`\n\nMood: ${selections.mood.prompt}`)
+      }
+      
+      return parts.join('')
+    }
+    
+    return basePrompt
+  }, [selections, storyArtStyle])
+
   const hasSelections = Object.values(selections).some(Boolean)
 
-  const toggleColumn = (columnId: string) => {
+  const toggleColumn = useCallback((columnId: string) => {
     setExpandedColumn(prev => prev === columnId ? null : columnId)
-  }
+  }, [])
+
+  // Keyboard navigation for columns
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, columnIndex: number) => {
+    const columns = PROMPT_COLUMNS
+    let newIndex = columnIndex
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        newIndex = Math.min(columnIndex + 1, columns.length - 1)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        newIndex = Math.max(columnIndex - 1, 0)
+        break
+      case 'Home':
+        e.preventDefault()
+        newIndex = 0
+        break
+      case 'End':
+        e.preventDefault()
+        newIndex = columns.length - 1
+        break
+      default:
+        return
+    }
+
+    if (newIndex !== columnIndex) {
+      const columnId = columns[newIndex].id
+      setExpandedColumn(columnId)
+      // Focus the new column header
+      const element = document.querySelector(`[data-column-id="${columnId}"]`) as HTMLElement
+      element?.focus()
+    }
+  }, [])
 
   return (
-    <div className="space-y-4">
+    <section
+      className="space-y-4"
+      aria-label="Image Prompt Builder"
+      data-testid="prompt-composer"
+    >
       <Header
         hasSelections={hasSelections}
         loading={externalGenerating}
         onClear={handleClear}
       />
 
-      {/* Columns */}
-      <div className="space-y-2">
-        {PROMPT_COLUMNS.map((column) => (
+      {/* Story Art Style Indicator */}
+      {storyArtStyle && !selections.style && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-primary/10 border-2 border-primary/30 rounded-lg">
+          <span className="text-lg">{storyArtStyle.details.icon}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-primary">Story Art Style Active</p>
+            <p className="text-xs text-muted-foreground truncate">{storyArtStyle.details.label}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Columns - using semantic nav for prompt dimension navigation */}
+      <nav
+        className="space-y-2"
+        role="group"
+        aria-label="Prompt dimensions"
+        data-testid="prompt-composer-dimensions"
+      >
+        {PROMPT_COLUMNS.map((column, index) => (
           <OptionSelector
             key={column.id}
             column={column}
@@ -87,14 +175,15 @@ export default function PromptComposer({
             loading={externalGenerating}
             onToggle={toggleColumn}
             onSelect={handleSelect}
+            onKeyDown={(e) => handleKeyDown(e, index)}
             prefillContent={column.id === 'setting' ? cardContent : undefined}
-            artStyleId={selections.style?.id}
+            artStyleId={selections.style?.id || storyStack?.artStyleId || undefined}
           />
         ))}
-      </div>
+      </nav>
 
       {/* Prompt Preview with Sketch Generation */}
-      {hasSelections && (
+      {(hasSelections || storyArtStyle) && finalPrompt && (
         <PromptPreview
           prompt={finalPrompt}
           copied={copied}
@@ -105,13 +194,18 @@ export default function PromptComposer({
       )}
 
       {/* Empty State */}
-      {!hasSelections && (
-        <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+      {!hasSelections && !storyArtStyle && (
+        <div
+          className="border-2 border-dashed border-border rounded-lg p-4 text-center"
+          role="status"
+          aria-live="polite"
+          data-testid="prompt-composer-empty-state"
+        >
           <p className="text-xs text-muted-foreground">
             Select options above to build your image prompt
           </p>
         </div>
       )}
-    </div>
+    </section>
   )
 }

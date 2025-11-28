@@ -1,0 +1,321 @@
+/**
+ * Halloween Divider Decorations
+ * 
+ * This file contains divider decoration styles for the Halloween theme enrichment.
+ * Effects include torn-edge horizontal dividers, dripping vertical dividers,
+ * and decorative header icons.
+ * All effects include prefers-reduced-motion fallbacks.
+ * 
+ * Effects:
+ * 1. torn-divider - Jagged torn-edge pattern for horizontal dividers
+ * 2. drip-divider - Animated dripping effect for vertical dividers
+ * 3. header-icon - Decorative bat/spider icons for section headers
+ * 
+ * **Feature: halloween-theme-enrichment**
+ * **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
+ */
+
+/* ==========================================================================
+   1. Torn-Edge Horizontal Divider
+   Jagged torn-edge pattern using clip-path for horizontal dividers
+   Applicable to: horizontal dividers, section separators
+   Requirements: 4.1, 4.4
+   ========================================================================== */
+
+.halloween .halloween-torn-divider {
+  position: relative;
+  height: 8px;
+  background: transparent;
+  border: none;
+  margin: 1rem 0;
+}
+
+.halloween .halloween-torn-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    hsl(270 40% 35% / 0.6) 0%,
+    hsl(270 50% 40% / 0.8) 50%,
+    hsl(270 40% 35% / 0.6) 100%
+  );
+  clip-path: polygon(
+    0% 0%, 
+    5% 100%, 8% 0%, 
+    12% 80%, 15% 0%, 
+    20% 100%, 23% 20%, 
+    28% 90%, 32% 0%, 
+    36% 70%, 40% 10%, 
+    45% 100%, 48% 0%, 
+    52% 85%, 56% 15%, 
+    60% 100%, 64% 0%, 
+    68% 75%, 72% 20%, 
+    76% 100%, 80% 0%, 
+    84% 90%, 88% 10%, 
+    92% 80%, 96% 0%, 
+    100% 100%, 100% 0%
+  );
+  pointer-events: none;
+}
+
+.halloween .halloween-torn-divider::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    hsl(270 30% 25% / 0.4) 0%,
+    hsl(270 40% 30% / 0.6) 50%,
+    hsl(270 30% 25% / 0.4) 100%
+  );
+  clip-path: polygon(
+    0% 100%, 
+    3% 0%, 7% 100%, 
+    10% 30%, 14% 100%, 
+    18% 0%, 22% 70%, 
+    26% 100%, 30% 20%, 
+    34% 100%, 38% 0%, 
+    42% 80%, 46% 100%, 
+    50% 10%, 54% 100%, 
+    58% 0%, 62% 90%, 
+    66% 100%, 70% 30%, 
+    74% 100%, 78% 0%, 
+    82% 60%, 86% 100%, 
+    90% 20%, 94% 100%, 
+    98% 0%, 100% 100%
+  );
+  pointer-events: none;
+}
+
+/* Subtle shadow for depth */
+.halloween .halloween-torn-divider {
+  filter: drop-shadow(0 2px 4px hsl(270 50% 20% / 0.3));
+}
+
+
+/* ==========================================================================
+   2. Dripping Vertical Divider
+   Animated dripping effect for vertical dividers
+   Applicable to: vertical dividers, sidebar separators
+   Requirements: 4.2, 4.4
+   ========================================================================== */
+
+@keyframes dripFlow {
+  0%, 100% {
+    clip-path: polygon(
+      0% 0%, 100% 0%,
+      100% 5%, 80% 8%, 100% 10%,
+      100% 18%, 70% 22%, 100% 25%,
+      100% 32%, 85% 36%, 100% 40%,
+      100% 48%, 75% 52%, 100% 55%,
+      100% 62%, 80% 66%, 100% 70%,
+      100% 78%, 70% 82%, 100% 85%,
+      100% 92%, 85% 96%, 100% 100%,
+      0% 100%
+    );
+  }
+  50% {
+    clip-path: polygon(
+      0% 0%, 100% 0%,
+      100% 5%, 70% 10%, 100% 12%,
+      100% 20%, 80% 24%, 100% 28%,
+      100% 35%, 75% 40%, 100% 42%,
+      100% 50%, 85% 54%, 100% 58%,
+      100% 65%, 70% 70%, 100% 72%,
+      100% 80%, 80% 84%, 100% 88%,
+      100% 94%, 75% 98%, 100% 100%,
+      0% 100%
+    );
+  }
+}
+
+.halloween .halloween-drip-divider {
+  position: relative;
+  width: 8px;
+  background: transparent;
+  border: none;
+}
+
+.halloween .halloween-drip-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    180deg,
+    hsl(270 40% 35% / 0.6) 0%,
+    hsl(270 50% 40% / 0.8) 50%,
+    hsl(270 40% 35% / 0.6) 100%
+  );
+  animation: dripFlow 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.halloween .halloween-drip-divider::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    180deg,
+    hsl(270 30% 25% / 0.4) 0%,
+    hsl(270 40% 30% / 0.6) 50%,
+    hsl(270 30% 25% / 0.4) 100%
+  );
+  animation: dripFlow 4s ease-in-out infinite 2s;
+  pointer-events: none;
+}
+
+/* Subtle glow for depth */
+.halloween .halloween-drip-divider {
+  filter: drop-shadow(2px 0 4px hsl(270 50% 20% / 0.3));
+}
+
+/* ==========================================================================
+   3. Decorative Header Icons
+   Bat and spider icons for section headers using pseudo-elements
+   Applicable to: section headers, titles
+   Requirements: 4.3
+   ========================================================================== */
+
+@keyframes headerIconFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-2px) rotate(-3deg);
+  }
+  75% {
+    transform: translateY(1px) rotate(2deg);
+  }
+}
+
+/* Bat icon variant */
+.halloween .halloween-header-icon-bat {
+  position: relative;
+}
+
+.halloween .halloween-header-icon-bat::before {
+  content: '🦇';
+  position: absolute;
+  top: 50%;
+  left: -1.5rem;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: headerIconFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 2px hsl(270 70% 60% / 0.5));
+}
+
+/* Spider icon variant */
+.halloween .halloween-header-icon-spider {
+  position: relative;
+}
+
+.halloween .halloween-header-icon-spider::before {
+  content: '🕷️';
+  position: absolute;
+  top: 50%;
+  right: -1.5rem;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: headerIconFloat 3s ease-in-out infinite 1.5s;
+  filter: drop-shadow(0 0 2px hsl(270 70% 60% / 0.5));
+}
+
+/* Combined bat and spider variant */
+.halloween .halloween-header-icon {
+  position: relative;
+}
+
+.halloween .halloween-header-icon::before {
+  content: '🦇';
+  position: absolute;
+  top: 50%;
+  left: -1.5rem;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: headerIconFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 2px hsl(270 70% 60% / 0.5));
+}
+
+.halloween .halloween-header-icon::after {
+  content: '🕷️';
+  position: absolute;
+  top: 50%;
+  right: -1.5rem;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: headerIconFloat 3s ease-in-out infinite 1.5s;
+  filter: drop-shadow(0 0 2px hsl(270 70% 60% / 0.5));
+}
+
+/* Skull icon variant for special headers */
+.halloween .halloween-header-icon-skull {
+  position: relative;
+}
+
+.halloween .halloween-header-icon-skull::before {
+  content: '💀';
+  position: absolute;
+  top: 50%;
+  left: -1.5rem;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: headerIconFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 2px hsl(270 70% 60% / 0.5));
+}
+
+/* ==========================================================================
+   Reduced Motion Fallbacks
+   Static alternatives for users who prefer reduced motion
+   Requirements: 4.4
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-drip-divider::before,
+  .halloween .halloween-drip-divider::after {
+    animation: none;
+    /* Static drip appearance */
+    clip-path: polygon(
+      0% 0%, 100% 0%,
+      100% 5%, 75% 8%, 100% 10%,
+      100% 18%, 80% 22%, 100% 25%,
+      100% 32%, 70% 36%, 100% 40%,
+      100% 48%, 85% 52%, 100% 55%,
+      100% 62%, 75% 66%, 100% 70%,
+      100% 78%, 80% 82%, 100% 85%,
+      100% 92%, 70% 96%, 100% 100%,
+      0% 100%
+    );
+  }
+
+  .halloween .halloween-header-icon-bat::before,
+  .halloween .halloween-header-icon-spider::before,
+  .halloween .halloween-header-icon::before,
+  .halloween .halloween-header-icon::after,
+  .halloween .halloween-header-icon-skull::before {
+    animation: none;
+    transform: translateY(-50%);
+  }
+}

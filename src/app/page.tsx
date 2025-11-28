@@ -5,15 +5,17 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Sparkles, Play } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function Home() {
-  const [user, setUser] = useState<any>(null)
+  const [_user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
+  const { theme } = useTheme()
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -50,7 +52,7 @@ export default function Home() {
 
       {/* Retro grid background */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-[length:50px_50px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-size-[50px_50px]" />
       </div>
 
       <motion.div 

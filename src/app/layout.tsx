@@ -6,6 +6,8 @@ import { ToasterProvider } from "@/components/ui/ToasterProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { HighContrastWrapper } from "@/app/features/accessibility";
+import { SkipLinkWrapper } from "@/components/ui/SkipLinkWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,14 +24,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <SkipLinkWrapper targetId="main-content" />
         <ServiceWorkerRegistration />
         <QueryProvider>
           <ThemeProvider>
-            <AuthProvider>
-              <ToasterProvider>
-                {children}
-              </ToasterProvider>
-            </AuthProvider>
+            <HighContrastWrapper>
+              <AuthProvider>
+                <ToasterProvider>
+                  <main id="main-content" role="main">
+                    {children}
+                  </main>
+                </ToasterProvider>
+              </AuthProvider>
+            </HighContrastWrapper>
           </ThemeProvider>
         </QueryProvider>
       </body>

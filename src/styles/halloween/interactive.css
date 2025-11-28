@@ -1,0 +1,358 @@
+/**
+ * Halloween Interactive State Enhancements
+ * 
+ * This file contains interactive effect styles for the Halloween theme enrichment.
+ * Effects include smoke wisps, spectral ripples, ember particles, and ghost trails.
+ * All effects include prefers-reduced-motion fallbacks.
+ * All decorative pseudo-elements have pointer-events: none to preserve click targets.
+ * 
+ * Effects:
+ * 1. smoke-wisp - Subtle smoke effect on button hover
+ * 2. spectral-ripple - Ripple animation on button click
+ * 3. ember-focus - Ember particle animation on input focus
+ * 4. ghost-trail - Ghostly trail effect on dragged nodes
+ * 
+ * **Feature: halloween-theme-enrichment**
+ * **Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5**
+ */
+
+/* ==========================================================================
+   1. Smoke Wisp Effect
+   Subtle smoke effect on button hover using pseudo-element animation
+   Applicable to: primary buttons
+   Requirements: 6.1, 6.5
+   ========================================================================== */
+
+@keyframes smokeWisp {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  30% {
+    opacity: 0.6;
+    transform: translateY(-5px) scale(1);
+  }
+  70% {
+    opacity: 0.4;
+    transform: translateY(-15px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-25px) scale(1.4);
+  }
+}
+
+@keyframes smokeWispSecondary {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(-5px) scale(0.6);
+  }
+  40% {
+    opacity: 0.4;
+    transform: translateY(-8px) translateX(-3px) scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) translateX(5px) scale(1.1);
+  }
+}
+
+.halloween .halloween-smoke-wisp {
+  position: relative;
+  overflow: visible;
+}
+
+.halloween .halloween-smoke-wisp::before,
+.halloween .halloween-smoke-wisp::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    hsl(270 30% 60% / 0.4) 0%,
+    hsl(270 30% 60% / 0.2) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+.halloween .halloween-smoke-wisp::before {
+  left: 30%;
+}
+
+.halloween .halloween-smoke-wisp::after {
+  left: 55%;
+  width: 15px;
+  height: 15px;
+}
+
+.halloween .halloween-smoke-wisp:hover::before {
+  animation: smokeWisp 0.6s ease-out forwards;
+}
+
+.halloween .halloween-smoke-wisp:hover::after {
+  animation: smokeWispSecondary 0.6s ease-out 0.1s forwards;
+}
+
+
+/* ==========================================================================
+   2. Spectral Ripple Effect
+   Ripple animation on button click using :active state
+   Applicable to: clickable elements
+   Requirements: 6.2, 6.5
+   ========================================================================== */
+
+@keyframes spectralRipple {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.halloween .halloween-spectral-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.halloween .halloween-spectral-ripple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    hsl(270 70% 60% / 0.5) 0%,
+    hsl(270 70% 60% / 0.3) 30%,
+    transparent 70%
+  );
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+.halloween .halloween-spectral-ripple:active::before {
+  animation: spectralRipple 0.4s ease-out forwards;
+}
+
+/* ==========================================================================
+   3. Ember Focus Effect
+   Ember particle animation on input focus
+   Applicable to: input fields, textareas
+   Requirements: 6.3, 6.5
+   ========================================================================== */
+
+@keyframes emberFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.3);
+  }
+}
+
+@keyframes emberGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 8px 2px hsl(30 90% 50% / 0.3),
+      0 0 16px 4px hsl(270 70% 60% / 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 12px 3px hsl(30 90% 50% / 0.4),
+      0 0 24px 6px hsl(270 70% 60% / 0.3);
+  }
+}
+
+.halloween .halloween-ember-focus {
+  position: relative;
+}
+
+.halloween .halloween-ember-focus::before,
+.halloween .halloween-ember-focus::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: hsl(30 90% 55%);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  box-shadow: 0 0 4px 1px hsl(30 90% 50% / 0.6);
+}
+
+.halloween .halloween-ember-focus::before {
+  top: -2px;
+  left: 20%;
+}
+
+.halloween .halloween-ember-focus::after {
+  top: -2px;
+  right: 25%;
+}
+
+.halloween .halloween-ember-focus:focus::before,
+.halloween .halloween-ember-focus:focus-within::before {
+  animation: emberFloat 2s ease-out infinite;
+}
+
+.halloween .halloween-ember-focus:focus::after,
+.halloween .halloween-ember-focus:focus-within::after {
+  animation: emberFloat 2s ease-out 0.5s infinite;
+}
+
+.halloween .halloween-ember-focus:focus,
+.halloween .halloween-ember-focus:focus-within {
+  animation: emberGlow 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   4. Ghost Trail Effect
+   Ghostly trail effect on dragged nodes
+   Applicable to: draggable nodes in StoryGraph
+   Requirements: 6.4, 6.5
+   ========================================================================== */
+
+@keyframes ghostTrailFade {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.halloween .halloween-ghost-trail {
+  position: relative;
+}
+
+.halloween .halloween-ghost-trail::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    hsl(270 50% 50% / 0.3) 0%,
+    hsl(270 50% 50% / 0.1) 50%,
+    transparent 100%
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transform: scale(1);
+}
+
+/* Applied when element is being dragged */
+.halloween .halloween-ghost-trail.dragging::before,
+.halloween .halloween-ghost-trail[data-dragging="true"]::before {
+  animation: ghostTrailFade 0.3s ease-out forwards;
+}
+
+/* Alternative: CSS-only approach using :active for drag simulation */
+.halloween .halloween-ghost-trail:active::before {
+  opacity: 0.5;
+  transform: scale(1.02);
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+}
+
+
+/* ==========================================================================
+   Reduced Motion Fallbacks
+   Static alternatives for users who prefer reduced motion
+   Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.1
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Smoke wisp - disable animation, show subtle static glow on hover */
+  .halloween .halloween-smoke-wisp:hover::before,
+  .halloween .halloween-smoke-wisp:hover::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .halloween .halloween-smoke-wisp:hover {
+    box-shadow: 0 -4px 8px hsl(270 30% 60% / 0.2);
+  }
+
+  /* Spectral ripple - disable animation, show subtle highlight on active */
+  .halloween .halloween-spectral-ripple:active::before {
+    animation: none;
+    opacity: 0;
+  }
+
+  .halloween .halloween-spectral-ripple:active {
+    background-color: hsl(270 70% 60% / 0.15);
+  }
+
+  /* Ember focus - disable animation, show static glow */
+  .halloween .halloween-ember-focus:focus::before,
+  .halloween .halloween-ember-focus:focus::after,
+  .halloween .halloween-ember-focus:focus-within::before,
+  .halloween .halloween-ember-focus:focus-within::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .halloween .halloween-ember-focus:focus,
+  .halloween .halloween-ember-focus:focus-within {
+    animation: none;
+    box-shadow: 
+      0 0 10px 2px hsl(30 90% 50% / 0.35),
+      0 0 20px 5px hsl(270 70% 60% / 0.25);
+  }
+
+  /* Ghost trail - disable animation, show subtle static effect */
+  .halloween .halloween-ghost-trail.dragging::before,
+  .halloween .halloween-ghost-trail[data-dragging="true"]::before,
+  .halloween .halloween-ghost-trail:active::before {
+    animation: none;
+    opacity: 0.3;
+    transform: scale(1);
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   Pointer Events Verification
+   Ensure all decorative pseudo-elements do not block interactions
+   Requirements: 6.5
+   ========================================================================== */
+
+/* All pseudo-elements in this file already have pointer-events: none set.
+   This section serves as documentation and verification that:
+   
+   1. .halloween-smoke-wisp::before, ::after - pointer-events: none ✓
+   2. .halloween-spectral-ripple::before - pointer-events: none ✓
+   3. .halloween-ember-focus::before, ::after - pointer-events: none ✓
+   4. .halloween-ghost-trail::before - pointer-events: none ✓
+   
+   All interactive elements maintain their full clickable area.
+*/
+

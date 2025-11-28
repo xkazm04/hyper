@@ -1,0 +1,674 @@
+/**
+ * Halloween Component-Specific Theming
+ * 
+ * This file contains component-specific decoration styles for the Halloween theme enrichment.
+ * Each major editor component has unique Halloween decorations while maintaining cohesion.
+ * All effects include prefers-reduced-motion fallbacks.
+ * 
+ * Components:
+ * 1. OutlineSidebar - Haunted tree aesthetic with branch-like dividers
+ * 2. PromptComposer - Cauldron-inspired container with bubbling border
+ * 3. StoryCardEditor - Spell-book page aesthetic with aged edges
+ * 4. CommandPalette - Crystal ball inspired glow effect
+ * 5. ScriptQualityAssistant - Potion-bottle aesthetic for metrics
+ * 
+ * **Feature: halloween-theme-enrichment**
+ * **Validates: Requirements 8.1, 8.2, 8.3, 8.4, 8.5**
+ */
+
+/* ==========================================================================
+   1. OutlineSidebar - Haunted Tree Aesthetic
+   Branch-like dividers and twisted tree structure
+   Applicable to: OutlineSidebar component
+   Requirements: 8.1
+   ========================================================================== */
+
+.halloween .halloween-tree-sidebar {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    hsl(270 25% 12%) 0%,
+    hsl(270 20% 10%) 50%,
+    hsl(270 25% 8%) 100%
+  );
+}
+
+/* Twisted branch pattern overlay */
+.halloween .halloween-tree-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    /* Main trunk line */
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      hsl(30 30% 20% / 0.15) 10%,
+      hsl(30 30% 20% / 0.2) 50%,
+      hsl(30 30% 20% / 0.15) 90%,
+      transparent 100%
+    );
+  background-size: 3px 100%;
+  background-position: 12px 0;
+  background-repeat: no-repeat;
+  opacity: 0.6;
+}
+
+/* Branch-like divider styling */
+.halloween .halloween-branch-divider {
+  position: relative;
+  height: 2px;
+  background: transparent;
+  margin: 0.75rem 0;
+  overflow: visible;
+}
+
+.halloween .halloween-branch-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    hsl(30 40% 25% / 0.8) 0%,
+    hsl(30 30% 20% / 0.6) 30%,
+    hsl(30 30% 20% / 0.4) 60%,
+    transparent 100%
+  );
+  clip-path: polygon(
+    0% 0%, 
+    15% 100%, 20% 0%, 
+    35% 80%, 40% 20%, 
+    55% 100%, 60% 0%, 
+    75% 60%, 80% 40%, 
+    100% 50%
+  );
+}
+
+/* Small twig offshoots */
+.halloween .halloween-branch-divider::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 20%;
+  width: 20px;
+  height: 10px;
+  background: linear-gradient(
+    135deg,
+    hsl(30 40% 25% / 0.6) 0%,
+    transparent 100%
+  );
+  clip-path: polygon(0% 50%, 100% 0%, 80% 50%, 100% 100%);
+  pointer-events: none;
+}
+
+/* Tree header with gnarled appearance */
+.halloween .halloween-tree-header {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.halloween .halloween-tree-header::before {
+  content: '🌳';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  opacity: 0.5;
+  filter: grayscale(0.8) brightness(0.6) hue-rotate(270deg);
+}
+
+/* Leaf/node items with branch connection */
+.halloween .halloween-tree-item {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.halloween .halloween-tree-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    hsl(30 30% 25% / 0.5) 0%,
+    hsl(30 30% 25% / 0.2) 100%
+  );
+  transform: translateY(-50%);
+}
+
+
+
+/* ==========================================================================
+   2. PromptComposer - Cauldron Container
+   Bubbling border effect with cauldron-inspired styling
+   Applicable to: PromptComposer component
+   Requirements: 8.2
+   ========================================================================== */
+
+@keyframes cauldronBubbleRise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-15px) scale(1.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-30px) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes cauldronSimmer {
+  0%, 100% {
+    box-shadow: 
+      inset 0 -20px 40px hsl(270 50% 20% / 0.3),
+      inset 0 -10px 20px hsl(142 50% 30% / 0.15),
+      0 4px 20px hsl(270 50% 20% / 0.4);
+  }
+  50% {
+    box-shadow: 
+      inset 0 -25px 50px hsl(270 50% 25% / 0.4),
+      inset 0 -15px 25px hsl(142 50% 35% / 0.2),
+      0 6px 25px hsl(270 50% 20% / 0.5);
+  }
+}
+
+.halloween .halloween-cauldron-container {
+  position: relative;
+  border-radius: 8px 8px 40% 40%;
+  background: linear-gradient(
+    180deg,
+    hsl(270 20% 15%) 0%,
+    hsl(270 25% 12%) 70%,
+    hsl(270 30% 10%) 100%
+  );
+  border: 2px solid hsl(270 30% 25%);
+  border-bottom-width: 4px;
+  overflow: visible;
+  animation: cauldronSimmer 4s ease-in-out infinite;
+}
+
+/* Cauldron rim */
+.halloween .halloween-cauldron-container::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  height: 12px;
+  background: linear-gradient(
+    180deg,
+    hsl(270 20% 30%) 0%,
+    hsl(270 25% 20%) 50%,
+    hsl(270 20% 25%) 100%
+  );
+  border-radius: 8px 8px 0 0;
+  border: 2px solid hsl(270 30% 35%);
+  border-bottom: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Bubbling effect */
+.halloween .halloween-bubbling-border {
+  position: relative;
+  overflow: visible;
+}
+
+.halloween .halloween-bubbling-border::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  left: 20%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    hsl(142 60% 50% / 0.6) 0%,
+    hsl(142 60% 40% / 0.3) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+  animation: cauldronBubbleRise 3s ease-in-out infinite;
+}
+
+/* Additional bubbles using box-shadow */
+.halloween .halloween-cauldron-container .halloween-bubbling-border::before {
+  content: '';
+  position: absolute;
+  bottom: 15px;
+  right: 25%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    hsl(270 60% 60% / 0.5) 0%,
+    hsl(270 60% 50% / 0.2) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+  animation: cauldronBubbleRise 3s ease-in-out infinite 1.5s;
+}
+
+/* ==========================================================================
+   3. StoryCardEditor - Spell-Book Page Aesthetic
+   Aged edge effect with parchment-like background
+   Applicable to: StoryCardEditor component
+   Requirements: 8.3
+   ========================================================================== */
+
+.halloween .halloween-spellbook-page {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    hsl(35 20% 18%) 0%,
+    hsl(30 15% 15%) 50%,
+    hsl(35 20% 16%) 100%
+  );
+  border: 1px solid hsl(30 30% 25%);
+  border-radius: 4px 12px 12px 4px;
+  box-shadow: 
+    inset 2px 0 8px hsl(30 30% 10% / 0.3),
+    4px 4px 12px hsl(270 30% 10% / 0.4);
+}
+
+/* Aged/worn edge effect */
+.halloween .halloween-spellbook-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(
+    90deg,
+    hsl(30 25% 12%) 0%,
+    hsl(30 20% 15% / 0.8) 40%,
+    transparent 100%
+  );
+  border-radius: 4px 0 0 4px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Page binding spine effect */
+.halloween .halloween-spellbook-page::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 8px;
+  bottom: 10px;
+  width: 3px;
+  background: repeating-linear-gradient(
+    180deg,
+    hsl(30 40% 30%) 0px,
+    hsl(30 40% 30%) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.6;
+}
+
+/* Aged edges class for additional wear */
+.halloween .halloween-aged-edges {
+  position: relative;
+}
+
+.halloween .halloween-aged-edges::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: 
+    linear-gradient(90deg, hsl(30 30% 10% / 0.2) 0%, transparent 5%),
+    linear-gradient(270deg, hsl(30 30% 10% / 0.15) 0%, transparent 3%),
+    linear-gradient(180deg, hsl(30 30% 10% / 0.1) 0%, transparent 2%),
+    linear-gradient(0deg, hsl(30 30% 10% / 0.15) 0%, transparent 3%);
+  border-radius: inherit;
+}
+
+/* Mystical text glow for content */
+.halloween .halloween-spellbook-page [contenteditable],
+.halloween .halloween-spellbook-page textarea,
+.halloween .halloween-spellbook-page input {
+  text-shadow: 0 0 1px hsl(270 50% 60% / 0.2);
+}
+
+
+
+/* ==========================================================================
+   4. CommandPalette - Crystal Ball Glow
+   Orb-like glow effect for backdrop and container
+   Applicable to: CommandPalette component
+   Requirements: 8.4
+   ========================================================================== */
+
+@keyframes crystalBallPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 30px 10px hsl(270 60% 50% / 0.2),
+      0 0 60px 20px hsl(270 60% 50% / 0.1),
+      inset 0 0 30px hsl(270 70% 60% / 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px 15px hsl(270 60% 55% / 0.3),
+      0 0 80px 30px hsl(270 60% 50% / 0.15),
+      inset 0 0 40px hsl(270 70% 60% / 0.15);
+  }
+}
+
+@keyframes crystalMist {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05) rotate(2deg);
+  }
+}
+
+.halloween .halloween-crystal-glow {
+  position: relative;
+  background: radial-gradient(
+    ellipse at center,
+    hsl(270 30% 20% / 0.95) 0%,
+    hsl(270 25% 15% / 0.98) 50%,
+    hsl(270 20% 12%) 100%
+  );
+  border: 2px solid hsl(270 40% 40% / 0.5);
+  border-radius: 16px;
+  animation: crystalBallPulse 4s ease-in-out infinite;
+}
+
+/* Inner mystical mist effect */
+.halloween .halloween-crystal-glow::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 12px;
+  background: radial-gradient(
+    ellipse at 30% 30%,
+    hsl(270 50% 60% / 0.1) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    ellipse at 70% 70%,
+    hsl(270 50% 50% / 0.08) 0%,
+    transparent 40%
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: crystalMist 6s ease-in-out infinite;
+}
+
+/* Highlight reflection on the orb */
+.halloween .halloween-crystal-glow::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 15%;
+  width: 40%;
+  height: 20px;
+  background: linear-gradient(
+    180deg,
+    hsl(270 70% 80% / 0.15) 0%,
+    transparent 100%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Orb container variant for inner elements */
+.halloween .halloween-orb-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.halloween .halloween-orb-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 0%,
+    hsl(270 40% 30% / 0.1) 70%,
+    hsl(270 40% 20% / 0.2) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ==========================================================================
+   5. ScriptQualityAssistant - Potion Bottle Aesthetic
+   Bottle-shaped containers with bubbling liquid effect
+   Applicable to: ScriptQualityAssistant component
+   Requirements: 8.5
+   ========================================================================== */
+
+@keyframes potionBubble {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes potionGlow {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.1) saturate(1.2);
+  }
+}
+
+.halloween .halloween-potion-metrics {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem;
+}
+
+.halloween .halloween-potion-bottle {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    hsl(270 20% 25%) 0%,
+    hsl(270 25% 20%) 20%,
+    hsl(270 30% 15%) 100%
+  );
+  border: 2px solid hsl(270 30% 35%);
+  border-radius: 8px 8px 20px 20px;
+  padding: 0.5rem;
+  padding-top: 1rem;
+  min-width: 60px;
+  overflow: visible;
+}
+
+/* Bottle neck/cork */
+.halloween .halloween-potion-bottle::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 12px;
+  background: linear-gradient(
+    180deg,
+    hsl(30 30% 35%) 0%,
+    hsl(30 25% 25%) 100%
+  );
+  border: 2px solid hsl(30 30% 40%);
+  border-radius: 4px 4px 2px 2px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Liquid fill effect */
+.halloween .halloween-potion-bottle::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  height: 60%;
+  background: linear-gradient(
+    180deg,
+    hsl(270 60% 50% / 0.4) 0%,
+    hsl(270 70% 40% / 0.6) 100%
+  );
+  border-radius: 0 0 16px 16px;
+  pointer-events: none;
+  z-index: 0;
+  animation: potionGlow 3s ease-in-out infinite;
+}
+
+/* Different potion colors for different metrics */
+.halloween .halloween-potion-bottle--green::after {
+  background: linear-gradient(
+    180deg,
+    hsl(142 60% 45% / 0.4) 0%,
+    hsl(142 70% 35% / 0.6) 100%
+  );
+}
+
+.halloween .halloween-potion-bottle--red::after {
+  background: linear-gradient(
+    180deg,
+    hsl(0 60% 50% / 0.4) 0%,
+    hsl(0 70% 40% / 0.6) 100%
+  );
+}
+
+.halloween .halloween-potion-bottle--orange::after {
+  background: linear-gradient(
+    180deg,
+    hsl(30 70% 50% / 0.4) 0%,
+    hsl(30 80% 40% / 0.6) 100%
+  );
+}
+
+.halloween .halloween-potion-bottle--blue::after {
+  background: linear-gradient(
+    180deg,
+    hsl(220 60% 50% / 0.4) 0%,
+    hsl(220 70% 40% / 0.6) 100%
+  );
+}
+
+/* Bubbles inside potion */
+.halloween .halloween-potion-bubbles {
+  position: relative;
+}
+
+.halloween .halloween-potion-bubbles::before,
+.halloween .halloween-potion-bubbles::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: hsl(0 0% 100% / 0.3);
+  pointer-events: none;
+  z-index: 1;
+  animation: potionBubble 2s ease-in-out infinite;
+}
+
+.halloween .halloween-potion-bubbles::before {
+  bottom: 20%;
+  left: 25%;
+  width: 4px;
+  height: 4px;
+}
+
+.halloween .halloween-potion-bubbles::after {
+  bottom: 30%;
+  right: 30%;
+  width: 3px;
+  height: 3px;
+  animation-delay: 1s;
+}
+
+/* Score indicator styling */
+.halloween .halloween-potion-score {
+  position: relative;
+  z-index: 3;
+  font-weight: 600;
+  text-shadow: 0 0 4px hsl(270 70% 60% / 0.5);
+}
+
+
+
+/* ==========================================================================
+   Reduced Motion Fallbacks
+   Static alternatives for users who prefer reduced motion
+   Requirements: 7.1
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Cauldron effects */
+  .halloween .halloween-cauldron-container {
+    animation: none;
+    box-shadow: 
+      inset 0 -20px 40px hsl(270 50% 20% / 0.3),
+      inset 0 -10px 20px hsl(142 50% 30% / 0.15),
+      0 4px 20px hsl(270 50% 20% / 0.4);
+  }
+
+  .halloween .halloween-bubbling-border::after,
+  .halloween .halloween-cauldron-container .halloween-bubbling-border::before {
+    animation: none;
+    opacity: 0.4;
+    transform: translateY(-10px);
+  }
+
+  /* Crystal ball effects */
+  .halloween .halloween-crystal-glow {
+    animation: none;
+    box-shadow: 
+      0 0 35px 12px hsl(270 60% 50% / 0.25),
+      0 0 70px 25px hsl(270 60% 50% / 0.12),
+      inset 0 0 35px hsl(270 70% 60% / 0.12);
+  }
+
+  .halloween .halloween-crystal-glow::before {
+    animation: none;
+    opacity: 0.4;
+  }
+
+  /* Potion effects */
+  .halloween .halloween-potion-bottle::after {
+    animation: none;
+    filter: brightness(1.05) saturate(1.1);
+  }
+
+  .halloween .halloween-potion-bubbles::before,
+  .halloween .halloween-potion-bubbles::after {
+    animation: none;
+    opacity: 0.4;
+    transform: translateY(-4px);
+  }
+}
+

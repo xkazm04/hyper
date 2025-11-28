@@ -4,11 +4,18 @@
  * Archetypes, poses, and expressions
  */
 
-import { PromptOption, PromptColumn } from './types';
+import { PromptOption } from './types';
 
 export type CharacterDimension = 'archetype' | 'pose' | 'mood';
 
-export const CHARACTER_PROMPT_COLUMNS: PromptColumn[] = [
+export interface CharacterPromptColumn {
+  id: CharacterDimension;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+export const CHARACTER_PROMPT_COLUMNS: CharacterPromptColumn[] = [
   {
     id: 'archetype',
     label: 'Archetype',

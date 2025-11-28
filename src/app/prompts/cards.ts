@@ -4,10 +4,10 @@
  * Settings and moods that work with any art style
  */
 
-import { PromptOption, PromptColumn } from './types';
+import { PromptOption, PromptColumn, PromptDimension } from './types';
 import { ART_STYLES, getArtStyleById, LLM_ARTSTYLE_GUIDANCE } from './artstyles';
 
-export type CardDimension = 'style' | 'setting' | 'mood';
+export type CardDimension = PromptDimension;
 
 export const PROMPT_COLUMNS: PromptColumn[] = [
   {

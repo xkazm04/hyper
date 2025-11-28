@@ -1,0 +1,320 @@
+/**
+ * Theme System CSS Variables
+ * 
+ * This file defines CSS custom properties for the theme system.
+ * All colors are defined in HSL format without the hsl() wrapper for Tailwind compatibility.
+ * 
+ * Usage in components:
+ * - Use Tailwind classes: bg-background, text-foreground, border-border, etc.
+ * - Use in custom CSS: background-color: hsl(var(--background));
+ * 
+ * Color Format: H S% L% (Hue Saturation Lightness)
+ * Example: 270 30% 8% = Purple hue, 30% saturation, 8% lightness
+ */
+
+:root {
+  /* 
+   * Core theme variables - Light Theme
+   * These are the primary colors used throughout the application
+   */
+  --background: 0 0% 100%;           /* Main page background - white */
+  --foreground: 0 0% 3.9%;           /* Main text color - near black */
+  --card: 0 0% 100%;                 /* Card/panel backgrounds - white */
+  --card-foreground: 0 0% 3.9%;     /* Text on cards - near black */
+  --popover: 0 0% 100%;              /* Dropdown/popover backgrounds - white */
+  --popover-foreground: 0 0% 3.9%;  /* Text in popovers - near black */
+  --primary: 0 0% 9%;                /* Primary action color - dark gray */
+  --primary-foreground: 0 0% 98%;   /* Text on primary buttons - near white */
+  --secondary: 0 0% 96.1%;           /* Secondary elements - light gray */
+  --secondary-foreground: 0 0% 9%;  /* Text on secondary elements - dark gray */
+  --muted: 0 0% 96.1%;               /* Muted/disabled backgrounds - light gray */
+  --muted-foreground: 0 0% 45.1%;   /* Muted/disabled text - medium gray */
+  --accent: 0 0% 96.1%;              /* Accent/hover backgrounds - light gray */
+  --accent-foreground: 0 0% 9%;     /* Text on accent elements - dark gray */
+  --destructive: 0 84.2% 60.2%;     /* Error/destructive actions - red */
+  --destructive-foreground: 0 0% 98%; /* Text on destructive buttons - near white */
+  --border: 0 0% 89.8%;              /* Border color - light gray */
+  --input: 0 0% 89.8%;               /* Input border color - light gray */
+  --ring: 0 0% 3.9%;                 /* Focus ring color - near black */
+  --radius: 0.5rem;                  /* Border radius for rounded elements */
+
+  /* Extended color palette - Slate scale */
+  --slate-50: 210 40% 98%;
+  --slate-100: 210 40% 96.1%;
+  --slate-200: 214 32% 91%;
+  --slate-300: 213 27% 84%;
+  --slate-400: 215 20% 65%;
+  --slate-500: 215 16% 47%;
+  --slate-600: 215 16% 47%;
+  --slate-700: 215 19% 35%;
+  --slate-800: 217 19% 27%;
+  --slate-900: 222 47% 11%;
+
+
+  /* Extended color palette - Gray scale */
+  --gray-50: 0 0% 98%;
+  --gray-100: 0 0% 96.1%;
+  --gray-200: 0 0% 89.8%;
+  --gray-300: 0 0% 83.1%;
+  --gray-400: 0 0% 63.9%;
+  --gray-500: 0 0% 45.1%;
+  --gray-600: 0 0% 32.2%;
+  --gray-700: 0 0% 25.1%;
+  --gray-800: 0 0% 14.9%;
+  --gray-900: 0 0% 9%;
+
+  /* Semantic colors - Blue */
+  --blue-500: 217 91% 60%;
+  --blue-600: 221 83% 53%;
+
+  /* Semantic colors - Green */
+  --green-50: 138 76% 97%;
+  --green-100: 141 84% 93%;
+  --green-500: 142 71% 45%;
+  --green-600: 142 76% 36%;
+  --green-800: 143 64% 24%;
+
+  /* Semantic colors - Red */
+  --red-50: 0 86% 97%;
+  --red-400: 0 91% 71%;
+  --red-500: 0 84% 60%;
+  --red-600: 0 72% 51%;
+
+  /* Semantic colors - Yellow */
+  --yellow-100: 48 96% 89%;
+  --yellow-500: 45 93% 47%;
+
+  /* Gradient colors */
+  --gradient-from: 210 40% 98%;
+  --gradient-to: 210 40% 96.1%;
+
+  /* Card-specific tokens - Light theme defaults */
+  --card-choice-bg: 0 0% 9%;
+  --card-choice-text: 0 0% 98%;
+  --card-choice-border: 0 0% 0%;
+  --card-title: 0 0% 3.9%;
+  --card-content: 0 0% 45.1%;
+  --card-shadow: 0 0% 0%;
+  --card-overlay: 0 0% 100%;
+  --card-overlay-text: 0 0% 0%;
+  --card-end-badge-bg: 0 0% 96.1%;
+  --card-end-badge-text: 0 0% 9%;
+  --card-published-bg: 138 76% 93%;
+  --card-published-text: 142 76% 36%;
+  --card-node-bg: 0 0% 100%;
+  --card-node-border: 0 0% 89.8%;
+  --card-node-selected: 217 91% 60%;
+
+  /* Mood color CSS custom properties */
+  --mood-primary: 210 70% 50%;
+  --mood-secondary: 210 50% 60%;
+  --mood-muted: 210 20% 92%;
+  --mood-accent: 210 80% 55%;
+}
+
+.halloween {
+  /* Core theme variables - Dark theme: Pure black to dark gray gradient with purple accents */
+  --background: 0 0% 5%;             /* Near pure black background */
+  --foreground: 270 15% 95%;         /* Light purple-tinted white for main text */
+  --card: 270 15% 10%;               /* Very dark gray with purple tint for cards */
+  --card-foreground: 270 15% 95%;    /* Light purple-tinted text on cards */
+  --popover: 270 15% 10%;            /* Very dark gray with purple tint for popovers */
+  --popover-foreground: 270 15% 95%; /* Light purple-tinted text in popovers */
+  --primary: 270 70% 60%;            /* Vibrant purple for primary actions */
+  --primary-foreground: 0 0% 100%;   /* Pure white text on purple */
+  --secondary: 270 50% 40%;          /* Medium purple for secondary elements */
+  --secondary-foreground: 270 10% 98%; /* Light purple-tinted text on secondary */
+  --muted: 270 10% 15%;              /* Muted dark gray with purple hint */
+  --muted-foreground: 270 10% 70%;   /* Light purple-gray for muted text */
+  --accent: 270 70% 55%;             /* Purple accent for hover states */
+  --accent-foreground: 0 0% 100%;    /* White text on accent */
+  --destructive: 0 70% 55%;          /* Red for destructive actions */
+  --destructive-foreground: 0 0% 98%; /* White text on destructive */
+  --border: 270 40% 35%;             /* Purple borders for decorative styling */
+  --input: 270 15% 15%;              /* Dark gray with purple tint for inputs */
+  --ring: 270 70% 60%;               /* Purple focus rings */
+
+  /* Extended color palette - Slate scale (purple-tinted dark grays) */
+  --slate-50: 270 15% 95%;
+  --slate-100: 270 15% 90%;
+  --slate-200: 270 15% 80%;
+  --slate-300: 270 15% 65%;
+  --slate-400: 270 15% 50%;
+  --slate-500: 270 15% 35%;
+  --slate-600: 270 15% 25%;
+  --slate-700: 270 15% 15%;
+  --slate-800: 270 15% 10%;
+  --slate-900: 270 15% 5%;
+
+  /* Extended color palette - Gray scale (purple-tinted dark grays) */
+  --gray-50: 270 10% 95%;
+  --gray-100: 270 10% 90%;
+  --gray-200: 270 10% 80%;
+  --gray-300: 270 10% 65%;
+  --gray-400: 270 10% 50%;
+  --gray-500: 270 10% 35%;
+  --gray-600: 270 10% 25%;
+  --gray-700: 270 10% 15%;
+  --gray-800: 270 10% 10%;
+  --gray-900: 270 10% 5%;
+
+  /* Semantic colors - Blue (purple-blue for consistency) */
+  --blue-500: 260 70% 60%;
+  --blue-600: 260 75% 55%;
+
+  /* Semantic colors - Green (bright for visibility on dark) */
+  --green-50: 270 10% 15%;
+  --green-100: 270 10% 18%;
+  --green-500: 142 65% 50%;
+  --green-600: 142 70% 45%;
+  --green-800: 142 75% 35%;
+
+  /* Semantic colors - Red (bright for visibility) */
+  --red-50: 270 10% 15%;
+  --red-400: 0 75% 65%;
+  --red-500: 0 70% 55%;
+  --red-600: 0 75% 50%;
+
+  /* Semantic colors - Yellow (bright for visibility) */
+  --yellow-100: 270 10% 18%;
+  --yellow-500: 45 90% 60%;
+
+  /* Gradient colors - Pure black to dark purple-gray */
+  --gradient-from: 270 20% 5%;       /* Near-black with purple tint */
+  --gradient-to: 270 25% 15%;        /* Dark purple-gray */
+
+  /* Card-specific tokens - Halloween theme defaults */
+  --card-choice-bg: 270 70% 60%;
+  --card-choice-text: 0 0% 100%;
+  --card-choice-border: 270 50% 45%;
+  --card-title: 270 15% 95%;
+  --card-content: 270 10% 70%;
+  --card-shadow: 270 40% 35%;
+  --card-overlay: 0 0% 0%;
+  --card-overlay-text: 0 0% 100%;
+  --card-end-badge-bg: 270 10% 15%;
+  --card-end-badge-text: 270 10% 95%;
+  --card-published-bg: 142 40% 20%;
+  --card-published-text: 142 65% 60%;
+  --card-node-bg: 270 15% 12%;
+  --card-node-border: 270 40% 35%;
+  --card-node-selected: 270 70% 60%;
+}
+
+
+/*
+ * High Contrast Mode Styles
+ * WCAG AA compliant color overrides for improved accessibility
+ * Activated via .high-contrast class on html element
+ */
+
+/* Light theme high contrast overrides */
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 85%;
+  --muted-foreground: 0 0% 25%;
+  --accent: 220 100% 50%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 100% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --ring: 220 100% 50%;
+}
+
+/* Dark theme (halloween) high contrast overrides */
+.halloween.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 270 100% 75%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 270 80% 55%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 270 15% 20%;
+  --muted-foreground: 270 10% 85%;
+  --accent: 270 100% 70%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 100% 65%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 270 50% 60%;
+  --input: 270 20% 25%;
+  --ring: 270 100% 75%;
+}
+
+/* High contrast semantic colors - Light theme */
+.high-contrast {
+  --green-500: 142 100% 30%;
+  --green-600: 142 100% 25%;
+  --red-500: 0 100% 40%;
+  --red-600: 0 100% 35%;
+  --yellow-500: 45 100% 35%;
+  --blue-500: 217 100% 40%;
+  --blue-600: 221 100% 35%;
+
+  /* Card-specific high contrast tokens - Light theme */
+  --card-choice-bg: 220 100% 35%;
+  --card-choice-text: 0 0% 100%;
+  --card-choice-border: 220 100% 25%;
+  --card-title: 0 0% 0%;
+  --card-content: 0 0% 15%;
+  --card-shadow: 0 0% 0%;
+  --card-overlay: 0 0% 100%;
+  --card-overlay-text: 0 0% 0%;
+  --card-end-badge-bg: 0 0% 90%;
+  --card-end-badge-text: 0 0% 0%;
+  --card-published-bg: 142 100% 85%;
+  --card-published-text: 142 100% 20%;
+  --card-node-bg: 0 0% 100%;
+  --card-node-border: 0 0% 0%;
+  --card-node-selected: 217 100% 40%;
+}
+
+/* High contrast semantic colors - Dark theme */
+.halloween.high-contrast {
+  --green-500: 142 100% 60%;
+  --green-600: 142 100% 55%;
+  --red-500: 0 100% 60%;
+  --red-600: 0 100% 55%;
+  --yellow-500: 45 100% 50%;
+  --blue-500: 260 100% 70%;
+  --blue-600: 260 100% 65%;
+
+  /* Card-specific high contrast tokens - Dark theme */
+  --card-choice-bg: 270 100% 70%;
+  --card-choice-text: 0 0% 0%;
+  --card-choice-border: 270 100% 80%;
+  --card-title: 0 0% 100%;
+  --card-content: 270 5% 90%;
+  --card-shadow: 270 50% 60%;
+  --card-overlay: 0 0% 0%;
+  --card-overlay-text: 0 0% 100%;
+  --card-end-badge-bg: 270 15% 25%;
+  --card-end-badge-text: 0 0% 100%;
+  --card-published-bg: 142 80% 30%;
+  --card-published-text: 142 100% 75%;
+  --card-node-bg: 0 0% 0%;
+  --card-node-border: 270 60% 65%;
+  --card-node-selected: 270 100% 75%;
+}
+
+/* System high contrast mode detection */
+@media (prefers-contrast: more) {
+  :root:not([data-high-contrast="false"]) {
+    --foreground: 0 0% 0%;
+    --muted-foreground: 0 0% 25%;
+    --border: 0 0% 0%;
+  }
+}

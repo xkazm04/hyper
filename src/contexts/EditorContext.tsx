@@ -1,7 +1,16 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
 import { StoryStack, StoryCard, Choice, Character } from '@/lib/types'
+
+export interface EditorSnapshot {
+  storyCards: StoryCard[]
+  choices: Choice[]
+  characters: Character[]
+  currentCardId: string | null
+  currentCharacterId: string | null
+  collapsedNodes: Set<string>
+}
 
 interface EditorContextType {
   // Story data
@@ -13,6 +22,12 @@ interface EditorContextType {
   characters: Character[]
   currentCharacter: Character | null
   currentCharacterId: string | null
+
+  // Collapsed nodes state (for story graph)
+  collapsedNodes: Set<string>
+  toggleNodeCollapsed: (nodeId: string) => void
+  isNodeCollapsed: (nodeId: string) => boolean
+  setCollapsedNodes: (nodes: Set<string>) => void
 
   // Actions
   setStoryStack: (stack: StoryStack) => void
@@ -31,6 +46,10 @@ interface EditorContextType {
   updateCharacter: (characterId: string, updates: Partial<Character>) => void
   deleteCharacter: (characterId: string) => void
 
+  // Snapshot for undo/redo
+  getSnapshot: () => EditorSnapshot
+  applySnapshot: (snapshot: EditorSnapshot) => void
+
   // UI state
   isSaving: boolean
   setIsSaving: (saving: boolean) => void
@@ -38,17 +57,79 @@ interface EditorContextType {
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined)
 
+// Helper to get localStorage key for collapsed nodes
+const getCollapsedNodesKey = (stackId: string) => `hyper_collapsed_nodes_${stackId}`
+
 export function EditorProvider({ children }: { children: ReactNode }) {
-  const [storyStack, setStoryStack] = useState<StoryStack | null>(null)
+  const [storyStack, setStoryStackInternal] = useState<StoryStack | null>(null)
   const [storyCards, setStoryCards] = useState<StoryCard[]>([])
   const [currentCardId, setCurrentCardId] = useState<string | null>(null)
   const [choices, setChoices] = useState<Choice[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [currentCharacterId, setCurrentCharacterId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [collapsedNodes, setCollapsedNodesInternal] = useState<Set<string>>(new Set())
 
   const currentCard = storyCards.find(card => card.id === currentCardId) || null
   const currentCharacter = characters.find(char => char.id === currentCharacterId) || null
+
+  // Load collapsed nodes from localStorage when storyStack changes
+  const setStoryStack = useCallback((stack: StoryStack) => {
+    setStoryStackInternal(stack)
+    // Load collapsed nodes from localStorage
+    if (typeof window !== 'undefined' && stack?.id) {
+      try {
+        const stored = localStorage.getItem(getCollapsedNodesKey(stack.id))
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed)) {
+            setCollapsedNodesInternal(new Set(parsed))
+          }
+        } else {
+          setCollapsedNodesInternal(new Set())
+        }
+      } catch {
+        setCollapsedNodesInternal(new Set())
+      }
+    }
+  }, [])
+
+  // Persist collapsed nodes to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && storyStack?.id) {
+      try {
+        localStorage.setItem(
+          getCollapsedNodesKey(storyStack.id),
+          JSON.stringify(Array.from(collapsedNodes))
+        )
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  }, [collapsedNodes, storyStack?.id])
+
+  // Toggle collapsed state for a node
+  const toggleNodeCollapsed = useCallback((nodeId: string) => {
+    setCollapsedNodesInternal(prev => {
+      const next = new Set(prev)
+      if (next.has(nodeId)) {
+        next.delete(nodeId)
+      } else {
+        next.add(nodeId)
+      }
+      return next
+    })
+  }, [])
+
+  // Check if a node is collapsed
+  const isNodeCollapsed = useCallback((nodeId: string) => {
+    return collapsedNodes.has(nodeId)
+  }, [collapsedNodes])
+
+  // Set collapsed nodes directly
+  const setCollapsedNodes = useCallback((nodes: Set<string>) => {
+    setCollapsedNodesInternal(nodes)
+  }, [])
 
   const addCard = useCallback((card: StoryCard) => {
     setStoryCards(prev => [...prev, card])
@@ -104,6 +185,26 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
   }, [currentCharacterId])
 
+  const getSnapshot = useCallback((): EditorSnapshot => {
+    return {
+      storyCards,
+      choices,
+      characters,
+      currentCardId,
+      currentCharacterId,
+      collapsedNodes,
+    }
+  }, [storyCards, choices, characters, currentCardId, currentCharacterId, collapsedNodes])
+
+  const applySnapshot = useCallback((snapshot: EditorSnapshot) => {
+    setStoryCards(snapshot.storyCards)
+    setChoices(snapshot.choices)
+    setCharacters(snapshot.characters)
+    setCurrentCardId(snapshot.currentCardId)
+    setCurrentCharacterId(snapshot.currentCharacterId)
+    setCollapsedNodesInternal(snapshot.collapsedNodes)
+  }, [])
+
   return (
     <EditorContext.Provider
       value={{
@@ -115,6 +216,10 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         characters,
         currentCharacter,
         currentCharacterId,
+        collapsedNodes,
+        toggleNodeCollapsed,
+        isNodeCollapsed,
+        setCollapsedNodes,
         setStoryStack,
         setStoryCards,
         setCurrentCardId,
@@ -130,6 +235,8 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         addCharacter,
         updateCharacter,
         deleteCharacter,
+        getSnapshot,
+        applySnapshot,
         isSaving,
         setIsSaving,
       }}

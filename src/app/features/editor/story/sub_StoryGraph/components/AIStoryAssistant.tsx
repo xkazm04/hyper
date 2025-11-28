@@ -41,6 +41,9 @@ export function AIStoryAssistant() {
                         script: card.script || '',
                         imageUrl: card.imageUrl || null,
                         imagePrompt: card.imagePrompt || null,
+                        message: card.message || null,
+                        speaker: card.speaker || null,
+                        speakerType: card.speakerType || null,
                         orderIndex: card.orderIndex ?? index,
                         createdAt: card.createdAt || new Date().toISOString(),
                         updatedAt: card.updatedAt || new Date().toISOString()

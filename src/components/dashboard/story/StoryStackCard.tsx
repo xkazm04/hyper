@@ -22,17 +22,17 @@ export function StoryStackCard({ story, onDelete, index }: StoryStackCardProps) 
       whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
       whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
     >
-      <Card className="border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-150 relative group bg-card h-full touch-manipulation">
+      <Card className="border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-150 relative group bg-card h-full touch-manipulation animate-story-card-hover">
         <CardHeader className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-2">
             <Link href={`/editor/${story.id}`} className="flex-1 min-w-0">
               <CardTitle className="hover:text-blue-600 transition-colors text-lg sm:text-xl flex items-center gap-2">
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 animate-icon-wiggle" />
                 <span className="truncate">{story.name}</span>
               </CardTitle>
             </Link>
             {story.isPublished && (
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs bg-green-100 text-green-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border-2 border-green-600 shrink-0">
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs bg-green-100 text-green-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border-2 border-green-600 shrink-0 animate-badge-sparkle">
                 <Globe className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span className="hidden sm:inline">Published</span>
               </div>

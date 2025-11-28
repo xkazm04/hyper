@@ -1,0 +1,227 @@
+/**
+ * Halloween Background Decorations
+ * 
+ * This file contains background decoration styles for the Halloween theme enrichment.
+ * Effects include fog layers, dust particles, cobweb patterns, and vignette effects.
+ * All overlays use pointer-events: none to ensure interactivity is preserved.
+ * All effects include prefers-reduced-motion fallbacks.
+ * 
+ * Effects:
+ * 1. fog-layer - Drifting fog effect for canvas backgrounds
+ * 2. dust-particles - Floating dust particles animation
+ * 3. cobweb-pattern - Subtle cobweb overlay for sidebars
+ * 4. vignette - Edge darkening effect for main editor area
+ * 
+ * **Feature: halloween-theme-enrichment**
+ * **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5**
+ */
+
+/* ==========================================================================
+   1. Fog Layer Effect
+   Drifting fog effect for StoryGraph canvas
+   Applicable to: canvas, graph containers
+   Requirements: 3.1, 3.5
+   ========================================================================== */
+
+@keyframes fogLayerDrift {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateX(0) translateY(0);
+  }
+  25% {
+    opacity: 0.5;
+    transform: translateX(15px) translateY(-5px);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(25px) translateY(0);
+  }
+  75% {
+    opacity: 0.45;
+    transform: translateX(10px) translateY(5px);
+  }
+}
+
+.halloween .halloween-fog-layer {
+  position: relative;
+}
+
+.halloween .halloween-fog-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: 
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      hsl(270 20% 15% / 0.08) 20%,
+      hsl(270 20% 15% / 0.15) 50%,
+      hsl(270 20% 15% / 0.08) 80%,
+      transparent 100%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(270 20% 15% / 0.05) 30%,
+      hsl(270 20% 15% / 0.1) 50%,
+      hsl(270 20% 15% / 0.05) 70%,
+      transparent 100%
+    );
+  animation: fogLayerDrift 20s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   2. Dust Particles Effect
+   Floating dust particles for InfiniteCanvas
+   Applicable to: canvas containers
+   Requirements: 3.2, 3.5
+   ========================================================================== */
+
+@keyframes dustParticlesFloat {
+  0% {
+    background-position: 
+      0% 0%, 20% 80%, 40% 20%, 60% 60%, 80% 40%,
+      10% 50%, 30% 10%, 50% 90%, 70% 30%, 90% 70%;
+  }
+  50% {
+    background-position: 
+      5% 10%, 25% 70%, 45% 30%, 65% 50%, 85% 50%,
+      15% 40%, 35% 20%, 55% 80%, 75% 40%, 95% 60%;
+  }
+  100% {
+    background-position: 
+      0% 0%, 20% 80%, 40% 20%, 60% 60%, 80% 40%,
+      10% 50%, 30% 10%, 50% 90%, 70% 30%, 90% 70%;
+  }
+}
+
+.halloween .halloween-dust-particles {
+  position: relative;
+}
+
+.halloween .halloween-dust-particles::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, hsl(270 70% 80% / 0.4), transparent),
+    radial-gradient(1px 1px at 30% 60%, hsl(270 70% 80% / 0.3), transparent),
+    radial-gradient(1.5px 1.5px at 50% 10%, hsl(270 70% 80% / 0.35), transparent),
+    radial-gradient(1px 1px at 70% 40%, hsl(270 70% 80% / 0.3), transparent),
+    radial-gradient(1px 1px at 90% 80%, hsl(270 70% 80% / 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 20% 90%, hsl(270 70% 80% / 0.35), transparent),
+    radial-gradient(1px 1px at 40% 30%, hsl(270 70% 80% / 0.3), transparent),
+    radial-gradient(1px 1px at 60% 70%, hsl(270 70% 80% / 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 80% 15%, hsl(270 70% 80% / 0.35), transparent),
+    radial-gradient(1px 1px at 15% 55%, hsl(270 70% 80% / 0.3), transparent);
+  background-size: 100% 100%;
+  animation: dustParticlesFloat 30s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+/* ==========================================================================
+   3. Cobweb Pattern Effect
+   Subtle cobweb overlay for sidebars
+   Applicable to: sidebars, panels
+   Requirements: 3.3, 3.5
+   ========================================================================== */
+
+.halloween .halloween-cobweb {
+  position: relative;
+  overflow: hidden;
+}
+
+.halloween .halloween-cobweb::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    /* Radial web lines */
+    linear-gradient(45deg, transparent 48%, hsl(270 40% 50% / 0.12) 48%, hsl(270 40% 50% / 0.12) 52%, transparent 52%),
+    linear-gradient(135deg, transparent 48%, hsl(270 40% 50% / 0.1) 48%, hsl(270 40% 50% / 0.1) 52%, transparent 52%),
+    linear-gradient(90deg, transparent 48%, hsl(270 40% 50% / 0.08) 48%, hsl(270 40% 50% / 0.08) 52%, transparent 52%),
+    linear-gradient(0deg, transparent 48%, hsl(270 40% 50% / 0.08) 48%, hsl(270 40% 50% / 0.08) 52%, transparent 52%),
+    linear-gradient(22.5deg, transparent 48%, hsl(270 40% 50% / 0.06) 48%, hsl(270 40% 50% / 0.06) 52%, transparent 52%),
+    linear-gradient(67.5deg, transparent 48%, hsl(270 40% 50% / 0.06) 48%, hsl(270 40% 50% / 0.06) 52%, transparent 52%);
+  background-size: 30px 30px;
+  opacity: 0.5;
+  mask-image: radial-gradient(ellipse at top left, black 15%, transparent 60%);
+  -webkit-mask-image: radial-gradient(ellipse at top left, black 15%, transparent 60%);
+}
+
+/* Additional cobweb in bottom-right corner */
+.halloween .halloween-cobweb::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(225deg, transparent 48%, hsl(270 40% 50% / 0.1) 48%, hsl(270 40% 50% / 0.1) 52%, transparent 52%),
+    linear-gradient(315deg, transparent 48%, hsl(270 40% 50% / 0.08) 48%, hsl(270 40% 50% / 0.08) 52%, transparent 52%),
+    linear-gradient(270deg, transparent 48%, hsl(270 40% 50% / 0.06) 48%, hsl(270 40% 50% / 0.06) 52%, transparent 52%),
+    linear-gradient(180deg, transparent 48%, hsl(270 40% 50% / 0.06) 48%, hsl(270 40% 50% / 0.06) 52%, transparent 52%);
+  background-size: 25px 25px;
+  opacity: 0.4;
+  mask-image: radial-gradient(ellipse at bottom right, black 10%, transparent 55%);
+  -webkit-mask-image: radial-gradient(ellipse at bottom right, black 10%, transparent 55%);
+}
+
+/* ==========================================================================
+   4. Vignette Effect
+   Edge darkening effect for main editor area
+   Applicable to: main containers, editor layouts
+   Requirements: 3.4, 3.5
+   ========================================================================== */
+
+.halloween .halloween-vignette {
+  position: relative;
+}
+
+.halloween .halloween-vignette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 40%,
+    hsl(270 30% 8% / 0.15) 70%,
+    hsl(270 30% 5% / 0.35) 100%
+  );
+}
+
+/* ==========================================================================
+   Reduced Motion Fallbacks
+   Static alternatives for users who prefer reduced motion
+   Requirements: 3.5
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween .halloween-fog-layer::before {
+    animation: none;
+    opacity: 0.5;
+    transform: none;
+  }
+
+  .halloween .halloween-dust-particles::after {
+    animation: none;
+    opacity: 0.4;
+  }
+
+  /* Cobweb and vignette are static by design, no changes needed */
+}

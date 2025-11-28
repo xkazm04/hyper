@@ -1,223 +1,50 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { Node, Edge, Position, MarkerType } from 'reactflow'
-import dagre from 'dagre'
 import { useEditor } from '@/contexts/EditorContext'
 import { StoryNodeData } from '../components/StoryNode'
-import { Choice, StoryCard } from '@/lib/types'
-
-// Optimized node dimensions for large graphs (140px width nodes)
-const NODE_WIDTH = 160
-const NODE_HEIGHT = 95
-
-// Spacing optimized for decision trees with up to 3 branches
-// These values ensure readability even at 100+ nodes
-const RANK_SEPARATION = 250  // Horizontal spacing between depth levels (increased for clarity)
-const NODE_SEPARATION = 60   // Vertical spacing between sibling nodes (reduced, nodes are compact)
-const EDGE_SEPARATION = 25   // Spacing between parallel edges
-
-// Edge styling constants for visual hierarchy
-const EDGE_COLORS = {
-  branch1: { hue: 220, sat: 60, light: 50 }, // Blue - first choice
-  branch2: { hue: 160, sat: 50, light: 45 }, // Teal - second choice
-  branch3: { hue: 280, sat: 50, light: 55 }, // Purple - third choice
-  single: { hue: 210, sat: 30, light: 55 },  // Subtle blue-gray for single paths
-}
-
-interface CardAnalysis {
-  orphanedCards: Set<string>
-  deadEndCards: Set<string>
-  incompleteCards: Set<string>
-  choiceCount: Map<string, number>
-  depth: Map<string, number>
-}
+import { Choice } from '@/lib/types'
+import {
+  createHierarchicalLayout,
+  createIncrementalLayout,
+  getEdgeColor,
+  CardAnalysis,
+  NodePosition,
+} from './useGraphLayout'
+import { analyzeCards } from './useGraphOperations'
+import { useHiddenNodes } from './useGraphSelection'
+import {
+  GraphSnapshot,
+  GraphDiff,
+  createGraphSnapshot,
+  computeGraphDiff,
+  getNodesNeedingLayout,
+} from './useGraphDiff'
 
 /**
- * Analyzes story cards for status indicators
+ * Cache for preserving layout positions across renders
  */
-function analyzeCards(
-  storyCards: StoryCard[],
-  choices: Choice[],
-  firstCardId: string | null
-): CardAnalysis {
-  const hasIncomingLinks = new Set<string>()
-  const hasOutgoingChoices = new Set<string>()
-  const choiceCount = new Map<string, number>()
-  const depth = new Map<string, number>()
-
-  // Count choices per card and track connections
-  choices.forEach(choice => {
-    if (choice.targetCardId) {
-      hasIncomingLinks.add(choice.targetCardId)
-    }
-    hasOutgoingChoices.add(choice.storyCardId)
-    choiceCount.set(
-      choice.storyCardId,
-      (choiceCount.get(choice.storyCardId) || 0) + 1
-    )
-  })
-
-  // First card is always reachable
-  if (firstCardId) {
-    hasIncomingLinks.add(firstCardId)
-  }
-
-  // Calculate depth from first card using BFS
-  if (firstCardId) {
-    const queue: Array<{ id: string; level: number }> = [{ id: firstCardId, level: 0 }]
-    const visited = new Set<string>()
-
-    while (queue.length > 0) {
-      const { id, level } = queue.shift()!
-      if (visited.has(id)) continue
-      visited.add(id)
-      depth.set(id, level)
-
-      // Find all choices from this card
-      choices
-        .filter(c => c.storyCardId === id && c.targetCardId)
-        .forEach(c => {
-          if (!visited.has(c.targetCardId)) {
-            queue.push({ id: c.targetCardId, level: level + 1 })
-          }
-        })
-    }
-  }
-
-  // Identify incomplete cards (missing content, image, or choices)
-  const incompleteCards = new Set<string>()
-  storyCards.forEach(card => {
-    const hasContent = card.content && card.content.trim().length > 0
-    const hasImage = !!card.imageUrl
-    const hasChoices = hasOutgoingChoices.has(card.id)
-    const hasTitle = card.title && card.title.trim().length > 0 && card.title !== 'Untitled Card'
-
-    if (!hasContent || !hasImage || !hasTitle) {
-      incompleteCards.add(card.id)
-    }
-  })
-
-  return {
-    orphanedCards: new Set(storyCards.filter(c => !hasIncomingLinks.has(c.id)).map(c => c.id)),
-    deadEndCards: new Set(storyCards.filter(c => !hasOutgoingChoices.has(c.id)).map(c => c.id)),
-    incompleteCards,
-    choiceCount,
-    depth,
-  }
+interface LayoutCache {
+  snapshot: GraphSnapshot | null
+  positions: Map<string, NodePosition>
 }
 
 /**
- * Creates a hierarchical layout optimized for decision trees with up to 3 branches
+ * Main hook for story graph data with incremental layout optimization
  *
- * Layout strategy for 100+ nodes:
- * - Left-to-right flow (chronological reading)
- * - Depth-based ranking to ensure proper tree structure
- * - Vertical fan-out for branches at angles that remain readable
- * - Increased spacing at deeper levels to prevent overlap
+ * Features:
+ * - Graph diff detection to identify changed nodes/edges
+ * - Incremental layout recalculation for affected subtrees only
+ * - Position preservation for unchanged nodes
+ * - Minimal React Flow state updates
  */
-function createHierarchicalLayout(
-  storyCards: StoryCard[],
-  choices: Choice[],
-  analysis: CardAnalysis
-): { nodePositions: Map<string, { x: number; y: number }> } {
-  const g = new dagre.graphlib.Graph()
-
-  // Calculate max depth for adaptive spacing
-  const maxDepth = Math.max(...Array.from(analysis.depth.values()), 0)
-
-  // Configure for left-to-right decision tree layout
-  // Use tighter vertical spacing but wider horizontal for readability
-  g.setGraph({
-    rankdir: 'LR',           // Left to right chronological flow
-    align: 'UL',             // Upper-left alignment - keeps branches predictable
-    ranksep: RANK_SEPARATION,
-    nodesep: NODE_SEPARATION,
-    edgesep: EDGE_SEPARATION,
-    marginx: 80,
-    marginy: 80,
-    ranker: 'tight-tree',    // Better for tree structures
-  })
-
-  g.setDefaultEdgeLabel(() => ({}))
-
-  // Add all nodes with depth-aware sizing
-  storyCards.forEach(card => {
-    const depth = analysis.depth.get(card.id) ?? 999
-    g.setNode(card.id, {
-      width: NODE_WIDTH,
-      height: NODE_HEIGHT,
-      rank: depth,
-    })
-  })
-
-  // Group edges by source for branch ordering
-  const edgesBySource = new Map<string, Choice[]>()
-  choices
-    .filter(choice => choice.targetCardId && storyCards.find(c => c.id === choice.targetCardId))
-    .forEach(choice => {
-      const existing = edgesBySource.get(choice.storyCardId) || []
-      existing.push(choice)
-      edgesBySource.set(choice.storyCardId, existing)
-    })
-
-  // Add edges sorted by orderIndex for consistent vertical ordering
-  // Weight edges to encourage proper branch distribution
-  edgesBySource.forEach((choiceList, sourceId) => {
-    const sortedChoices = choiceList.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-    const branchCount = sortedChoices.length
-
-    sortedChoices.forEach((choice, index) => {
-      // Adjust weights to spread branches vertically
-      // First choice goes up, middle stays center, last goes down
-      let weight = 1
-      if (branchCount > 1) {
-        // Higher weight = tighter to parent
-        weight = branchCount === 2
-          ? (index === 0 ? 1.5 : 0.5)
-          : (index === 0 ? 2 : index === branchCount - 1 ? 0.5 : 1)
-      }
-
-      g.setEdge(sourceId, choice.targetCardId, {
-        weight,
-        minlen: 1,
-        labelpos: 'c',
-      })
-    })
-  })
-
-  // Calculate layout
-  dagre.layout(g)
-
-  // Extract positions
-  const nodePositions = new Map<string, { x: number; y: number }>()
-  storyCards.forEach(card => {
-    const nodeWithPosition = g.node(card.id)
-    if (nodeWithPosition) {
-      nodePositions.set(card.id, {
-        x: nodeWithPosition.x - NODE_WIDTH / 2,
-        y: nodeWithPosition.y - NODE_HEIGHT / 2,
-      })
-    }
-  })
-
-  return { nodePositions }
-}
-
-/**
- * Get edge color based on branch index for visual distinction
- */
-function getEdgeColor(branchIndex: number, totalBranches: number): string {
-  if (totalBranches === 1) {
-    const { hue, sat, light } = EDGE_COLORS.single
-    return `hsl(${hue}, ${sat}%, ${light}%)`
-  }
-
-  const colors = [EDGE_COLORS.branch1, EDGE_COLORS.branch2, EDGE_COLORS.branch3]
-  const color = colors[Math.min(branchIndex, colors.length - 1)]
-  return `hsl(${color.hue}, ${color.sat}%, ${color.light}%)`
-}
-
 export function useStoryGraphData() {
-  const { storyCards, choices, currentCardId, storyStack, characters } = useEditor()
+  const { storyCards, choices, currentCardId, storyStack, characters, collapsedNodes } = useEditor()
+
+  // Cache for layout positions and previous snapshot
+  const layoutCacheRef = useRef<LayoutCache>({
+    snapshot: null,
+    positions: new Map(),
+  })
 
   // Memoized analysis
   const cardAnalysis = useMemo(() =>
@@ -225,17 +52,66 @@ export function useStoryGraphData() {
     [storyCards, choices, storyStack?.firstCardId]
   )
 
-  // Layout and node/edge generation
-  const { nodes, edges } = useMemo(() => {
+  // Hidden nodes management
+  const { hiddenNodes, hiddenDescendantCount } = useHiddenNodes(
+    collapsedNodes,
+    cardAnalysis.childrenMap
+  )
+
+  // Create current graph snapshot for diffing
+  const currentSnapshot = useMemo(() =>
+    createGraphSnapshot(storyCards, choices, storyStack?.firstCardId ?? null),
+    [storyCards, choices, storyStack?.firstCardId]
+  )
+
+  // Compute graph diff from previous state
+  const graphDiff = useMemo((): GraphDiff => {
+    return computeGraphDiff(layoutCacheRef.current.snapshot, currentSnapshot)
+  }, [currentSnapshot])
+
+  // Determine which nodes need layout recalculation
+  const nodesNeedingLayout = useMemo(() =>
+    getNodesNeedingLayout(graphDiff, cardAnalysis.childrenMap),
+    [graphDiff, cardAnalysis.childrenMap]
+  )
+
+  // Layout and node/edge generation with incremental optimization
+  const { nodes, edges, nodePositions } = useMemo(() => {
     if (storyCards.length === 0) {
-      return { nodes: [], edges: [] }
+      return { nodes: [], edges: [], nodePositions: new Map<string, NodePosition>() }
     }
 
-    const { nodePositions } = createHierarchicalLayout(storyCards, choices, cardAnalysis)
+    // Filter out hidden nodes (descendants of collapsed nodes)
+    const visibleCards = storyCards.filter(card => !hiddenNodes.has(card.id))
 
-    // Create React Flow Nodes
-    const layoutNodes: Node<StoryNodeData>[] = storyCards.map(card => {
-      const position = nodePositions.get(card.id) || { x: 0, y: 0 }
+    // Filter choices to only include those between visible nodes
+    const visibleChoices = choices.filter(choice =>
+      !hiddenNodes.has(choice.storyCardId) &&
+      (!choice.targetCardId || !hiddenNodes.has(choice.targetCardId))
+    )
+
+    // Calculate layout - use incremental if possible
+    let computedPositions: Map<string, NodePosition>
+
+    if (graphDiff.requiresFullLayout || layoutCacheRef.current.positions.size === 0) {
+      // Full layout required
+      const { nodePositions: fullPositions } = createHierarchicalLayout(visibleCards, visibleChoices, cardAnalysis)
+      computedPositions = fullPositions
+    } else {
+      // Incremental layout - only recalculate affected subtrees
+      const { nodePositions: incrementalPositions } = createIncrementalLayout(
+        visibleCards,
+        visibleChoices,
+        cardAnalysis,
+        layoutCacheRef.current.positions,
+        nodesNeedingLayout
+      )
+      computedPositions = incrementalPositions
+    }
+
+    // Create React Flow Nodes with minimal updates
+    const layoutNodes: Node<StoryNodeData>[] = visibleCards.map(card => {
+      const position = computedPositions.get(card.id) || { x: 0, y: 0 }
       const isOrphaned = cardAnalysis.orphanedCards.has(card.id)
       const isDeadEnd = cardAnalysis.deadEndCards.has(card.id)
       const isIncomplete = cardAnalysis.incompleteCards.has(card.id)
@@ -243,6 +119,8 @@ export function useStoryGraphData() {
       const isFirst = card.id === storyStack?.firstCardId
       const choiceCount = cardAnalysis.choiceCount.get(card.id) || 0
       const nodeDepth = cardAnalysis.depth.get(card.id) ?? -1
+      const isCollapsed = collapsedNodes.has(card.id)
+      const hiddenCount = hiddenDescendantCount.get(card.id) || 0
 
       // Determine characters present in card content
       const presentCharacters = characters
@@ -274,14 +152,16 @@ export function useStoryGraphData() {
           choiceCount,
           characters: presentCharacters,
           depth: nodeDepth,
+          isCollapsed,
+          hiddenDescendantCount: hiddenCount,
         },
       }
     })
 
-    // Group choices by source for edge styling
+    // Group choices by source for edge styling (only visible nodes)
     const choicesBySource = new Map<string, Choice[]>()
-    choices.forEach(choice => {
-      if (choice.targetCardId && storyCards.find(c => c.id === choice.targetCardId)) {
+    visibleChoices.forEach(choice => {
+      if (choice.targetCardId && visibleCards.find(c => c.id === choice.targetCardId)) {
         const existing = choicesBySource.get(choice.storyCardId) || []
         existing.push(choice)
         choicesBySource.set(choice.storyCardId, existing)
@@ -297,9 +177,6 @@ export function useStoryGraphData() {
 
       sortedChoices.forEach((choice, index) => {
         const edgeColor = getEdgeColor(index, totalChoices)
-
-        // Determine edge styling based on branch count
-        // Single paths: subtle, multi-branch: distinct colors
         const strokeWidth = totalChoices > 1 ? 2.5 : 2
         const opacity = totalChoices > 1 ? 1 : 0.8
 
@@ -309,7 +186,6 @@ export function useStoryGraphData() {
           target: choice.targetCardId,
           type: 'smoothstep',
           animated: false,
-          // Custom path options for better angles
           pathOptions: {
             borderRadius: 12,
             offset: totalChoices > 1 ? (index - (totalChoices - 1) / 2) * 8 : 0,
@@ -325,7 +201,6 @@ export function useStoryGraphData() {
             width: 16,
             height: 16,
           },
-          // Show labels only when there are multiple choices (decision points)
           label: totalChoices > 1 ? choice.label : undefined,
           labelStyle: {
             fill: 'hsl(var(--foreground))',
@@ -339,14 +214,34 @@ export function useStoryGraphData() {
           },
           labelBgPadding: [6, 4] as [number, number],
           labelBgBorderRadius: 4,
-          // z-index for layering: selected edges on top
           zIndex: choice.storyCardId === currentCardId ? 100 : 0,
         })
       })
     })
 
-    return { nodes: layoutNodes, edges: layoutEdges }
-  }, [storyCards, choices, cardAnalysis, currentCardId, storyStack?.firstCardId, characters])
+    return { nodes: layoutNodes, edges: layoutEdges, nodePositions: computedPositions }
+  }, [
+    storyCards,
+    choices,
+    cardAnalysis,
+    currentCardId,
+    storyStack?.firstCardId,
+    characters,
+    hiddenNodes,
+    collapsedNodes,
+    hiddenDescendantCount,
+    graphDiff.requiresFullLayout,
+    nodesNeedingLayout,
+  ])
 
-  return { nodes, edges, analysis: cardAnalysis }
+  // Update cache after successful layout calculation
+  // This runs as a side effect after the memoized values are computed
+  useMemo(() => {
+    layoutCacheRef.current = {
+      snapshot: currentSnapshot,
+      positions: nodePositions,
+    }
+  }, [currentSnapshot, nodePositions])
+
+  return { nodes, edges, analysis: cardAnalysis, hiddenNodes }
 }
