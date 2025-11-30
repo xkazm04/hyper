@@ -96,6 +96,7 @@ export function mapStoryCard(data: any): StoryCard {
     script: data.script || '',
     imageUrl: data.image_url,
     imagePrompt: data.image_prompt,
+    imageDescription: data.image_description || null,
     message: data.message || null,
     speaker: data.speaker || null,
     speakerType: data.speaker_type || null,

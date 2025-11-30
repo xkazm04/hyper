@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState, lazy, Suspense } from 'react'
 import ReactFlow, { Controls, MiniMap, ConnectionLineType, Node, Edge, Background, BackgroundVariant } from 'reactflow'
 import 'reactflow/dist/style.css'
 import StoryNode, { StoryNodeData } from './StoryNode'
@@ -14,6 +14,15 @@ import { SuggestedCard } from '@/lib/types/ai-canvas'
 import { DefaultBackground, useGraphNodes } from './sub_GraphCanvas'
 import { useEditor } from '@/contexts/EditorContext'
 import { playDropChime, warmupAudio } from '../lib/dropChime'
+import { usePerformanceOptional } from '@/contexts/PerformanceContext'
+
+// Lazy load decorative components for performance
+const FogOverlay = lazy(() => import('./decorative/FogOverlay'))
+const DustParticles = lazy(() => import('./decorative/DustParticles'))
+const CauldronBubbles = lazy(() => import('./decorative/CauldronBubbles'))
+
+// Simple fallback for lazy loaded components
+const DecorativeFallback = () => <div />
 
 export interface GraphCanvasProps {
   initialNodes: Node<StoryNodeData>[]
@@ -63,6 +72,9 @@ export function GraphCanvas({
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<Set<string>>(new Set())
 
   const { storyStack, deleteCard, setCurrentCardId } = useEditor()
+
+  // Performance context for controlling decorative animations
+  const { showHeavyAnimations, isLowPower } = usePerformanceOptional()
 
   const { nodes, edges, onNodesChange, onEdgesChange, nodeColor } = useGraphNodes({
     initialNodes, initialEdges, suggestions, hoveredSuggestionId, acceptSuggestion, declineSuggestion, setHoveredSuggestionId,
@@ -214,13 +226,24 @@ export function GraphCanvas({
   // Get container rect for preview positioning
   const containerRect = graphContainerRef.current?.getBoundingClientRect() ?? null
 
+  // Determine if we should show CSS-based effects (removed when using canvas-based)
+  const showCssEffects = isHalloween && !showHeavyAnimations
+
   return (
-    <div ref={graphContainerRef} className={cn("h-full w-full relative bg-background overflow-hidden font-sans", isHalloween && "halloween-cauldron-bubble halloween-fog-layer")} data-testid="story-graph-container" role="tree" aria-label="Story map navigation. Use arrow keys to navigate between connected scenes, Page Up/Down to jump between levels." aria-activedescendant={currentCardId ? `story-node-${currentCardId}` : undefined}>
+    <div ref={graphContainerRef} className={cn("h-full w-full relative bg-background overflow-hidden font-sans", showCssEffects && "halloween-cauldron-bubble halloween-fog-layer")} data-testid="story-graph-container" role="tree" aria-label="Story map navigation. Use arrow keys to navigate between connected scenes, Page Up/Down to jump between levels." aria-activedescendant={currentCardId ? `story-node-${currentCardId}` : undefined}>
       {isHalloween ? <HalloweenMapBackground /> : <DefaultBackground />}
 
+      {/* Performance-optimized decorative layers - only render when Halloween theme is active */}
+      {isHalloween && showHeavyAnimations && (
+        <Suspense fallback={<DecorativeFallback />}>
+          <FogOverlay visible={true} />
+          <DustParticles visible={true} />
+          <CauldronBubbles visible={true} />
+        </Suspense>
+      )}
 
-      {/* Node drop confetti effects */}
-      {confettiEffects.map(effect => (
+      {/* Node drop confetti effects - respect performance settings */}
+      {showHeavyAnimations && confettiEffects.map(effect => (
         <NodeDropConfetti
           key={effect.id}
           x={effect.x}

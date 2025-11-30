@@ -4,9 +4,13 @@
  * ChoiceEditor Component
  *
  * Unified component for editing story choices.
- * Supports two modes:
- * - inline: Header-only mode for embedding in larger editors (shows add button, AI suggestions)
+ * Supports three modes:
+ * - inline: Header-only mode for embedding in larger editors (shows add button)
  * - standalone: Full CRUD mode with complete choice list and state management
+ * - integrated: Full CRUD mode using useChoicesSection hook
+ *
+ * Note: AI suggestion generation has been consolidated into the AICompanionBottomPanel's
+ * "Next Steps" feature which creates both new cards AND choices in one operation.
  */
 
 import { useState, useEffect } from 'react'
@@ -22,24 +26,13 @@ import { ChoiceTargets } from './components/ChoiceTargets'
 import { ChoiceConditions } from './components/ChoiceConditions'
 import { useChoicesSection } from './hooks/useChoicesSection'
 
-interface GeneratedChoice {
-  label: string
-  description: string
-}
-
 // Props for inline mode (header-only)
 interface InlineChoiceEditorProps {
   mode: 'inline'
   choiceCount: number
   isSaving: boolean
-  isGenerating: boolean
   canAddChoices: boolean
-  hasPredecessors: boolean
-  hasCurrentCard: boolean
-  suggestedChoices: GeneratedChoice[]
   onAddChoice: () => void
-  onGenerateChoices: () => void
-  onApplySuggestion: (suggestion: GeneratedChoice) => void
 }
 
 // Props for standalone mode (full CRUD)
@@ -67,14 +60,8 @@ export function ChoiceEditor(props: ChoiceEditorProps) {
       <ChoiceEditorHeader
         choiceCount={props.choiceCount}
         isSaving={props.isSaving}
-        isGenerating={props.isGenerating}
         canAddChoices={props.canAddChoices}
-        hasPredecessors={props.hasPredecessors}
-        hasCurrentCard={props.hasCurrentCard}
-        suggestedChoices={props.suggestedChoices}
         onAddChoice={props.onAddChoice}
-        onGenerateChoices={props.onGenerateChoices}
-        onApplySuggestion={props.onApplySuggestion}
       />
     )
   }
@@ -119,14 +106,8 @@ function IntegratedChoiceEditor({
       <ChoiceEditorHeader
         choiceCount={choices.length}
         isSaving={isSaving}
-        isGenerating={isGenerating}
         canAddChoices={canAddChoices}
-        hasPredecessors={hasPredecessors}
-        hasCurrentCard={!!currentCard}
-        suggestedChoices={suggestedChoices}
         onAddChoice={handleAddChoice}
-        onGenerateChoices={handleGenerateChoices}
-        onApplySuggestion={handleApplySuggestion}
       />
 
       <ChoiceList

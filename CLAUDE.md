@@ -195,16 +195,18 @@ Protected routes use middleware (`src/middleware.ts`) to check Supabase session.
 - `character_cards` - Character visual representations
 - `profiles` - User profiles (auto-created on signup)
 
-**Migrations** are in `supabase/migrations/`:
-1. `00001_initial_schema.sql` - Profiles, auth triggers
-2. `00002_stacks_and_cards.sql` - Core story tables
-3. `00003_publishing.sql` - Slug, view counts
-4. `00004_marketplace_packages.sql` - (Optional) Marketplace
-5. `00005_stack_embeddings.sql` - (Optional) AI recommendations
-6. `00006_nested_stacks.sql` - (Optional) Composable stacks
-7. `00007_deployments.sql` - (Optional) Vercel/Netlify deploys
-8. `00015_character_cards.sql` - Character cards system
-9. `00016_shared_story_bundles.sql` - Shared story bundles
+**Migrations** are in `supabase/migrations/` (run in order):
+- `00001_initial_schema.sql` - Profiles, auth triggers
+- `00002_stacks_and_cards.sql` - Core story tables
+- `00003_publishing.sql` - Slug, view counts
+- `00004_marketplace_packages.sql` - (Optional) Marketplace
+- `00005_stack_embeddings.sql` - (Optional) AI recommendations
+- `00006_nested_stacks.sql` - (Optional) Composable stacks
+- `00007_deployments.sql` - (Optional) Vercel/Netlify deploys
+- `00015_character_cards.sql` - Character cards system
+- `00016_shared_story_bundles.sql` - Shared story bundles
+
+**Note**: Migration numbers 00008-00014 were removed during development. Run migrations by number order.
 
 All tables use Row Level Security (RLS). Users can only access their own data unless stories are published.
 
@@ -388,3 +390,7 @@ import { StoryService } from '@/lib/services/story'
 - Respects `prefers-reduced-motion`
 - All color combinations meet WCAG 2.1 AA standards
 - Detailed specs in `.kiro/specs/theme-switching/`
+
+## Windows Development Notes
+
+This project is developed on Windows. Path separators work correctly with TypeScript/Next.js. When running shell commands, use PowerShell or Git Bash. The `rm -rf .next` cleanup command from troubleshooting docs translates to `Remove-Item -Recurse -Force .next` in PowerShell.

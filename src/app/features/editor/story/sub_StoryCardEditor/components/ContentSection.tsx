@@ -5,7 +5,7 @@ import { StoryCard } from '@/lib/types'
 import { ContentEditor } from './sub_ContentSection/ContentEditor'
 import { ContentToolbar } from './sub_ContentSection/ContentToolbar'
 import { SceneSketchPanel } from './sub_ContentSection/SceneSketchPanel'
-import { DecisionsPanel } from './sub_ContentSection/DecisionsPanel'
+import { ChoiceEditor } from '../../sub_ChoiceEditor'
 import { useContentSection } from './sub_ContentSection/useContentSection'
 import { updateCard } from '../lib/cardApi'
 import { useEditor } from '@/contexts/EditorContext'
@@ -23,7 +23,7 @@ interface ContentSectionProps {
 }
 
 export function ContentSection({
-  cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, currentCard,
+  cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, availableCards, currentCard,
 }: ContentSectionProps) {
   const { updateCard: updateCardContext } = useEditor()
   const { success, error: showError } = useToast()
@@ -111,11 +111,13 @@ export function ContentSection({
           onSpeakerBlur={saveSpeaker}
         />
 
-        {/* Decisions Panel - Player choices for this card */}
-        <DecisionsPanel
-          cardId={cardId}
+        {/* Choices - Player decisions for this card */}
+        <ChoiceEditor
+          mode="integrated"
           storyStackId={storyStackId}
-          disabled={isSaving || isGenerating}
+          cardId={cardId}
+          availableCards={availableCards || []}
+          currentCard={currentCard}
         />
       </div>
 

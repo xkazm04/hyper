@@ -4,14 +4,11 @@ import { useMemo } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { FileText, BookOpen, User, Cpu } from 'lucide-react'
 import Image from 'next/image'
-import { useCardContrastRef } from '@/app/features/accessibility'
 import { cn } from '@/lib/utils'
-import { extractPreviewTheme, themeToCSS, DEFAULT_PREVIEW_THEME } from '@/lib/utils/previewTheme'
+import { extractPreviewTheme, themeToCSS } from '@/lib/utils/previewTheme'
 
 export default function CardPreview() {
   const { currentCard, storyStack, choices } = useEditor()
-  // Use card contrast ref for automatic high contrast token application
-  const cardRef = useCardContrastRef<HTMLDivElement>()
 
   // Extract preview theme from stack's art style
   const previewTheme = useMemo(() => {
@@ -117,7 +114,6 @@ export default function CardPreview() {
 
         {/* Card Frame - 1:1 ratio with theme styling */}
         <div
-          ref={cardRef}
           className={cn(
             "relative bg-card overflow-hidden aspect-square",
             getShadowClass()

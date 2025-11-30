@@ -168,10 +168,12 @@ export default function StoryGraph() {
         isVisible={isDiagnosticsVisible}
         onToggle={toggleDiagnosticsVisibility}
       />
-      <BranchNavigator
-        position="bottom-left"
-        onCardClick={setCurrentCardId}
-      />
+      {/* BranchNavigator - positioned at left, vertically centered to avoid AI Companion at bottom */}
+      <Panel position="top-left" className="mt-24">
+        <BranchNavigator
+          onCardClick={setCurrentCardId}
+        />
+      </Panel>
     </GraphCanvas>
   )
 }

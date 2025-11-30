@@ -4,10 +4,10 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import { ToasterProvider } from "@/components/ui/ToasterProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { PerformanceProvider } from "@/contexts/PerformanceContext";
 import { ThemeLayerProvider, HalloweenOverlay } from "@/app/features/theme-layer";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
-import { HighContrastWrapper } from "@/app/features/accessibility";
 import { SkipLinkWrapper } from "@/components/ui/SkipLinkWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -29,18 +29,18 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <QueryProvider>
           <ThemeProvider>
-            <ThemeLayerProvider>
-              <HighContrastWrapper>
-                <AuthProvider>
-                  <ToasterProvider>
-                    <HalloweenOverlay />
-                    <main id="main-content" role="main">
-                      {children}
-                    </main>
-                  </ToasterProvider>
-                </AuthProvider>
-              </HighContrastWrapper>
-            </ThemeLayerProvider>
+            <PerformanceProvider>
+              <ThemeLayerProvider>
+                  <AuthProvider>
+                    <ToasterProvider>
+                      <HalloweenOverlay />
+                      <main id="main-content" role="main">
+                        {children}
+                      </main>
+                    </ToasterProvider>
+                  </AuthProvider>
+              </ThemeLayerProvider>
+            </PerformanceProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>

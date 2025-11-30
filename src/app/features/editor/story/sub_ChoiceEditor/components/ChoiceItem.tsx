@@ -77,7 +77,7 @@ export function ChoiceItem({
               onBlur={() => onLabelBlur(choice.id)}
               onFocus={() => onFocus(choice.id)}
               placeholder="e.g., Go north, Fight the dragon, Open the door..."
-              className="border-2 border-border focus:border-primary
+              className="border-0 bg-muted/50 focus:bg-background focus:ring-0 focus:outline-none
                          shadow-[inset_1px_1px_2px_rgba(0,0,0,0.05)] halloween-candle-flicker-focus"
               disabled={isSaving}
               data-testid={`choice-label-input-${choice.id}`}
@@ -95,12 +95,12 @@ export function ChoiceItem({
               onValueChange={(value) => onTargetChange(choice.id, value)}
               disabled={isSaving}
             >
-              <SelectTrigger className="border-2 border-border" data-testid={`choice-target-select-${choice.id}`}>
+              <SelectTrigger className="border-0 bg-muted/50 focus:ring-0" data-testid={`choice-target-select-${choice.id}`}>
                 <SelectValue>
                   {getTargetCardTitle(choice.targetCardId)}
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-card border-2 border-border shadow-lg">
                 {otherCards.map(card => (
                   <SelectItem key={card.id} value={card.id} data-testid={`choice-target-option-${card.id}`}>
                     {card.title || 'Untitled Card'}

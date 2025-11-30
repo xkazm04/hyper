@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { Panel } from 'reactflow'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useEditor } from '@/contexts/EditorContext'
@@ -19,8 +18,6 @@ import {
 } from 'lucide-react'
 
 export interface BranchNavigatorProps {
-  /** Position of the panel */
-  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   /** Callback when a card in the path is clicked */
   onCardClick?: (cardId: string) => void
   /** Callback when path order changes via drag */
@@ -37,7 +34,6 @@ export interface BranchNavigatorProps {
  * - Real-time updates as the graph changes
  */
 export function BranchNavigator({
-  position = 'bottom-left',
   onCardClick,
   onReorderPath
 }: BranchNavigatorProps) {
@@ -102,38 +98,35 @@ export function BranchNavigator({
 
   if (isMinimized) {
     return (
-      <Panel position={position} className="pointer-events-auto">
-        <button
-          onClick={() => setIsMinimized(false)}
-          className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-lg border-2 shadow-lg transition-all',
-            'hover:scale-105 active:scale-95',
-            isHalloween
-              ? 'bg-purple-900/90 border-orange-500/30 text-orange-100 hover:border-orange-500/50'
-              : 'bg-card/95 border-border text-foreground hover:border-primary/50'
-          )}
-          data-testid="branch-navigator-expand-btn"
-          aria-label="Expand branch navigator"
-        >
-          <Route className="w-4 h-4" />
-          <span className="text-xs font-medium">Branch Navigator</span>
-          <Eye className="w-3 h-3 opacity-60" />
-        </button>
-      </Panel>
+      <button
+        onClick={() => setIsMinimized(false)}
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg border-2 shadow-lg transition-all pointer-events-auto',
+          'hover:scale-105 active:scale-95',
+          isHalloween
+            ? 'bg-purple-900/90 border-orange-500/30 text-orange-100 hover:border-orange-500/50'
+            : 'bg-card/95 border-border text-foreground hover:border-primary/50'
+        )}
+        data-testid="branch-navigator-expand-btn"
+        aria-label="Expand branch navigator"
+      >
+        <Route className="w-4 h-4" />
+        <span className="text-xs font-medium">Branch Navigator</span>
+        <Eye className="w-3 h-3 opacity-60" />
+      </button>
     )
   }
 
   return (
-    <Panel position={position} className="pointer-events-auto">
-      <div
-        className={cn(
-          'w-72 rounded-xl border-2 shadow-xl overflow-hidden transition-all',
-          isHalloween
-            ? 'bg-card/95 border-orange-500/30 backdrop-blur-sm'
-            : 'bg-card border-border backdrop-blur-sm'
-        )}
-        data-testid="branch-navigator-panel"
-      >
+    <div
+      className={cn(
+        'w-72 rounded-xl border-2 shadow-xl overflow-hidden transition-all pointer-events-auto',
+        isHalloween
+          ? 'bg-card/95 border-orange-500/30 backdrop-blur-sm'
+          : 'bg-card border-border backdrop-blur-sm'
+      )}
+      data-testid="branch-navigator-panel"
+    >
         {/* Header */}
         <div
           className={cn(
@@ -290,7 +283,6 @@ export function BranchNavigator({
           )}
         </div>
       </div>
-    </Panel>
   )
 }
 

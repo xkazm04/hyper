@@ -64,8 +64,8 @@ const NodeDropConfetti = memo(function NodeDropConfetti({
   const particleCount = useMemo(() => {
     if (prefersReducedMotion) return 0
     // Detect if device has reduced capability via memory or connection
-    const hasReducedCapability = (typeof navigator !== 'undefined') && 
-      (navigator.deviceMemory <= 4 || 
+    const hasReducedCapability = (typeof navigator !== 'undefined') &&
+      ((navigator as any).deviceMemory <= 4 ||
        (navigator as any).connection?.effectiveType === '3g')
     if (hasReducedCapability) return Math.max(4, Math.min(8, Math.round(nodeWidth / 20)))
     return Math.max(6, Math.min(12, Math.round(nodeWidth / 12)))

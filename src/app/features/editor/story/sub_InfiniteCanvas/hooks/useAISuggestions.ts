@@ -96,6 +96,7 @@ export function useAISuggestions(
         script: '',
         imageUrl: null,
         imagePrompt: suggestion.imagePrompt || null,
+        imageDescription: null,
         message: null,
         speaker: null,
         speakerType: null,

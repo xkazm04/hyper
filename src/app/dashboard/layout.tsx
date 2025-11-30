@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { LogOut } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { DashboardDecorations } from './components/DashboardDecorations'
 
 export default function DashboardLayout({
   children,
@@ -42,8 +43,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-theme">
-      <header className="bg-card border-b-4 border-border shadow-theme-sm">
+    <div className="min-h-screen bg-gradient-theme relative">
+      {/* Decorative SVG background elements */}
+      <DashboardDecorations />
+
+      <header className="relative z-10 bg-card border-b-4 border-border shadow-theme-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Adventure Story Creator</h1>
@@ -65,7 +69,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
     </div>

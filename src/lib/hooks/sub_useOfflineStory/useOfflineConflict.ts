@@ -62,6 +62,7 @@ export function useOfflineConflict(storage: OfflineStorage) {
       script: '',
       imageUrl: input.imageUrl || null,
       imagePrompt: input.imagePrompt || null,
+      imageDescription: null,
       message: input.message || null,
       speaker: input.speaker || null,
       speakerType: input.speakerType || null,
