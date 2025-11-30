@@ -483,13 +483,13 @@
    ========================================================================== */
 
 @keyframes halloweenTwinkle {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.3); }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
-.animate-halloween-twinkle { animation: halloweenTwinkle 3s ease-in-out infinite; }
-.animate-halloween-twinkle-delay-1 { animation: halloweenTwinkle 3s ease-in-out infinite 1s; }
-.animate-halloween-twinkle-delay-2 { animation: halloweenTwinkle 3s ease-in-out infinite 2s; }
+.animate-halloween-twinkle { animation: halloweenTwinkle 4s ease-in-out infinite; will-change: opacity; }
+.animate-halloween-twinkle-delay-1 { animation: halloweenTwinkle 4s ease-in-out infinite 1s; will-change: opacity; }
+.animate-halloween-twinkle-delay-2 { animation: halloweenTwinkle 4s ease-in-out infinite 2s; will-change: opacity; }
 
 @keyframes halloweenMoonGlow {
   0%, 100% { opacity: 0.8; filter: blur(0); }
@@ -506,10 +506,10 @@
 .animate-halloween-float-slow { animation: halloweenFloatSlow 20s ease-in-out infinite; }
 
 @keyframes halloweenFog {
-  0%, 100% { opacity: 0.6; transform: translateX(0); }
-  50% { opacity: 0.4; transform: translateX(10px); }
+  0%, 100% { opacity: 0.5; transform: translateX(0); }
+  100% { transform: translateX(8px); }
 }
-.animate-halloween-fog { animation: halloweenFog 15s ease-in-out infinite; }
+.animate-halloween-fog { animation: halloweenFog 12s linear infinite; will-change: opacity, transform; }
 
 @keyframes halloweenBob {
   0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -561,24 +561,56 @@
     radial-gradient(1px 1px at 90% 80%, hsl(270, 70%, 80%), transparent),
     radial-gradient(1px 1px at 20% 90%, hsl(25, 100%, 80%), transparent),
     radial-gradient(1px 1px at 40% 30%, hsl(45, 100%, 90%), transparent),
-    radial-gradient(1px 1px at 60% 70%, hsl(270, 70%, 80%), transparent),
-    radial-gradient(1px 1px at 80% 15%, hsl(25, 100%, 80%), transparent),
-    radial-gradient(1px 1px at 15% 55%, hsl(45, 100%, 90%), transparent),
-    radial-gradient(1px 1px at 35% 85%, hsl(270, 70%, 80%), transparent),
-    radial-gradient(1px 1px at 55% 45%, hsl(25, 100%, 80%), transparent),
-    radial-gradient(1px 1px at 75% 5%, hsl(45, 100%, 90%), transparent),
-    radial-gradient(1px 1px at 95% 35%, hsl(270, 70%, 80%), transparent),
-    radial-gradient(1px 1px at 5% 75%, hsl(25, 100%, 80%), transparent),
-    radial-gradient(1px 1px at 25% 25%, hsl(45, 100%, 90%), transparent),
-    radial-gradient(1px 1px at 45% 95%, hsl(270, 70%, 80%), transparent),
-    radial-gradient(1px 1px at 65% 55%, hsl(25, 100%, 80%), transparent),
-    radial-gradient(1px 1px at 85% 65%, hsl(45, 100%, 90%), transparent);
-  animation: halloweenStarsShimmer 30s ease-in-out infinite;
+    radial-gradient(1px 1px at 60% 70%, hsl(270, 70%, 80%), transparent);
+  animation: halloweenStarsShimmer 6s ease-in-out infinite;
+  will-change: opacity;
 }
 
 @keyframes halloweenStarsShimmer {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 0.8; }
+}
+
+/* ==========================================================================
+   Theme Layer Engine Animations
+   Additional animations for the Halloween theme layer engine
+   ========================================================================== */
+
+/* Mist crawling effect for fog overlay */
+@keyframes mistCrawl {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Candle flicker effect for ambient glow */
+@keyframes halloweenCandleFlicker {
+  0%, 100% { opacity: 1; }
+  25% { opacity: 0.75; }
+  50% { opacity: 0.9; }
+  75% { opacity: 0.8; }
+}
+
+.animate-halloween-candle-flicker {
+  animation: halloweenCandleFlicker 3s ease-in-out infinite;
+}
+
+/* Fog layer class for containers */
+.halloween-fog-layer {
+  position: relative;
+}
+
+.halloween-fog-layer::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, hsl(270 20% 10% / 0.25), transparent);
+  pointer-events: none;
+  z-index: 1;
+  animation: halloweenFog 12s linear infinite;
+  will-change: transform;
 }
 
 /* Reduced motion preferences for all Halloween animations */
@@ -598,7 +630,9 @@
   .animate-halloween-accent-glow,
   .animate-halloween-particle,
   .animate-halloween-pumpkin-burst,
-  .halloween-stars {
+  .animate-halloween-candle-flicker,
+  .halloween-stars,
+  .halloween-fog-layer::after {
     animation: none !important;
   }
 }

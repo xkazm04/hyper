@@ -1,7 +1,7 @@
 /**
  * Character Prompt Composer
  * Visual prompt builder for character image generation
- * Max total prompt length: 1618 characters (Leonardo limit)
+ * Max total prompt length: 1500 characters (Leonardo limit with reserve)
  */
 
 // Export types and variables
@@ -28,3 +28,11 @@ export {
   composeCharacterPrompt,
   composeAvatarPrompt,
 } from './promptBuilder';
+
+// Export AI-powered prompt composer
+export {
+  composeCharacterPromptWithAI,
+  composeCharacterPromptWithAIResult,
+  type PromptComposerInput,
+  type PromptComposerResult,
+} from './aiPromptComposer';

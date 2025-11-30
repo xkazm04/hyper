@@ -15,6 +15,7 @@ export type {
   NavigationEdge,
   AssetManifest,
   AssetEntry,
+  FlagBitmask,
   WasmRuntimeState,
   RuntimeEventType,
   RuntimeEvent,
@@ -26,6 +27,14 @@ export type {
   ExportFormat,
   ExportOptions,
   SyncCapabilities,
+  BundleValidationResult,
+  BundleValidationError,
+  BundleValidationWarning,
+  BundleErrorCode,
+  BundleWarningCode,
+  BundleLoaderState,
+  BundleLoaderStatus,
+  BundleLoadOptions,
 } from './types'
 
 // Serialization
@@ -74,3 +83,42 @@ export {
   debounce,
   createSandbox,
 } from './utils'
+
+// Markdown Export
+export {
+  generateStoryMarkdown,
+  createMarkdownBlob,
+  type MarkdownExportOptions,
+} from './markdownExporter'
+
+// Validation
+export {
+  validateBundleIntegrity,
+  safeParseBundleBytes,
+  saveLastKnownGood,
+  getLastKnownGood,
+  hasLastKnownGood,
+  clearLastKnownGood,
+  createInitialLoaderState,
+  getErrorMessage,
+  getErrorAction,
+  delay,
+} from './validator'
+
+// Type Generation
+export {
+  generateBundleTypes,
+  createTypesBlob,
+  getTypesFilename,
+  type TypeGeneratorOptions,
+  type TypeGenerationResult,
+  type TypeGenerationStats,
+} from './typeGenerator'
+
+// Auto-Save Hook
+export {
+  useAutoSave,
+  useAutoSaveState,
+  type AutoSaveOptions,
+  type AutoSaveResult,
+} from './useAutoSave'

@@ -146,13 +146,27 @@ export interface AssetEntry {
 }
 
 /**
+ * Bitmask-based flag storage for O(1) flag operations
+ * Uses bigint to support more than 32 flags efficiently
+ */
+export interface FlagBitmask {
+  /** The bitmask value storing all flags */
+  value: bigint
+  /** Maps flag names to their bit positions (0-indexed) */
+  registry: Map<string, number>
+  /** Next available bit position for new flags */
+  nextBit: number
+}
+
+/**
  * Runtime state for the WASM player
  */
 export interface WasmRuntimeState {
   currentCardId: string | null
   history: string[]
   variables: Record<string, unknown>
-  flags: Set<string>
+  /** Bitmask-based flag storage for O(1) operations */
+  flags: FlagBitmask
   visitedCards: Set<string>
   playStartTime: number
   totalPlayTime: number
@@ -233,7 +247,7 @@ export interface CompileStats {
 /**
  * Export format options
  */
-export type ExportFormat = 'wasm-standalone' | 'wasm-embed' | 'html-bundle' | 'json-bundle'
+export type ExportFormat = 'wasm-standalone' | 'wasm-embed' | 'html-bundle' | 'json-bundle' | 'markdown'
 
 export interface ExportOptions {
   format: ExportFormat
@@ -253,4 +267,98 @@ export interface SyncCapabilities {
   lastSyncTime: number | null
   pendingUpdates: number
   syncEndpoint: string | null
+}
+
+/**
+ * Bundle validation result with detailed error information
+ */
+export interface BundleValidationResult {
+  /** Whether the bundle passed all validation checks */
+  isValid: boolean
+  /** Validation errors that prevent bundle loading */
+  errors: BundleValidationError[]
+  /** Warnings that don't prevent loading but indicate issues */
+  warnings: BundleValidationWarning[]
+  /** Whether checksum verification passed */
+  checksumValid: boolean
+  /** Whether schema validation passed */
+  schemaValid: boolean
+  /** Computed checksum of the bundle data */
+  computedChecksum: string | null
+  /** Expected checksum from bundle metadata */
+  expectedChecksum: string | null
+}
+
+export interface BundleValidationError {
+  code: BundleErrorCode
+  message: string
+  field?: string
+  details?: unknown
+}
+
+export interface BundleValidationWarning {
+  code: BundleWarningCode
+  message: string
+  suggestion?: string
+}
+
+export type BundleErrorCode =
+  | 'CHECKSUM_MISMATCH'
+  | 'SCHEMA_INVALID'
+  | 'MISSING_VERSION'
+  | 'MISSING_METADATA'
+  | 'MISSING_DATA'
+  | 'MISSING_STACK'
+  | 'EMPTY_CARDS'
+  | 'NO_ENTRY_POINT'
+  | 'PARSE_ERROR'
+  | 'CORRUPT_DATA'
+  | 'INVALID_NAVIGATION'
+  | 'UNSUPPORTED_VERSION'
+
+export type BundleWarningCode =
+  | 'ORPHANED_CARDS'
+  | 'DEAD_END_CARDS'
+  | 'MISSING_ASSETS'
+  | 'LARGE_BUNDLE'
+  | 'OLD_VERSION'
+
+/**
+ * Bundle loader state for UI feedback
+ */
+export interface BundleLoaderState {
+  status: BundleLoaderStatus
+  error: BundleValidationError | null
+  warnings: BundleValidationWarning[]
+  retryCount: number
+  maxRetries: number
+  hasLastKnownGood: boolean
+  lastKnownGoodKey: string | null
+}
+
+export type BundleLoaderStatus =
+  | 'idle'
+  | 'loading'
+  | 'validating'
+  | 'validated'
+  | 'error'
+  | 'retrying'
+  | 'fallback'
+
+/**
+ * Options for bundle loading with validation
+ */
+export interface BundleLoadOptions {
+  /** Whether to validate checksum (default: true) */
+  validateChecksum?: boolean
+  /** Whether to validate schema (default: true) */
+  validateSchema?: boolean
+  /** Maximum retry attempts (default: 3) */
+  maxRetries?: number
+  /** Delay between retries in ms (default: 1000) */
+  retryDelay?: number
+  /** Key for storing last known good state */
+  lastKnownGoodKey?: string
+  /** Callback for validation progress */
+  onValidationProgress?: (stage: string) => void
 }

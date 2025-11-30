@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, FileCode, FileJson, Package } from 'lucide-react'
+import { Globe, FileCode, FileJson, Package, FileText } from 'lucide-react'
 import type { ExportFormat } from '../lib/types'
 
 interface ExportFormatSelectorProps {
@@ -23,6 +23,12 @@ const FORMAT_OPTIONS: FormatOption[] = [
     description: 'Self-contained HTML file with embedded player. Open in any browser.',
     icon: <Globe className="w-5 h-5" />,
     recommended: true,
+  },
+  {
+    value: 'markdown',
+    label: 'Markdown',
+    description: 'Human-readable outline of your story. Great for documentation and sharing.',
+    icon: <FileText className="w-5 h-5" />,
   },
   {
     value: 'json-bundle',

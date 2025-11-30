@@ -9,15 +9,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { buildNodeAriaLabel } from '../hooks/useKeyboardNavigation'
+import { buildNodeAriaLabel } from '../hooks/useStoryGraphNavigation'
 import { PumpkinIcon, CompletionIndicators } from './NodeContent'
 import { NodeConnectors } from './NodeConnectors'
 import { NodeActions } from './NodeActions'
-import { 
-  NodeTooltip, 
-  getNodeStatus, 
-  getSelectionClasses, 
-  getFocusRingClasses 
+import { OrphanAttachButton } from './OrphanAttachButton'
+import {
+  NodeTooltip,
+  getNodeStatus,
+  getSelectionClasses,
+  getFocusRingClasses
 } from './sub_StoryNode'
 
 export interface StoryNodeData {
@@ -37,6 +38,12 @@ export interface StoryNodeData {
   isCollapsed?: boolean
   hiddenDescendantCount?: number
   isOnPath?: boolean
+  onOrphanAttach?: (nodeId: string) => void
+  /** Whether this node is highlighted from search results */
+  isSearchHighlighted?: boolean
+  // Dynamic dimensions
+  nodeWidth?: number
+  nodeHeight?: number
 }
 
 /**
@@ -49,6 +56,7 @@ const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
   const ariaLabel = buildNodeAriaLabel(data)
   const [isBouncing, setIsBouncing] = useState(false)
 
+  // Memoized callback to prevent unnecessary re-renders
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
@@ -62,18 +70,22 @@ const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
     toggleNodeCollapsed(id)
   }, [id, toggleNodeCollapsed])
 
-  // Handle click to trigger bounce animation
+  // Optimized bounce animation with cleanup
   const handleClick = useCallback(() => {
     setIsBouncing(true)
-    // Remove bounce class after animation completes
-    setTimeout(() => setIsBouncing(false), 400)
+    const timer = setTimeout(() => setIsBouncing(false), 350)
+    return () => clearTimeout(timer)
   }, [])
 
   const {
     label, isFirst, isOrphaned, isDeadEnd, isSelected, hasImage,
     hasContent, hasTitle, hasChoices, choiceCount, characters, depth,
     isCollapsed = false, hiddenDescendantCount = 0, isOnPath = false,
+    onOrphanAttach, nodeWidth, nodeHeight, isSearchHighlighted = false,
   } = data
+
+  // Dynamic width style (default to 140px if not provided)
+  const dynamicWidth = nodeWidth ?? 140
 
   const canCollapse = choiceCount > 0
   const completionItems = [hasTitle, hasContent, hasImage, hasChoices]
@@ -93,7 +105,7 @@ const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
         <TooltipTrigger asChild>
           <div
             className={cn(
-              'relative w-[140px] rounded-lg border-2 transition-all duration-200 cursor-pointer group shadow-md',
+              'relative rounded-lg border-2 transition-all duration-200 cursor-pointer group shadow-md',
               statusBgClass, statusBorderClass, statusAccentClass, selectionClass, focusRingClass,
               isHalloween && 'halloween-ghost-float',
               // Halloween dripping border effect
@@ -101,8 +113,11 @@ const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
               // Path glow animation for nodes on the ancestry path
               isOnPath && !isNodeSelected && 'path-node-glow',
               // Bounce animation on click
-              isBouncing && 'node-click-bounce'
+              isBouncing && 'node-click-bounce',
+              // Search highlight styling
+              isSearchHighlighted && 'search-highlight-glow'
             )}
+            style={{ width: dynamicWidth, contain: 'layout style paint' }}
             tabIndex={0}
             role="treeitem"
             aria-label={ariaLabel}
@@ -213,6 +228,14 @@ const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
               isHalloween={isHalloween}
               onCollapseToggle={handleCollapseToggle}
             />
+            {onOrphanAttach && (
+              <OrphanAttachButton
+                nodeId={id}
+                isOrphaned={isOrphaned}
+                isHalloween={isHalloween}
+                onClick={onOrphanAttach}
+              />
+            )}
           </div>
         </TooltipTrigger>
 

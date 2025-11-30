@@ -11,9 +11,22 @@ import type {
   RuntimeEventType,
   NavigationGraph,
   AssetManifest,
+  FlagBitmask,
+  BundleLoadOptions,
+  BundleLoaderState,
+  BundleValidationResult,
 } from './types'
-import { bytesToBundle, validateBundle } from './serializer'
+import { bytesToBundle } from './serializer'
 import { generateRuntimeId, createSandbox, deepClone } from './utils'
+import {
+  validateBundleIntegrity,
+  safeParseBundleBytes,
+  saveLastKnownGood,
+  getLastKnownGood,
+  hasLastKnownGood,
+  createInitialLoaderState,
+  delay,
+} from './validator'
 
 export type RuntimeEventListener = (event: RuntimeEvent) => void
 
@@ -28,35 +41,210 @@ export class WasmRuntime {
   private runtimeId: string = ''
   private sandbox: Record<string, unknown> = {}
   private autoSaveKey: string | null = null
+  private loaderState: BundleLoaderState = createInitialLoaderState()
+  private loadOptions: BundleLoadOptions = {}
+  private lastValidationResult: BundleValidationResult | null = null
 
   constructor() {
     this.runtimeId = generateRuntimeId()
   }
 
   /**
-   * Loads a compiled bundle into the runtime
+   * Gets the current loader state for UI feedback
    */
-  async loadBundle(bundleOrBytes: CompiledStoryBundle | Uint8Array): Promise<boolean> {
-    try {
-      const bundle =
-        bundleOrBytes instanceof Uint8Array ? bytesToBundle(bundleOrBytes) : bundleOrBytes
+  getLoaderState(): BundleLoaderState {
+    return { ...this.loaderState }
+  }
 
-      const validation = validateBundle(bundle)
-      if (!validation.valid) {
-        console.error('Bundle validation failed:', validation.errors)
-        this.emit({ type: 'error', timestamp: Date.now(), data: { errors: validation.errors } })
+  /**
+   * Gets the last validation result
+   */
+  getValidationResult(): BundleValidationResult | null {
+    return this.lastValidationResult
+  }
+
+  /**
+   * Loads a compiled bundle into the runtime with validation
+   */
+  async loadBundle(
+    bundleOrBytes: CompiledStoryBundle | Uint8Array,
+    options: BundleLoadOptions = {}
+  ): Promise<boolean> {
+    this.loadOptions = options
+    this.loaderState = {
+      ...createInitialLoaderState(),
+      maxRetries: options.maxRetries ?? 3,
+      lastKnownGoodKey: options.lastKnownGoodKey ?? null,
+      hasLastKnownGood: options.lastKnownGoodKey ? hasLastKnownGood(options.lastKnownGoodKey) : false,
+    }
+
+    return this.attemptLoad(bundleOrBytes, options)
+  }
+
+  /**
+   * Attempts to load a bundle with retry logic
+   */
+  private async attemptLoad(
+    bundleOrBytes: CompiledStoryBundle | Uint8Array,
+    options: BundleLoadOptions
+  ): Promise<boolean> {
+    const maxRetries = options.maxRetries ?? 3
+    const retryDelay = options.retryDelay ?? 1000
+
+    while (this.loaderState.retryCount <= maxRetries) {
+      try {
+        this.loaderState.status = this.loaderState.retryCount > 0 ? 'retrying' : 'loading'
+        options.onValidationProgress?.('Loading bundle...')
+
+        // Parse bytes if needed
+        let bundle: CompiledStoryBundle
+        if (bundleOrBytes instanceof Uint8Array) {
+          const parseResult = safeParseBundleBytes(bundleOrBytes)
+          if (parseResult.error) {
+            this.loaderState.error = parseResult.error
+            this.loaderState.status = 'error'
+            this.emit({
+              type: 'error',
+              timestamp: Date.now(),
+              data: { error: parseResult.error, stage: 'parse' },
+            })
+            // Parse errors are not retryable
+            return this.handleLoadFailure(options)
+          }
+          bundle = parseResult.bundle!
+        } else {
+          bundle = bundleOrBytes
+        }
+
+        // Validate the bundle
+        this.loaderState.status = 'validating'
+        const validation = await validateBundleIntegrity(bundle, options)
+        this.lastValidationResult = validation
+        this.loaderState.warnings = validation.warnings
+
+        if (!validation.isValid) {
+          const primaryError = validation.errors[0]
+          this.loaderState.error = primaryError
+          this.loaderState.status = 'error'
+          this.emit({
+            type: 'error',
+            timestamp: Date.now(),
+            data: {
+              error: primaryError,
+              allErrors: validation.errors,
+              stage: 'validation',
+            },
+          })
+
+          // Schema errors are not retryable, checksum errors might be
+          if (primaryError.code !== 'CHECKSUM_MISMATCH') {
+            return this.handleLoadFailure(options)
+          }
+
+          // Retry for checksum mismatch (might be network issue)
+          this.loaderState.retryCount++
+          if (this.loaderState.retryCount <= maxRetries) {
+            await delay(retryDelay * this.loaderState.retryCount)
+            continue
+          }
+          return this.handleLoadFailure(options)
+        }
+
+        // Validation passed - load the bundle
+        this.bundle = bundle
+        this.loaderState.status = 'validated'
+        this.initializeState()
+        this.initializeSandbox()
+
+        // Save as last known good if key provided
+        if (options.lastKnownGoodKey) {
+          saveLastKnownGood(options.lastKnownGoodKey, bundle)
+          this.loaderState.hasLastKnownGood = true
+        }
+
+        options.onValidationProgress?.('Bundle loaded successfully')
+        return true
+      } catch (error) {
+        console.error('Failed to load bundle:', error)
+        this.loaderState.error = {
+          code: 'CORRUPT_DATA',
+          message: error instanceof Error ? error.message : 'Unknown error during bundle load',
+          details: error,
+        }
+        this.loaderState.status = 'error'
+        this.emit({ type: 'error', timestamp: Date.now(), data: { error } })
+
+        this.loaderState.retryCount++
+        if (this.loaderState.retryCount <= maxRetries) {
+          await delay(retryDelay * this.loaderState.retryCount)
+          continue
+        }
+        return this.handleLoadFailure(options)
+      }
+    }
+
+    return this.handleLoadFailure(options)
+  }
+
+  /**
+   * Handles load failure with fallback to last known good state
+   */
+  private handleLoadFailure(options: BundleLoadOptions): boolean {
+    if (options.lastKnownGoodKey && hasLastKnownGood(options.lastKnownGoodKey)) {
+      return this.loadLastKnownGood(options.lastKnownGoodKey)
+    }
+    return false
+  }
+
+  /**
+   * Loads the last known good bundle as fallback
+   */
+  loadLastKnownGood(key: string): boolean {
+    try {
+      const bundle = getLastKnownGood(key)
+      if (!bundle) {
         return false
       }
 
       this.bundle = bundle
+      this.loaderState.status = 'fallback'
       this.initializeState()
       this.initializeSandbox()
 
+      this.emit({
+        type: 'state_restored',
+        timestamp: Date.now(),
+        data: { fallback: true, key },
+      })
+
       return true
     } catch (error) {
-      console.error('Failed to load bundle:', error)
-      this.emit({ type: 'error', timestamp: Date.now(), data: { error } })
+      console.error('Failed to load last known good bundle:', error)
       return false
+    }
+  }
+
+  /**
+   * Retries loading the bundle
+   */
+  async retryLoad(bundleOrBytes: CompiledStoryBundle | Uint8Array): Promise<boolean> {
+    this.loaderState.retryCount = 0
+    this.loaderState.error = null
+    return this.attemptLoad(bundleOrBytes, this.loadOptions)
+  }
+
+  // BigInt constants for bitmask operations
+  private static readonly BIGINT_ZERO = BigInt(0)
+  private static readonly BIGINT_ONE = BigInt(1)
+
+  /**
+   * Creates an empty bitmask for flags
+   */
+  private createEmptyFlagBitmask(): FlagBitmask {
+    return {
+      value: WasmRuntime.BIGINT_ZERO,
+      registry: new Map(),
+      nextBit: 0,
     }
   }
 
@@ -70,7 +258,7 @@ export class WasmRuntime {
       currentCardId: this.bundle.data.navigation.entryNodeId,
       history: [],
       variables: {},
-      flags: new Set(),
+      flags: this.createEmptyFlagBitmask(),
       visitedCards: new Set(),
       playStartTime: Date.now(),
       totalPlayTime: 0,
@@ -80,6 +268,54 @@ export class WasmRuntime {
     if (this.state.currentCardId) {
       this.state.visitedCards.add(this.state.currentCardId)
     }
+  }
+
+  /**
+   * Gets or assigns a bit position for a flag name
+   */
+  private getFlagBit(flag: string): number {
+    if (!this.state) return -1
+
+    let bit = this.state.flags.registry.get(flag)
+    if (bit === undefined) {
+      bit = this.state.flags.nextBit++
+      this.state.flags.registry.set(flag, bit)
+    }
+    return bit
+  }
+
+  /**
+   * Checks if a flag is set using bitwise AND (O(1) operation)
+   */
+  private hasFlagInternal(flag: string): boolean {
+    if (!this.state) return false
+
+    const bit = this.state.flags.registry.get(flag)
+    if (bit === undefined) return false
+
+    return (this.state.flags.value & (WasmRuntime.BIGINT_ONE << BigInt(bit))) !== WasmRuntime.BIGINT_ZERO
+  }
+
+  /**
+   * Sets a flag using bitwise OR (O(1) operation)
+   */
+  private setFlagInternal(flag: string): void {
+    if (!this.state) return
+
+    const bit = this.getFlagBit(flag)
+    this.state.flags.value |= (WasmRuntime.BIGINT_ONE << BigInt(bit))
+  }
+
+  /**
+   * Clears a flag using bitwise AND with complement (O(1) operation)
+   */
+  private clearFlagInternal(flag: string): void {
+    if (!this.state) return
+
+    const bit = this.state.flags.registry.get(flag)
+    if (bit === undefined) return
+
+    this.state.flags.value &= ~(WasmRuntime.BIGINT_ONE << BigInt(bit))
   }
 
   /**
@@ -95,9 +331,9 @@ export class WasmRuntime {
             this.state.variables[key] = value
           }
         },
-        hasFlag: (flag: string) => this.state?.flags.has(flag) ?? false,
-        setFlag: (flag: string) => this.state?.flags.add(flag),
-        clearFlag: (flag: string) => this.state?.flags.delete(flag),
+        hasFlag: (flag: string) => this.hasFlagInternal(flag),
+        setFlag: (flag: string) => this.setFlagInternal(flag),
+        clearFlag: (flag: string) => this.clearFlagInternal(flag),
         hasVisited: (cardId: string) => this.state?.visitedCards.has(cardId) ?? false,
         getVisitCount: () => this.state?.visitedCards.size ?? 0,
         getCurrentCardId: () => this.state?.currentCardId ?? null,
@@ -368,10 +604,32 @@ export class WasmRuntime {
   }
 
   /**
+   * Clones the flag bitmask
+   */
+  private cloneFlagBitmask(flags: FlagBitmask): FlagBitmask {
+    return {
+      value: flags.value,
+      registry: new Map(flags.registry),
+      nextBit: flags.nextBit,
+    }
+  }
+
+  /**
    * Gets the current runtime state
    */
   getState(): WasmRuntimeState | null {
-    return this.state ? deepClone(this.state) : null
+    if (!this.state) return null
+
+    return {
+      currentCardId: this.state.currentCardId,
+      history: [...this.state.history],
+      variables: deepClone(this.state.variables),
+      flags: this.cloneFlagBitmask(this.state.flags),
+      visitedCards: new Set(this.state.visitedCards),
+      playStartTime: this.state.playStartTime,
+      totalPlayTime: this.state.totalPlayTime,
+      isComplete: this.state.isComplete,
+    }
   }
 
   /**
@@ -391,24 +649,24 @@ export class WasmRuntime {
   }
 
   /**
-   * Checks if a flag is set
+   * Checks if a flag is set using bitwise AND (O(1) operation)
    */
   hasFlag(flag: string): boolean {
-    return this.state?.flags.has(flag) ?? false
+    return this.hasFlagInternal(flag)
   }
 
   /**
-   * Sets a flag
+   * Sets a flag using bitwise OR (O(1) operation)
    */
   setFlag(flag: string): void {
-    this.state?.flags.add(flag)
+    this.setFlagInternal(flag)
   }
 
   /**
-   * Clears a flag
+   * Clears a flag using bitwise AND with complement (O(1) operation)
    */
   clearFlag(flag: string): void {
-    this.state?.flags.delete(flag)
+    this.clearFlagInternal(flag)
   }
 
   /**
@@ -462,6 +720,18 @@ export class WasmRuntime {
   }
 
   /**
+   * Serializes flag bitmask for storage
+   */
+  private serializeFlags(): { value: string; registry: [string, number][] } {
+    if (!this.state) return { value: '0', registry: [] }
+
+    return {
+      value: this.state.flags.value.toString(),
+      registry: Array.from(this.state.flags.registry.entries()),
+    }
+  }
+
+  /**
    * Saves current state to localStorage
    */
   private autoSave(): void {
@@ -472,7 +742,7 @@ export class WasmRuntime {
         currentCardId: this.state.currentCardId,
         history: this.state.history,
         variables: this.state.variables,
-        flags: Array.from(this.state.flags),
+        flags: this.serializeFlags(),
         visitedCards: Array.from(this.state.visitedCards),
         totalPlayTime:
           this.state.totalPlayTime + (Date.now() - this.state.playStartTime),
@@ -481,6 +751,35 @@ export class WasmRuntime {
     } catch (error) {
       console.warn('Auto-save failed:', error)
     }
+  }
+
+  /**
+   * Deserializes flag bitmask from storage
+   */
+  private deserializeFlags(
+    savedFlags: { value: string; registry: [string, number][] } | string[] | undefined
+  ): FlagBitmask {
+    // Handle legacy Set-based format (array of flag names)
+    if (Array.isArray(savedFlags)) {
+      const bitmask = this.createEmptyFlagBitmask()
+      for (const flag of savedFlags) {
+        const bit = bitmask.nextBit++
+        bitmask.registry.set(flag, bit)
+        bitmask.value |= (WasmRuntime.BIGINT_ONE << BigInt(bit))
+      }
+      return bitmask
+    }
+
+    // Handle new bitmask format
+    if (savedFlags && typeof savedFlags === 'object') {
+      return {
+        value: BigInt(savedFlags.value || '0'),
+        registry: new Map(savedFlags.registry || []),
+        nextBit: savedFlags.registry?.length || 0,
+      }
+    }
+
+    return this.createEmptyFlagBitmask()
   }
 
   /**
@@ -496,7 +795,7 @@ export class WasmRuntime {
       this.state.currentCardId = saveData.currentCardId
       this.state.history = saveData.history || []
       this.state.variables = saveData.variables || {}
-      this.state.flags = new Set(saveData.flags || [])
+      this.state.flags = this.deserializeFlags(saveData.flags)
       this.state.visitedCards = new Set(saveData.visitedCards || [])
       this.state.totalPlayTime = saveData.totalPlayTime || 0
       this.state.playStartTime = Date.now()

@@ -6,12 +6,14 @@ import { createClient } from '@/lib/supabase/client'
 import { StoryCrudService } from './crud'
 import { CardsService } from './cards'
 import { CharactersService } from './characters'
+import { CharacterCardsService } from './characterCards'
 import { PublishingService } from './publishing'
 import {
   StoryStack,
   StoryCard,
   Choice,
   Character,
+  CharacterCard,
   CreateStoryStackInput,
   UpdateStoryStackInput,
   CreateStoryCardInput,
@@ -20,6 +22,8 @@ import {
   UpdateChoiceInput,
   CreateCharacterInput,
   UpdateCharacterInput,
+  CreateCharacterCardInput,
+  UpdateCharacterCardInput,
   ValidationResult,
 } from './types'
 
@@ -27,6 +31,7 @@ import {
 export { StoryCrudService } from './crud'
 export { CardsService } from './cards'
 export { CharactersService } from './characters'
+export { CharacterCardsService } from './characterCards'
 export { PublishingService } from './publishing'
 
 // Re-export types
@@ -40,6 +45,7 @@ export class StoryService {
   private crudService: StoryCrudService
   private cardsService: CardsService
   private charactersService: CharactersService
+  private characterCardsService: CharacterCardsService
   private publishingService: PublishingService
 
   constructor(supabaseClient?: SupabaseClient) {
@@ -47,6 +53,7 @@ export class StoryService {
     this.crudService = new StoryCrudService(client)
     this.cardsService = new CardsService(client)
     this.charactersService = new CharactersService(client)
+    this.characterCardsService = new CharacterCardsService(client)
     this.publishingService = new PublishingService(client)
   }
 
@@ -152,6 +159,34 @@ export class StoryService {
 
   async deleteCharacter(id: string): Promise<void> {
     return this.charactersService.deleteCharacter(id)
+  }
+
+  // ============================================================================
+  // Character Card Operations
+  // ============================================================================
+
+  async getCharacterCards(storyStackId: string): Promise<CharacterCard[]> {
+    return this.characterCardsService.getCharacterCards(storyStackId)
+  }
+
+  async getCharacterCard(id: string): Promise<CharacterCard | null> {
+    return this.characterCardsService.getCharacterCard(id)
+  }
+
+  async getCharacterCardsByCharacter(characterId: string): Promise<CharacterCard[]> {
+    return this.characterCardsService.getCharacterCardsByCharacter(characterId)
+  }
+
+  async createCharacterCard(input: CreateCharacterCardInput): Promise<CharacterCard> {
+    return this.characterCardsService.createCharacterCard(input)
+  }
+
+  async updateCharacterCard(id: string, input: UpdateCharacterCardInput): Promise<CharacterCard> {
+    return this.characterCardsService.updateCharacterCard(id, input)
+  }
+
+  async deleteCharacterCard(id: string): Promise<void> {
+    return this.characterCardsService.deleteCharacterCard(id)
   }
 
   // ============================================================================

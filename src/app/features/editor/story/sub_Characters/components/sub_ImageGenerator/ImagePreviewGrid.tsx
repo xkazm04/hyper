@@ -10,6 +10,8 @@ export interface GeneratedImage {
   width: number
   height: number
   prompt?: string
+  generationId?: string
+  imageId?: string
 }
 
 interface CurrentImagesGalleryProps {

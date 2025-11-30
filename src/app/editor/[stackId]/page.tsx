@@ -7,9 +7,12 @@ import { useStoryEditor } from '@/lib/hooks/useStoryEditor'
 import StoryEditorLayout from '@/app/features/editor/story/StoryEditorLayout'
 import StoryEditorToolbar from '@/app/features/editor/story/StoryEditorToolbar'
 import CardList from '@/app/features/editor/story/CardList'
-import { StoryCardEditor, PublishDialog } from '@/app/features/editor/story/sub_StoryCardEditor'
+import StoryCardEditor from '@/app/features/editor/story/sub_StoryCardEditor/StoryCardEditor'
+import { PublishDialog } from '@/app/features/editor/story/sub_PublishDialog'
 import CharacterList from '@/app/features/editor/story/sub_Characters/CharacterList'
 import CharacterEditor from '@/app/features/editor/story/sub_Characters/CharacterEditor'
+import CelebrationConfetti from '@/app/features/editor/story/sub_Characters/components/CelebrationConfetti'
+import { useCharacterCelebration } from '@/app/features/editor/story/sub_Characters/lib/useCharacterCelebration'
 import CardPreview from '@/app/features/editor/story/CardPreview'
 import {
   CommandPalette,
@@ -60,6 +63,7 @@ function EditorContent({ stackId }: { stackId: string }) {
   } = useEditor()
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const storyService = new StoryService()
+  const { isConfettiActive, celebrateNewCharacter, clearConfetti } = useCharacterCelebration()
 
   // Initialize editor context when data loads
   useEffect(() => {
@@ -123,6 +127,9 @@ function EditorContent({ stackId }: { stackId: string }) {
       })
       addCharacter(newCharacter)
       setCurrentCharacterId(newCharacter.id)
+
+      // Trigger celebration for new character creation
+      celebrateNewCharacter(newCharacter.name)
     } catch (err) {
       console.error('Failed to create character:', err)
     }
@@ -177,6 +184,10 @@ function EditorContent({ stackId }: { stackId: string }) {
 
   return (
     <>
+      <CelebrationConfetti
+        isActive={isConfettiActive}
+        onComplete={clearConfetti}
+      />
       <CommandPalette commands={commands} />
       <StoryEditorLayout
         toolbar={
@@ -185,7 +196,12 @@ function EditorContent({ stackId }: { stackId: string }) {
           />
         }
         cardList={<CardList onAddCard={handleAddCard} />}
-        characterList={<CharacterList onAddCharacter={handleAddCharacter} />}
+        characterList={({ onSwitchToCharacters }) => (
+          <CharacterList 
+            onAddCharacter={handleAddCharacter} 
+            onSwitchToCharacters={onSwitchToCharacters}
+          />
+        )}
         cardEditor={<StoryCardEditor />}
         characterEditor={<CharacterEditor />}
         cardPreview={<CardPreview />}

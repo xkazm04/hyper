@@ -1,28 +1,26 @@
 'use client'
 
 import { Panel } from 'reactflow'
-import { AIStoryAssistant } from './AIStoryAssistant'
-import { StatsOverview, AICoCreatorPanel, GraphStats, AISuggestionsState } from './sub_GraphControls'
+import { StatsOverview, GraphStats } from './sub_GraphControls'
+import { AICompanion } from '../../sub_AICompanion'
 
-export type { GraphStats, AISuggestionsState }
+// Re-export types for compatibility
+export type { GraphStats }
 
+// Simplified props - AI state is now internal to AICompanion
 export interface GraphControlsProps {
   stats: GraphStats
-  aiState: AISuggestionsState
-  currentCardId: string | null
-  storyCardsLength: number
 }
 
 /**
  * GraphControls - The control panel for the story graph
- * Contains stats overview, collapse/expand controls, legend, and AI assistant
+ * Contains stats overview and the unified AI Companion
  */
-export function GraphControls({ stats, aiState, currentCardId, storyCardsLength }: GraphControlsProps) {
+export function GraphControls({ stats }: GraphControlsProps) {
   return (
     <Panel position="top-right" className="flex flex-col gap-3 items-end max-w-[280px]">
       <StatsOverview stats={stats} />
-      <AIStoryAssistant />
-      <AICoCreatorPanel aiState={aiState} currentCardId={currentCardId} storyCardsLength={storyCardsLength} />
+      <AICompanion className="w-[280px]" defaultExpanded={false} />
     </Panel>
   )
 }

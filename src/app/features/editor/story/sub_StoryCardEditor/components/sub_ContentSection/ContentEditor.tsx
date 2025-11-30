@@ -1,66 +1,38 @@
 'use client'
 
-import { Sparkles, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 
 interface ContentEditorProps {
   title: string
   content: string
   isSaving: boolean
   isGenerating: boolean
-  hasContext: boolean
-  isLoadingContext: boolean
   onTitleChange: (value: string) => void
   onTitleBlur: () => void
   onContentChange: (value: string) => void
   onContentBlur: () => void
-  onGenerateContent: () => void
 }
 
+/**
+ * ContentEditor - Card title and story content editor
+ *
+ * AI generation is now handled by the bottom AICompanionBottomPanel
+ * which provides unified AI experience across the Cards module.
+ */
 export function ContentEditor({
   title,
   content,
   isSaving,
   isGenerating,
-  hasContext,
-  isLoadingContext,
   onTitleChange,
   onTitleBlur,
   onContentChange,
   onContentBlur,
-  onGenerateContent,
 }: ContentEditorProps) {
   return (
-    <div className="space-y-8">
-      {/* Header with Generate Button */}
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold text-foreground">Card Content</Label>
-        {!isLoadingContext && hasContext && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onGenerateContent}
-            disabled={isSaving || isGenerating}
-            className="border-2 border-primary/50 hover:border-primary hover:bg-primary/10"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                Generate with AI
-              </>
-            )}
-          </Button>
-        )}
-      </div>
-
+    <div className="space-y-6">
       {/* Title Field */}
       <div className="space-y-2">
         <Label htmlFor="card-title" className="text-sm font-semibold text-foreground flex items-center gap-2">

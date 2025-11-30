@@ -1,9 +1,11 @@
 'use client'
 
 import { Character } from '@/lib/types'
+import { useEditor } from '@/contexts/EditorContext'
+import { getEffectiveArtStylePrompt } from '../../sub_Story/lib/artStyleService'
 import {
   ImagePromptInput,
-  CurrentImagesGallery,
+  MasonryGallery,
   SketchesGrid,
   FinalImagePreview,
   EmptyState,
@@ -28,17 +30,23 @@ export function ImageGeneratorSection({
   onAddImage,
   onRemoveImage,
 }: ImageGeneratorSectionProps) {
+  // Get story art style from EditorContext (FR-3.1, FR-3.3)
+  const { storyStack } = useEditor()
+  const storyArtStyle = storyStack ? getEffectiveArtStylePrompt(storyStack) : undefined
+
   const {
     selections, expandedColumn, sketches, isGeneratingSketches, selectedSketchIndex,
     isGeneratingFinal, finalImage, error, finalPrompt, hasSelections, loading,
-    currentImageCount, canAddMore, handleSelect, handleClear, toggleColumn,
+    currentImageCount, canAddMore, canGenerate, handleSelect, handleClear, toggleColumn,
     handleGenerateSketches, handleGenerateFinal, handleAddToCharacter, handleUseSketch,
     setSelectedSketchIndex, setFinalImage,
-  } = useImageGenerator({ character, isSaving, onAddImage })
+    // AI composition state (FR-3.2, Task 10.1, 10.2)
+    isComposingPrompt, composedPrompt, compositionError, usedFallbackPrompt,
+  } = useImageGenerator({ character, isSaving, onAddImage, storyArtStyle })
 
   return (
     <div className="space-y-4">
-      <CurrentImagesGallery
+      <MasonryGallery
         character={character}
         loading={loading}
         onRemoveImage={onRemoveImage}
@@ -57,11 +65,14 @@ export function ImageGeneratorSection({
             onSelect={handleSelect}
             onToggleColumn={toggleColumn}
             onClear={handleClear}
-            onGenerateSketches={handleGenerateSketches}
-            isGeneratingSketches={isGeneratingSketches}
+            // AI composition state (FR-3.2, Task 10.1, 10.2)
+            isComposingPrompt={isComposingPrompt}
+            composedPrompt={composedPrompt}
+            compositionError={compositionError}
+            usedFallbackPrompt={usedFallbackPrompt}
           />
           <ImageGenerationControls
-            hasSelections={hasSelections}
+            canGenerate={canGenerate}
             loading={loading}
             isGeneratingSketches={isGeneratingSketches}
             onGenerateSketches={handleGenerateSketches}

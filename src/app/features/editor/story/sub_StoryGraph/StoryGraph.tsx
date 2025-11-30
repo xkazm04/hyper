@@ -1,57 +1,84 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
-import { Node } from 'reactflow'
+import { useCallback, useMemo, useState } from 'react'
+import { Node, Panel } from 'reactflow'
 import { useEditor } from '@/contexts/EditorContext'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useAuth } from '@/lib/auth/AuthContext'
 import { useStoryGraphData } from './hooks/useStoryGraphData'
-import { useKeyboardNavigation } from './hooks/useKeyboardNavigation'
+import { useStoryGraphNavigation } from './hooks/useStoryGraphNavigation'
 import { usePathAncestry } from './hooks/usePathAncestry'
-import { useAISuggestions } from '../sub_InfiniteCanvas/hooks/useAISuggestions'
+import { useBranchDepth } from './hooks/useBranchDepth'
+import { useOrphanAttachmentActions } from './hooks/useOrphanAttachmentState'
+import { useGraphValidation } from './hooks/useGraphValidation'
 import { GraphCanvas } from './components/GraphCanvas'
-import { GraphControls, GraphStats, AISuggestionsState } from './components/GraphControls'
+import { GraphControls, GraphStats } from './components/GraphControls'
+import { BranchDepthProgressBar } from './components/BranchDepthProgressBar'
+import { OrphanAttachmentHelper } from './components/OrphanAttachmentHelper'
+import { ValidationDiagnosticsOverlay, ValidationToggleButton } from './components/ValidationDiagnosticsOverlay'
+import { BranchNavigator } from './components/BranchNavigator'
 
 /**
  * StoryGraph - Main component for visualizing and navigating the story structure
- * 
+ *
  * Composes:
  * - GraphCanvas: ReactFlow canvas with nodes, edges, and background effects
- * - GraphControls: Stats panel, legend, and AI assistant
- * 
+ * - GraphControls: Stats panel and unified AI Companion
+ *
  * Features:
  * - Hierarchical story visualization
- * - AI-powered suggestions
+ * - AI-powered story assistance (via AICompanion)
  * - Keyboard navigation for accessibility
  * - Halloween theme support with cauldron-bubble effect
  */
 export default function StoryGraph() {
   const { setCurrentCardId, currentCardId, choices, storyStack, storyCards, collapsedNodes } = useEditor()
   const { theme } = useTheme()
-  const { user } = useAuth()
-  const userId = user?.id || null
   const isHalloween = theme === 'halloween'
   const { nodes: initialNodes, edges: initialEdges, analysis, hiddenNodes } = useStoryGraphData()
 
-  // AI Co-Creator suggestions
+  // Graph validation
   const {
-    suggestions,
-    isGenerating,
-    error: aiError,
-    generateSuggestions,
-    acceptSuggestion,
-    declineSuggestion,
-    dismissAllSuggestions,
-    hoveredSuggestionId,
-    setHoveredSuggestionId,
-  } = useAISuggestions(userId, {
-    enabled: !!userId && storyCards.length > 0,
-    debounceMs: 3000,
-    maxSuggestions: 3,
-  })
+    validationResult,
+    applyFix,
+    navigateToCard,
+    isDiagnosticsVisible,
+    toggleDiagnosticsVisibility,
+  } = useGraphValidation()
+
+  // Orphan attachment state
+  const [activeOrphanId, setActiveOrphanId] = useState<string | null>(null)
+  const { getSuggestedParents, attachOrphan } = useOrphanAttachmentActions()
+
+  // Get suggestions for the active orphan
+  const orphanSuggestions = useMemo(() => {
+    if (!activeOrphanId) return []
+    return getSuggestedParents(activeOrphanId)
+  }, [activeOrphanId, getSuggestedParents])
+
+  // Get the title of the active orphan card
+  const activeOrphanTitle = useMemo(() => {
+    if (!activeOrphanId) return ''
+    const card = storyCards.find(c => c.id === activeOrphanId)
+    return card?.title || 'Untitled'
+  }, [activeOrphanId, storyCards])
+
+  // Handle orphan attachment button click
+  const handleOrphanAttachClick = useCallback((nodeId: string) => {
+    setActiveOrphanId(nodeId)
+  }, [])
+
+  // Handle closing the attachment helper
+  const handleCloseAttachmentHelper = useCallback(() => {
+    setActiveOrphanId(null)
+  }, [])
+
+  // Handle attaching orphan to parent
+  const handleAttachOrphan = useCallback(async (parentCardId: string, orphanCardId: string) => {
+    await attachOrphan(parentCardId, orphanCardId)
+  }, [attachOrphan])
 
   // Keyboard navigation for accessibility
-  const { focusableNodes, navigateToNode } = useKeyboardNavigation({
+  const { focusableNodes, navigateToNode } = useStoryGraphNavigation({
     nodes: initialNodes,
     choices,
     currentCardId,
@@ -64,6 +91,13 @@ export default function StoryGraph() {
     currentCardId,
     storyStack?.firstCardId ?? null,
     choices
+  )
+
+  // Branch depth for progress bar
+  const branchDepth = useBranchDepth(
+    currentCardId,
+    storyStack?.firstCardId ?? null,
+    analysis
   )
 
   // Handle node click
@@ -84,38 +118,59 @@ export default function StoryGraph() {
     deadEnds: analysis.deadEndCards.size,
     incomplete: analysis.incompleteCards.size,
     complete: initialNodes.length - analysis.incompleteCards.size,
-    suggestions: suggestions.length,
-  }), [initialNodes.length, analysis, hiddenNodes.size, collapsedNodes.size, suggestions.length])
-
-  // AI state for controls
-  const aiState: AISuggestionsState = useMemo(() => ({
-    suggestions,
-    isGenerating,
-    error: aiError,
-    generateSuggestions,
-    dismissAllSuggestions,
-  }), [suggestions, isGenerating, aiError, generateSuggestions, dismissAllSuggestions])
+    suggestions: 0, // AI suggestions are now handled internally by AICompanion
+  }), [initialNodes.length, analysis, hiddenNodes.size, collapsedNodes.size])
 
   return (
     <GraphCanvas
       initialNodes={initialNodes}
       initialEdges={initialEdges}
-      suggestions={suggestions}
-      hoveredSuggestionId={hoveredSuggestionId}
-      acceptSuggestion={acceptSuggestion}
-      declineSuggestion={declineSuggestion}
-      setHoveredSuggestionId={setHoveredSuggestionId}
+      suggestions={[]}
+      hoveredSuggestionId={null}
+      acceptSuggestion={() => Promise.resolve()}
+      declineSuggestion={() => Promise.resolve()}
+      setHoveredSuggestionId={() => {}}
       onNodeClick={onNodeClick}
       currentCardId={currentCardId}
       isHalloween={isHalloween}
       pathNodeIds={pathNodeIds}
       pathEdgeIds={pathEdgeIds}
+      onOrphanAttachClick={handleOrphanAttachClick}
     >
-      <GraphControls
-        stats={stats}
-        aiState={aiState}
-        currentCardId={currentCardId}
-        storyCardsLength={storyCards.length}
+      {/* Branch Depth Progress Bar - positioned at top-left */}
+      <Panel position="top-left" className="w-64">
+        <BranchDepthProgressBar
+          currentDepth={branchDepth.currentDepth}
+          maxDepth={branchDepth.maxDepthInBranch}
+          isTerminal={branchDepth.isTerminal}
+        />
+      </Panel>
+      <GraphControls stats={stats} />
+      {activeOrphanId && (
+        <OrphanAttachmentHelper
+          orphanCardId={activeOrphanId}
+          orphanCardTitle={activeOrphanTitle}
+          suggestions={orphanSuggestions}
+          onAttach={handleAttachOrphan}
+          onClose={handleCloseAttachmentHelper}
+          isVisible={!!activeOrphanId}
+        />
+      )}
+      <ValidationDiagnosticsOverlay
+        validationResult={validationResult}
+        onApplyFix={applyFix}
+        onNavigateToCard={navigateToCard}
+        isVisible={isDiagnosticsVisible}
+        onToggleVisibility={toggleDiagnosticsVisibility}
+      />
+      <ValidationToggleButton
+        validationResult={validationResult}
+        isVisible={isDiagnosticsVisible}
+        onToggle={toggleDiagnosticsVisibility}
+      />
+      <BranchNavigator
+        position="bottom-left"
+        onCardClick={setCurrentCardId}
       />
     </GraphCanvas>
   )

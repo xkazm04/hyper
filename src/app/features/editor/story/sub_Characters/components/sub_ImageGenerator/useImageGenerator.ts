@@ -6,14 +6,17 @@ import {
   CharacterDimension,
   CharacterPromptOption,
   composeCharacterPrompt,
+  composeCharacterPromptWithAIResult,
 } from '../../lib/characterPromptComposer'
 import { SKETCH_QUALITY_PRESETS, FINAL_QUALITY_PRESETS } from '@/lib/services/promptVariation'
 import { SelectionState, GeneratedImage } from './index'
+import { deleteGenerations } from '@/lib/services/sketchCleanup'
 
 interface UseImageGeneratorProps {
   character: Character
   isSaving: boolean
   onAddImage: (imageUrl: string, prompt: string) => Promise<void>
+  storyArtStyle?: string // Story art style prompt from stack configuration (FR-3.1, FR-3.3)
 }
 
 export interface ImageGeneratorState {
@@ -30,6 +33,12 @@ export interface ImageGeneratorState {
   loading: boolean
   currentImageCount: number
   canAddMore: boolean
+  canGenerate: boolean // True if we have enough data to generate (character data or art style)
+  // AI composition state (FR-3.2, Task 10.1, 10.2)
+  isComposingPrompt: boolean
+  composedPrompt: string | null
+  compositionError: string | null
+  usedFallbackPrompt: boolean
 }
 
 export interface ImageGeneratorActions {
@@ -49,6 +58,7 @@ export function useImageGenerator({
   character,
   isSaving,
   onAddImage,
+  storyArtStyle,
 }: UseImageGeneratorProps): ImageGeneratorState & ImageGeneratorActions {
   // Prompt building state
   const [selections, setSelections] = useState<SelectionState>({})
@@ -64,13 +74,26 @@ export function useImageGenerator({
   const [finalImage, setFinalImage] = useState<GeneratedImage | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Compose the prompt from selections
+  // Generation tracking for cleanup (FR-2.1)
+  const [generationIds, setGenerationIds] = useState<string[]>([])
+
+  // AI composition state (FR-3.2, Task 10.1, 10.2)
+  const [isComposingPrompt, setIsComposingPrompt] = useState(false)
+  const [composedPrompt, setComposedPrompt] = useState<string | null>(null)
+  const [compositionError, setCompositionError] = useState<string | null>(null)
+  const [usedFallbackPrompt, setUsedFallbackPrompt] = useState(false)
+
+  // Compose the prompt from selections (includes art style for preview display)
   const finalPrompt = useMemo(
-    () => composeCharacterPrompt(selections, character.name, character.appearance),
-    [selections, character.name, character.appearance]
+    () => composeCharacterPrompt(selections, character.name, character.appearance, storyArtStyle),
+    [selections, character.name, character.appearance, storyArtStyle]
   )
 
   const hasSelections = Object.values(selections).some(Boolean)
+  // Character can generate images if we have character data (name/appearance) or story art style
+  // Selections are optional enhancements, not requirements
+  const hasCharacterData = !!(character.name || character.appearance || storyArtStyle)
+  const canGenerate = hasCharacterData // Enable generation with just character data, no selections required
   const loading = isGeneratingSketches || isGeneratingFinal || isSaving
   const currentImageCount = character.imageUrls?.length || 0
   const canAddMore = currentImageCount < 4
@@ -85,12 +108,22 @@ export function useImageGenerator({
   }, [])
 
   const handleClear = useCallback(() => {
+    // Cleanup existing sketches before clearing state (FR-2.2)
+    if (generationIds.length > 0) {
+      deleteGenerations(generationIds)
+    }
+    
     setSelections({})
     setSketches([])
     setSelectedSketchIndex(null)
     setFinalImage(null)
     setError(null)
-  }, [])
+    setGenerationIds([])
+    // Clear composition state (Task 10.1, 10.2)
+    setComposedPrompt(null)
+    setCompositionError(null)
+    setUsedFallbackPrompt(false)
+  }, [generationIds])
 
   const toggleColumn = useCallback((columnId: CharacterDimension) => {
     setExpandedColumn((prev) => (prev === columnId ? null : columnId))
@@ -105,12 +138,37 @@ export function useImageGenerator({
     setSketches([])
     setSelectedSketchIndex(null)
     setFinalImage(null)
+    setCompositionError(null)
+    setUsedFallbackPrompt(false)
 
     try {
+      // Use AI-composed prompt if story art style is available (FR-3.2, FR-3.3, NFR-3)
+      // Falls back to simple composition if art style unavailable or API fails
+      setIsComposingPrompt(true)
+      
+      // Use the result-based function to get detailed composition info (Task 10.2)
+      const compositionResult = await composeCharacterPromptWithAIResult({
+        characterName: character.name,
+        characterAppearance: character.appearance,
+        selections,
+        storyArtStyle,
+      })
+      
+      const aiComposedPrompt = compositionResult.prompt
+      setComposedPrompt(aiComposedPrompt)
+      setUsedFallbackPrompt(compositionResult.usedFallback)
+      
+      // Show user-friendly error message if fallback was used (Task 10.2, NFR-2)
+      if (compositionResult.error) {
+        setCompositionError(compositionResult.error)
+      }
+      
+      setIsComposingPrompt(false)
+
       const variationResponse = await fetch('/api/ai/prompt-variations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: finalPrompt, count: 4 }),
+        body: JSON.stringify({ prompt: aiComposedPrompt, count: 4 }),
       })
 
       if (!variationResponse.ok) {
@@ -141,7 +199,12 @@ export function useImageGenerator({
 
         const data = await response.json()
         const image = data.images?.[0]
-        return image ? { ...image, prompt: variation.variation } as GeneratedImage : null
+        return image ? {
+          ...image,
+          prompt: variation.variation,
+          generationId: data.generationId,
+          imageId: image.id,
+        } as GeneratedImage : null
       })
 
       const results = await Promise.all(sketchPromises)
@@ -151,14 +214,21 @@ export function useImageGenerator({
         throw new Error('Failed to generate any sketches')
       }
 
+      // Extract and store generationIds for later cleanup (FR-2.1)
+      const ids = validSketches
+        .map(s => s.generationId)
+        .filter((id): id is string => !!id)
+      setGenerationIds(ids)
+
       setSketches(validSketches)
     } catch (err) {
       console.error('Error generating sketches:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate sketches')
     } finally {
       setIsGeneratingSketches(false)
+      setIsComposingPrompt(false)
     }
-  }, [finalPrompt])
+  }, [finalPrompt, character.name, character.appearance, selections, storyArtStyle])
 
 
   const handleGenerateFinal = useCallback(async () => {
@@ -195,7 +265,12 @@ export function useImageGenerator({
       const image = data.images?.[0]
 
       if (image) {
-        setFinalImage({ ...image, prompt: selectedSketch.prompt })
+        setFinalImage({
+          ...image,
+          prompt: selectedSketch.prompt,
+          generationId: data.generationId,
+          imageId: image.id,
+        })
       } else {
         throw new Error('No image generated')
       }
@@ -212,11 +287,17 @@ export function useImageGenerator({
 
     await onAddImage(finalImage.url, finalImage.prompt)
 
+    // Cleanup all sketches after successful save (FR-2.1)
+    if (generationIds.length > 0) {
+      deleteGenerations(generationIds)
+    }
+
     setSketches([])
     setSelectedSketchIndex(null)
     setFinalImage(null)
     setSelections({})
-  }, [finalImage, onAddImage])
+    setGenerationIds([])
+  }, [finalImage, onAddImage, generationIds])
 
   const handleUseSketch = useCallback(async () => {
     if (selectedSketchIndex === null || !sketches[selectedSketchIndex]) return
@@ -224,16 +305,26 @@ export function useImageGenerator({
     const sketch = sketches[selectedSketchIndex]
     await onAddImage(sketch.url, sketch.prompt || finalPrompt)
 
+    // Delete unused sketches - filter out the selected sketch's generationId (FR-2.3)
+    const selectedGenerationId = sketch.generationId
+    const unusedGenerationIds = generationIds.filter(id => id !== selectedGenerationId)
+    if (unusedGenerationIds.length > 0) {
+      deleteGenerations(unusedGenerationIds)
+    }
+
     setSketches([])
     setSelectedSketchIndex(null)
     setSelections({})
-  }, [selectedSketchIndex, sketches, finalPrompt, onAddImage])
+    setGenerationIds([])
+  }, [selectedSketchIndex, sketches, finalPrompt, onAddImage, generationIds])
 
   return {
     selections, expandedColumn, sketches, isGeneratingSketches, selectedSketchIndex,
     isGeneratingFinal, finalImage, error, finalPrompt, hasSelections, loading,
-    currentImageCount, canAddMore, handleSelect, handleClear, toggleColumn,
+    currentImageCount, canAddMore, canGenerate, handleSelect, handleClear, toggleColumn,
     handleGenerateSketches, handleGenerateFinal, handleAddToCharacter, handleUseSketch,
     setSelectedSketchIndex, setFinalImage,
+    // AI composition state (FR-3.2, Task 10.1, 10.2)
+    isComposingPrompt, composedPrompt, compositionError, usedFallbackPrompt,
   }
 }

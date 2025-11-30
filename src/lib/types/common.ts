@@ -62,6 +62,13 @@ export class CharacterNotFoundError extends Error {
   }
 }
 
+export class CharacterCardNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Character card not found: ${id}`)
+    this.name = 'CharacterCardNotFoundError'
+  }
+}
+
 export class UnauthorizedError extends Error {
   constructor(message = 'Unauthorized access') {
     super(message)

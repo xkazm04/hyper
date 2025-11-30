@@ -22,7 +22,7 @@ export interface CharacterPromptColumn {
   description: string;
 }
 
-export const MAX_PROMPT_LENGTH = 1618;
+export const MAX_PROMPT_LENGTH = 1500;
 
 export const CHARACTER_PROMPT_COLUMNS: CharacterPromptColumn[] = [
   {
@@ -49,5 +49,9 @@ export const AVATAR_STYLES = [
   { id: 'pixel', label: 'Pixel Art', icon: '👾', description: 'Retro 16-bit RPG style' },
   { id: 'chibi', label: 'Chibi', icon: '🎀', description: 'Cute anime-inspired' },
   { id: 'portrait', label: 'Portrait', icon: '🖼️', description: 'Detailed painted bust' },
-  { id: 'icon', label: 'Icon', icon: '🔷', description: 'Simple minimalist badge' },
+  { id: 'rpg', label: 'RPG', icon: '⚔️', description: 'Modern videogame style' },
+  { id: 'cartoon', label: 'Cartoon', icon: '🎯', description: 'Clean tactical animation' },
+  { id: 'handdrawn', label: 'Hand-drawn', icon: '✒️', description: 'Elegant artisan sketch' },
+  { id: 'gothic', label: 'Gothic', icon: '💀', description: 'Grimdark baroque style' },
+  { id: 'story', label: 'Story Style', icon: '📖', description: 'Matches your story art' },
 ] as const;

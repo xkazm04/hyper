@@ -13,6 +13,7 @@ export interface UpdateCardPayload {
   script?: string
   imageUrl?: string | null
   imagePrompt?: string | null
+  imageDescription?: string | null
   message?: string | null
   speaker?: string | null
 }

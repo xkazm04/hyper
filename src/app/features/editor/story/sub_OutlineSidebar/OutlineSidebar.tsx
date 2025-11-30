@@ -198,13 +198,6 @@ export default function OutlineSidebar({
         onDrop={handleDrop}
         onKeyDown={handleKeyDown}
       />
-
-      {/* Keyboard Shortcuts Hint */}
-      <div className="p-2 border-t border-border text-center">
-        <p className="text-[10px] text-muted-foreground">
-          ↑↓ Navigate • Enter Select • Drag to reorder
-        </p>
-      </div>
     </div>
   )
 }

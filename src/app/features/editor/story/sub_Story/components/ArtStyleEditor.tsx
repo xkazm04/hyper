@@ -131,10 +131,10 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
         <button
           onClick={() => setActiveTab('preset')}
           className={cn(
-            'flex-1 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            'flex-1 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all',
             activeTab === 'preset'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              ? 'border-primary text-primary bg-primary/10'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
           )}
         >
           Preset Styles
@@ -142,10 +142,10 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
         <button
           onClick={() => setActiveTab('custom')}
           className={cn(
-            'flex-1 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            'flex-1 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all',
             activeTab === 'custom'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              ? 'border-primary text-primary bg-primary/10'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
           )}
         >
           Custom Style

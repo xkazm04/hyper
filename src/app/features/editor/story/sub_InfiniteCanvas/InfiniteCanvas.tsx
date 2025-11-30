@@ -183,16 +183,7 @@ export default function InfiniteCanvas({ onCardSelect, className }: InfiniteCanv
 
       {/* Top-right Panel: Stats & AI Controls */}
       <div className="absolute top-0 right-0 z-10">
-        <CanvasControls
-          stats={stats}
-          suggestions={suggestions}
-          isGenerating={isGenerating}
-          error={error}
-          currentCardId={currentCardId}
-          storyCardsLength={storyCards.length}
-          onGenerateSuggestions={generateSuggestions}
-          onDismissAllSuggestions={dismissAllSuggestions}
-        />
+        <CanvasControls stats={stats} />
       </div>
     </div>
   )

@@ -45,6 +45,11 @@ export function SyncStatus({ className, showDetails = false }: SyncStatusProps) 
       }
 
       if (event.type === 'sync_completed' || event.type === 'sync_failed') {
+        // Immediately set isSyncing to false, then fetch full status
+        setStatus(prev => ({
+          ...prev,
+          isSyncing: false,
+        }))
         syncService.getStatus().then(setStatus)
       }
 
@@ -143,6 +148,7 @@ export function SyncStatus({ className, showDetails = false }: SyncStatusProps) 
         disabled={status.isSyncing || !status.isOnline}
         className={cn(
           'flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors',
+          'bg-card/95 backdrop-blur-sm border border-border',
           'hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-50',
           indicator.color

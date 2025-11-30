@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import { MarketplaceSearchOptions, AssetType, AssetCategory, LicenseType } from '@/lib/types'
-import { ActiveFilters } from './sub_SearchFilters/ActiveFilters'
-import { FilterGroup } from './sub_SearchFilters/FilterGroup'
-import { FilterOption } from './sub_SearchFilters/FilterOption'
+import { Filters, SortByOption } from './Filters'
 
 interface SearchFiltersProps {
   onSearch: (options: MarketplaceSearchOptions) => void
@@ -18,7 +16,7 @@ export function SearchFilters({ onSearch, loading }: SearchFiltersProps) {
   const [category, setCategory] = useState<AssetCategory | ''>('')
   const [licenseType, setLicenseType] = useState<LicenseType | ''>('')
   const [isFree, setIsFree] = useState<boolean | undefined>(undefined)
-  const [sortBy, setSortBy] = useState<'downloads' | 'rating' | 'newest' | 'price'>('downloads')
+  const [sortBy, setSortBy] = useState<SortByOption>('downloads')
 
   const handleSearch = () => {
     onSearch({
@@ -48,44 +46,31 @@ export function SearchFilters({ onSearch, loading }: SearchFiltersProps) {
     onSearch({})
   }
 
-  const hasActiveFilters = query || assetType || category || licenseType || isFree !== undefined
+  const hasActiveFilters = !!(query || assetType || category || licenseType || isFree !== undefined)
 
   return (
-    <div className="space-y-4" data-testid="search-filters">
-      {/* Search bar */}
-      <ActiveFilters
+    <div data-testid="search-filters">
+      <Filters
         query={query}
         setQuery={setQuery}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
-        hasActiveFilters={!!hasActiveFilters}
         loading={loading}
         onSearch={handleSearch}
         onKeyDown={handleKeyDown}
+        assetType={assetType}
+        setAssetType={setAssetType}
+        category={category}
+        setCategory={setCategory}
+        licenseType={licenseType}
+        setLicenseType={setLicenseType}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        isFree={isFree}
+        setIsFree={setIsFree}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
       />
-
-      {/* Expanded filters */}
-      {showFilters && (
-        <div className="p-4 bg-muted/50 rounded-lg space-y-4" data-testid="filter-panel">
-          <FilterGroup
-            assetType={assetType}
-            setAssetType={setAssetType}
-            category={category}
-            setCategory={setCategory}
-            licenseType={licenseType}
-            setLicenseType={setLicenseType}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-          />
-
-          <FilterOption
-            isFree={isFree}
-            setIsFree={setIsFree}
-            hasActiveFilters={!!hasActiveFilters}
-            onClearFilters={clearFilters}
-          />
-        </div>
-      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
-import { Check, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Check, AlertCircle, Copy, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Character } from '@/lib/types'
@@ -98,15 +99,94 @@ export function NoImagesWarning({ hasImages }: NoImagesWarningProps) {
 
 interface PromptPreviewProps {
   avatarPrompt: string
+  isAIComposed?: boolean
+  isComposing?: boolean
+  usedFallback?: boolean
 }
 
-export function PromptPreview({ avatarPrompt }: PromptPreviewProps) {
-  return (
-    <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        Avatar Prompt
+export function PromptPreview({ 
+  avatarPrompt, 
+  isAIComposed = false,
+  isComposing = false,
+  usedFallback = false,
+}: PromptPreviewProps) {
+  const [copied, setCopied] = useState(false)
+  
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(avatarPrompt)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy prompt:', err)
+    }
+  }
+
+  const getStatusBadge = () => {
+    if (isComposing) {
+      return (
+        <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-600 rounded-full animate-pulse">
+          AI Composing...
+        </span>
+      )
+    }
+    if (isAIComposed && !usedFallback) {
+      return (
+        <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-600 rounded-full">
+          AI Composed
+        </span>
+      )
+    }
+    if (usedFallback) {
+      return (
+        <span className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-600 rounded-full">
+          Fallback
+        </span>
+      )
+    }
+    return (
+      <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
+        Preview
       </span>
-      <p className="text-xs text-foreground line-clamp-3">{avatarPrompt}</p>
+    )
+  }
+  
+  return (
+    <div className="bg-muted/50 rounded-lg border-2 border-border p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Avatar Prompt ({avatarPrompt.length} chars)
+          </span>
+          {getStatusBadge()}
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleCopy}
+          className="h-7 text-xs gap-1"
+        >
+          {copied ? (
+            <>
+              <CheckCircle className="w-3 h-3 text-green-500" />
+              Copied!
+            </>
+          ) : (
+            <>
+              <Copy className="w-3 h-3" />
+              Copy
+            </>
+          )}
+        </Button>
+      </div>
+      <div className="max-h-48 overflow-y-auto">
+        <p className="text-xs text-foreground whitespace-pre-wrap break-words">{avatarPrompt}</p>
+      </div>
+      {isAIComposed && !usedFallback && (
+        <p className="text-xs text-muted-foreground italic">
+          AI extracted face features from character description
+        </p>
+      )}
     </div>
   )
 }

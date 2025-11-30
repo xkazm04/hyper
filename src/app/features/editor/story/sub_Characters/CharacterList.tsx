@@ -7,10 +7,17 @@ import { cn } from '@/lib/utils'
 
 interface CharacterListProps {
   onAddCharacter: () => void
+  onSwitchToCharacters?: () => void
 }
 
-export default function CharacterList({ onAddCharacter }: CharacterListProps) {
+export default function CharacterList({ onAddCharacter, onSwitchToCharacters }: CharacterListProps) {
   const { characters, currentCharacterId, setCurrentCharacterId } = useEditor()
+
+  const handleSelectCharacter = (characterId: string) => {
+    setCurrentCharacterId(characterId)
+    // Switch to characters tab when selecting a character
+    onSwitchToCharacters?.()
+  }
 
   return (
     <div className="h-full flex flex-col bg-card">
@@ -55,7 +62,7 @@ export default function CharacterList({ onAddCharacter }: CharacterListProps) {
               .map((character, index) => (
                 <button
                   key={character.id}
-                  onClick={() => setCurrentCharacterId(character.id)}
+                  onClick={() => handleSelectCharacter(character.id)}
                   className={cn(
                     'w-full text-left px-2 py-1.5 rounded border transition-all touch-manipulation',
                     'hover:bg-muted active:scale-[0.98]',

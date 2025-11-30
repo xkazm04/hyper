@@ -2,23 +2,35 @@
 
 import { Loader2 } from 'lucide-react'
 
-export function CompilationProgress() {
+interface CompilationProgressProps {
+  message?: string
+}
+
+export function CompilationProgress({ message }: CompilationProgressProps) {
+  const isSharing = message?.includes('share')
+
   return (
     <div
       className="p-6 bg-muted/50 rounded-lg border-2 border-border text-center"
       data-testid="compilation-progress"
     >
       <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
-      <h4 className="mt-3 font-medium text-foreground">Compiling your story...</h4>
+      <h4 className="mt-3 font-medium text-foreground">
+        {message || 'Compiling your story...'}
+      </h4>
       <p className="text-sm text-muted-foreground mt-1">
-        Building navigation graph and bundling assets
+        {isSharing
+          ? 'Uploading bundle and generating URL'
+          : 'Building navigation graph and bundling assets'}
       </p>
-      <div className="mt-4 space-y-2">
-        <ProgressStep step="Serializing story data" status="complete" />
-        <ProgressStep step="Building navigation graph" status="active" />
-        <ProgressStep step="Processing assets" status="pending" />
-        <ProgressStep step="Creating bundle" status="pending" />
-      </div>
+      {!isSharing && (
+        <div className="mt-4 space-y-2">
+          <ProgressStep step="Serializing story data" status="complete" />
+          <ProgressStep step="Building navigation graph" status="active" />
+          <ProgressStep step="Processing assets" status="pending" />
+          <ProgressStep step="Creating bundle" status="pending" />
+        </div>
+      )}
     </div>
   )
 }

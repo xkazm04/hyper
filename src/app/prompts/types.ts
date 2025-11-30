@@ -70,7 +70,7 @@ export interface CharacterExpression {
   icon: string;
 }
 
-export const MAX_PROMPT_LENGTH = 1618;
+export const MAX_PROMPT_LENGTH = 1500;
 
 /**
  * LLM enrichment template for custom prompt processing

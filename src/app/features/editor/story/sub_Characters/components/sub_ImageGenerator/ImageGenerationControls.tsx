@@ -4,14 +4,14 @@ import { Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface ImageGenerationControlsProps {
-  hasSelections: boolean
+  canGenerate: boolean // True if we have character data or art style to generate from
   loading: boolean
   isGeneratingSketches: boolean
   onGenerateSketches: () => void
 }
 
 export function ImageGenerationControls({
-  hasSelections,
+  canGenerate,
   loading,
   isGeneratingSketches,
   onGenerateSketches,
@@ -19,7 +19,7 @@ export function ImageGenerationControls({
   return (
     <Button
       onClick={onGenerateSketches}
-      disabled={!hasSelections || loading}
+      disabled={!canGenerate || loading}
       className="w-full border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]"
     >
       {isGeneratingSketches ? (

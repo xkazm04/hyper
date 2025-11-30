@@ -4,6 +4,7 @@ import type {
   StoryCard,
   Choice,
   Character,
+  CharacterCard,
   PreviewTheme,
   CreateStoryStackInput,
   UpdateStoryStackInput,
@@ -13,6 +14,8 @@ import type {
   UpdateChoiceInput,
   CreateCharacterInput,
   UpdateCharacterInput,
+  CreateCharacterCardInput,
+  UpdateCharacterCardInput,
   ValidationResult,
   ValidationError,
   ValidationWarning,
@@ -23,6 +26,7 @@ import {
   CardNotFoundError,
   ChoiceNotFoundError,
   CharacterNotFoundError,
+  CharacterCardNotFoundError,
   DatabaseError,
 } from '@/lib/types'
 
@@ -32,6 +36,7 @@ export type {
   StoryCard,
   Choice,
   Character,
+  CharacterCard,
   PreviewTheme,
   CreateStoryStackInput,
   UpdateStoryStackInput,
@@ -41,6 +46,8 @@ export type {
   UpdateChoiceInput,
   CreateCharacterInput,
   UpdateCharacterInput,
+  CreateCharacterCardInput,
+  UpdateCharacterCardInput,
   ValidationResult,
   ValidationError,
   ValidationWarning,
@@ -51,6 +58,7 @@ export {
   CardNotFoundError,
   ChoiceNotFoundError,
   CharacterNotFoundError,
+  CharacterCardNotFoundError,
   DatabaseError,
 }
 
@@ -135,4 +143,23 @@ export function mapCharacter(data: any): Character {
 
 export function mapCharacters(data: any[]): Character[] {
   return data.map(d => mapCharacter(d))
+}
+
+export function mapCharacterCard(data: any): CharacterCard {
+  return {
+    id: data.id,
+    storyStackId: data.story_stack_id,
+    characterId: data.character_id,
+    title: data.title,
+    content: data.content,
+    imageIndex: data.image_index,
+    showAvatar: data.show_avatar,
+    orderIndex: data.order_index,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  }
+}
+
+export function mapCharacterCards(data: any[]): CharacterCard[] {
+  return data.map(d => mapCharacterCard(d))
 }

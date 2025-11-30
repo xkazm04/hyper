@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Download, Package, FileCode, Globe, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import {
+  Download,
+  Package,
+  FileCode,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Share2,
+  Link2,
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -12,12 +21,13 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import type { StoryStack, StoryCard, Choice, Character } from '@/lib/types'
-import type { CompileResult, ExportFormat, CompileStats } from '../lib/types'
+import type { CompileResult, ExportFormat } from '../lib/types'
 import { compileStory, exportBundle, downloadFile } from '../lib/compiler'
-import { formatBytes, formatDuration } from '../lib/utils'
+import { generateStoryMarkdown, createMarkdownBlob } from '../lib/markdownExporter'
 import { ExportFormatSelector } from './ExportFormatSelector'
 import { CompilationProgress } from './CompilationProgress'
 import { CompilationStats } from './CompilationStats'
+import { ShareUrlDialog } from './ShareUrlDialog'
 
 interface WasmExportDialogProps {
   open: boolean
@@ -28,7 +38,12 @@ interface WasmExportDialogProps {
   characters: Character[]
 }
 
-type ExportStatus = 'idle' | 'compiling' | 'success' | 'error'
+type ExportStatus = 'idle' | 'compiling' | 'success' | 'error' | 'sharing'
+
+interface ShareResult {
+  shareUrl: string
+  shareCode: string
+}
 
 export function WasmExportDialog({
   open,
@@ -42,8 +57,17 @@ export function WasmExportDialog({
   const [exportFormat, setExportFormat] = useState<ExportFormat>('html-bundle')
   const [compileResult, setCompileResult] = useState<CompileResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [shareResult, setShareResult] = useState<ShareResult | null>(null)
+  const [showShareDialog, setShowShareDialog] = useState(false)
 
   const handleCompile = useCallback(async () => {
+    // Markdown export doesn't require compilation
+    if (exportFormat === 'markdown') {
+      setStatus('success')
+      setCompileResult(null)
+      return
+    }
+
     setStatus('compiling')
     setError(null)
     setCompileResult(null)
@@ -71,12 +95,23 @@ export function WasmExportDialog({
   }, [stack, cards, choices, characters, exportFormat])
 
   const handleDownload = useCallback(async () => {
-    if (!compileResult?.success) return
-
     try {
+      const baseFilename = stack.slug || stack.name.toLowerCase().replace(/\s+/g, '-')
+
+      // Handle Markdown export separately (no compilation needed)
+      if (exportFormat === 'markdown') {
+        const markdown = generateStoryMarkdown(stack, cards, choices, characters)
+        const blob = createMarkdownBlob(markdown)
+        downloadFile(blob, `${baseFilename}.md`)
+        return
+      }
+
+      // Other formats require compilation
+      if (!compileResult?.success) return
+
       const blob = await exportBundle(compileResult, {
         format: exportFormat,
-        filename: stack.slug || stack.name.toLowerCase().replace(/\s+/g, '-'),
+        filename: baseFilename,
         includePlayer: true,
         minifyOutput: true,
         embedStyles: true,
@@ -84,19 +119,59 @@ export function WasmExportDialog({
 
       if (blob) {
         const ext = getFileExtension(exportFormat)
-        const filename = `${stack.slug || stack.name.toLowerCase().replace(/\s+/g, '-')}.${ext}`
+        const filename = `${baseFilename}.${ext}`
         downloadFile(blob, filename)
       }
     } catch (err) {
       console.error('Download failed:', err)
       setError(err instanceof Error ? err.message : 'Download failed')
     }
-  }, [compileResult, exportFormat, stack])
+  }, [compileResult, exportFormat, stack, cards, choices, characters])
+
+  const handleShare = useCallback(async () => {
+    // Only allow sharing compiled bundles (not markdown)
+    if (!compileResult?.success || !compileResult.bundle) {
+      setError('Please compile the bundle first')
+      return
+    }
+
+    setStatus('sharing')
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/stories/${stack.id}/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bundle: compileResult.bundle,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create share link')
+      }
+
+      setShareResult({
+        shareUrl: data.shareUrl,
+        shareCode: data.shareCode,
+      })
+      setShowShareDialog(true)
+      setStatus('success')
+    } catch (err) {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : 'Failed to create share link')
+    }
+  }, [compileResult, stack.id])
 
   const handleClose = () => {
     setStatus('idle')
     setCompileResult(null)
     setError(null)
+    setShareResult(null)
     onOpenChange(false)
   }
 
@@ -141,10 +216,38 @@ export function WasmExportDialog({
           )}
 
           {/* Compilation progress */}
-          {status === 'compiling' && <CompilationProgress />}
+          {(status === 'compiling' || status === 'sharing') && (
+            <CompilationProgress
+              message={status === 'sharing' ? 'Creating share link...' : undefined}
+            />
+          )}
 
-          {/* Success state */}
-          {status === 'success' && compileResult && (
+          {/* Success state - Markdown export */}
+          {status === 'success' && exportFormat === 'markdown' && (
+            <div className="space-y-4" data-testid="markdown-export-success">
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-medium">Markdown ready!</span>
+              </div>
+              <div
+                className="p-3 bg-muted/50 rounded-lg border-2 border-border"
+                data-testid="markdown-export-preview"
+              >
+                <p className="text-sm text-muted-foreground">
+                  Your story outline includes:
+                </p>
+                <ul className="text-sm text-foreground mt-2 space-y-1">
+                  <li>• Story metadata and overview</li>
+                  {characters.length > 0 && <li>• {characters.length} character bio(s)</li>}
+                  <li>• {cards.length} story card(s) with choices</li>
+                  <li>• Navigation structure summary</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Success state - Compiled formats */}
+          {status === 'success' && exportFormat !== 'markdown' && compileResult && (
             <div className="space-y-4" data-testid="wasm-export-success">
               <div className="flex items-center gap-2 text-green-600">
                 <CheckCircle className="w-5 h-5" />
@@ -211,7 +314,7 @@ export function WasmExportDialog({
                 data-testid="wasm-export-compile-btn"
               >
                 <FileCode className="w-4 h-4 mr-2" />
-                Compile Bundle
+                {exportFormat === 'markdown' ? 'Generate Markdown' : 'Compile Bundle'}
               </Button>
             </>
           )}
@@ -237,8 +340,22 @@ export function WasmExportDialog({
                            hover:-translate-x-px hover:-translate-y-px transition-all"
                 data-testid="wasm-export-recompile-btn"
               >
-                Recompile
+                {exportFormat === 'markdown' ? 'Regenerate' : 'Recompile'}
               </Button>
+              {/* Share button - only for compiled bundles, not markdown */}
+              {exportFormat !== 'markdown' && compileResult?.success && (
+                <Button
+                  onClick={handleShare}
+                  variant="outline"
+                  className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]
+                             hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
+                             hover:-translate-x-px hover:-translate-y-px transition-all"
+                  data-testid="wasm-export-share-btn"
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Get Share Link
+                </Button>
+              )}
               <Button
                 onClick={handleDownload}
                 className="border-2 border-border bg-green-600 text-white
@@ -248,7 +365,7 @@ export function WasmExportDialog({
                 data-testid="wasm-export-download-btn"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Download Bundle
+                {exportFormat === 'markdown' ? 'Download Markdown' : 'Download Bundle'}
               </Button>
             </>
           )}
@@ -279,6 +396,17 @@ export function WasmExportDialog({
           )}
         </DialogFooter>
       </DialogContent>
+
+      {/* Share URL Dialog */}
+      {shareResult && (
+        <ShareUrlDialog
+          open={showShareDialog}
+          onOpenChange={setShowShareDialog}
+          shareUrl={shareResult.shareUrl}
+          shareCode={shareResult.shareCode}
+          storyName={stack.name}
+        />
+      )}
     </Dialog>
   )
 }
@@ -289,6 +417,8 @@ function getFileExtension(format: ExportFormat): string {
       return 'html'
     case 'json-bundle':
       return 'json'
+    case 'markdown':
+      return 'md'
     case 'wasm-standalone':
     case 'wasm-embed':
       return 'wasm'

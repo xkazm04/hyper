@@ -1,9 +1,8 @@
 'use client'
 
 import { Panel } from 'reactflow'
-import { SuggestedCard } from '@/lib/types/ai-canvas'
 import { StatsCard } from './StatsCard'
-import { AISuggestionsPanel } from './AISuggestionsPanel'
+import { AICompanion } from '../../../sub_AICompanion'
 
 interface CanvasStats {
   total: number
@@ -16,34 +15,17 @@ interface CanvasStats {
 
 interface CanvasControlsProps {
   stats: CanvasStats
-  suggestions: SuggestedCard[]
-  isGenerating: boolean
-  error: string | null
-  currentCardId: string | null
-  storyCardsLength: number
-  onGenerateSuggestions: (sourceCardId?: string) => void
-  onDismissAllSuggestions: () => void
 }
 
 /**
  * CanvasControls - Stats panel and AI controls for the infinite canvas
+ * Now uses the unified AICompanion component
  */
-export function CanvasControls({
-  stats, suggestions, isGenerating, error, currentCardId, storyCardsLength,
-  onGenerateSuggestions, onDismissAllSuggestions,
-}: CanvasControlsProps) {
+export function CanvasControls({ stats }: CanvasControlsProps) {
   return (
     <Panel position="top-right" className="flex flex-col gap-3 items-end max-w-[300px]">
       <StatsCard stats={stats} />
-      <AISuggestionsPanel
-        suggestions={suggestions}
-        isGenerating={isGenerating}
-        error={error}
-        currentCardId={currentCardId}
-        storyCardsLength={storyCardsLength}
-        onGenerateSuggestions={onGenerateSuggestions}
-        onDismissAllSuggestions={onDismissAllSuggestions}
-      />
+      <AICompanion className="w-[280px]" defaultExpanded={false} />
     </Panel>
   )
 }

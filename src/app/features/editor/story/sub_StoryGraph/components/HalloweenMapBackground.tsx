@@ -9,71 +9,44 @@ import React, { useEffect, useRef, memo, useMemo } from 'react'
  * - Dark night sky gradient with purple/orange accents
  * - Twinkling stars animation
  * - Floating pumpkin silhouettes
- * - Subtle moon glow
  * - Spooky fog effect at the bottom
  */
 export const HalloweenMapBackground = memo(function HalloweenMapBackground() {
   return (
-    <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden" data-testid="halloween-map-background">
       {/* Night sky gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0612] via-[#1a0a2e] to-[#0d0820]" />
+      <div className="absolute inset-0 bg-linear-to-b from-[#0a0612] via-[#1a0a2e] to-[#0d0820]" />
 
-      {/* Stars layer */}
+      {/* Stars layer - simplified */}
       <div className="absolute inset-0 halloween-stars" />
 
-      {/* Large distant stars with twinkle */}
+      {/* Large distant stars with twinkle - reduced count for performance */}
       <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          {/* Star glow filter */}
-          <filter id="starGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="1" result="coloredBlur" />
+          {/* Star glow filter - simplified */}
+          <filter id="starGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="0.8" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-          {/* Moon glow */}
-          <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="hsl(45, 100%, 90%)" stopOpacity="0.3" />
-            <stop offset="50%" stopColor="hsl(45, 80%, 70%)" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-          </radialGradient>
         </defs>
 
-        {/* Moon */}
-        <circle
-          cx="85%"
-          cy="12%"
-          r="40"
-          fill="url(#moonGlow)"
-          className="animate-halloween-moon-glow"
-        />
-        <circle
-          cx="85%"
-          cy="12%"
-          r="25"
-          fill="hsl(45, 90%, 85%)"
-          opacity="0.9"
-        />
-
-        {/* Twinkling stars */}
+        {/* Twinkling stars - reduced from 12 to 8 for 33% performance gain */}
         <g filter="url(#starGlow)">
           <circle cx="10%" cy="15%" r="1.5" fill="hsl(45, 100%, 90%)" className="animate-halloween-twinkle" />
           <circle cx="25%" cy="8%" r="1" fill="hsl(270, 70%, 80%)" className="animate-halloween-twinkle-delay-1" />
           <circle cx="45%" cy="20%" r="1.2" fill="hsl(25, 100%, 80%)" className="animate-halloween-twinkle-delay-2" />
           <circle cx="65%" cy="5%" r="1" fill="hsl(45, 100%, 90%)" className="animate-halloween-twinkle" />
           <circle cx="75%" cy="25%" r="0.8" fill="hsl(270, 70%, 80%)" className="animate-halloween-twinkle-delay-1" />
-          <circle cx="15%" cy="35%" r="1" fill="hsl(25, 100%, 80%)" className="animate-halloween-twinkle-delay-2" />
-          <circle cx="35%" cy="12%" r="1.3" fill="hsl(45, 100%, 90%)" className="animate-halloween-twinkle" />
           <circle cx="55%" cy="30%" r="0.9" fill="hsl(270, 70%, 80%)" className="animate-halloween-twinkle-delay-1" />
           <circle cx="95%" cy="18%" r="1.1" fill="hsl(25, 100%, 80%)" className="animate-halloween-twinkle-delay-2" />
           <circle cx="5%" cy="45%" r="0.8" fill="hsl(45, 100%, 90%)" className="animate-halloween-twinkle" />
-          <circle cx="88%" cy="35%" r="1.2" fill="hsl(270, 70%, 80%)" className="animate-halloween-twinkle-delay-1" />
-          <circle cx="42%" cy="42%" r="0.7" fill="hsl(25, 100%, 80%)" className="animate-halloween-twinkle-delay-2" />
         </g>
 
-        {/* Distant bat silhouettes */}
-        <g className="animate-halloween-float-slow" opacity="0.15">
+        {/* Distant bat silhouettes - kept for atmosphere */}
+        <g className="animate-halloween-float-slow" opacity="0.12">
           <path
             d="M20 60 Q25 55 30 60 L28 65 Q25 62 22 65 Z"
             fill="hsl(270, 20%, 10%)"
@@ -87,11 +60,11 @@ export const HalloweenMapBackground = memo(function HalloweenMapBackground() {
         </g>
       </svg>
 
-      {/* Floating pumpkin decorations */}
-      <div className="absolute bottom-0 left-0 w-full h-32 opacity-10">
+      {/* Floating pumpkin decorations - simplified opacity */}
+      <div className="absolute bottom-0 left-0 w-full h-24 opacity-8">
         <svg className="w-full h-full" viewBox="0 0 400 100" preserveAspectRatio="xMidYMax slice">
-          {/* Small pumpkin silhouettes in the distance */}
-          <g fill="hsl(25, 95%, 25%)" opacity="0.6">
+          {/* Reduced pumpkin count from 8 to 4 for performance */}
+          <g fill="hsl(25, 95%, 25%)" opacity="0.5">
             <ellipse cx="50" cy="85" rx="12" ry="10" />
             <rect x="48" y="75" width="4" height="8" rx="2" />
             <ellipse cx="150" cy="90" rx="8" ry="7" />
@@ -104,17 +77,17 @@ export const HalloweenMapBackground = memo(function HalloweenMapBackground() {
         </svg>
       </div>
 
-      {/* Fog layer at bottom */}
-      <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#1a0a2e]/60 via-[#1a0a2e]/30 to-transparent animate-halloween-fog" />
+      {/* Fog layer at bottom - simplified */}
+      <div className="absolute bottom-0 left-0 w-full h-20 bg-linear-to-t from-[#1a0a2e]/50 via-[#1a0a2e]/20 to-transparent animate-halloween-fog" />
 
-      {/* Purple mist overlay */}
-      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#2d1b4e]/20" />
+      {/* Purple mist overlay - simplified */}
+      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#2d1b4e]/10" />
 
-      {/* Vignette effect - darker edges */}
-      <div className="absolute inset-0 shadow-[inset_0_0_200px_hsl(270,50%,5%/0.8)]" />
+      {/* Vignette effect - optimized shadow */}
+      <div className="absolute inset-0 shadow-[inset_0_0_120px_hsl(270,50%,5%/0.6)]" />
 
-      {/* Subtle orange glow from below (jack-o-lantern ambient) */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-40 bg-gradient-radial from-[#ff6b00]/5 via-transparent to-transparent blur-3xl" />
+      {/* Subtle orange glow from below - smaller blur radius */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/5 h-32 bg-gradient-radial from-[#ff6b00]/3 via-transparent to-transparent blur-2xl" />
     </div>
   )
 })

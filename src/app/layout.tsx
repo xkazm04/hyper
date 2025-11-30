@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import { ToasterProvider } from "@/components/ui/ToasterProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeLayerProvider, HalloweenOverlay } from "@/app/features/theme-layer";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { HighContrastWrapper } from "@/app/features/accessibility";
@@ -28,15 +29,18 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <QueryProvider>
           <ThemeProvider>
-            <HighContrastWrapper>
-              <AuthProvider>
-                <ToasterProvider>
-                  <main id="main-content" role="main">
-                    {children}
-                  </main>
-                </ToasterProvider>
-              </AuthProvider>
-            </HighContrastWrapper>
+            <ThemeLayerProvider>
+              <HighContrastWrapper>
+                <AuthProvider>
+                  <ToasterProvider>
+                    <HalloweenOverlay />
+                    <main id="main-content" role="main">
+                      {children}
+                    </main>
+                  </ToasterProvider>
+                </AuthProvider>
+              </HighContrastWrapper>
+            </ThemeLayerProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>

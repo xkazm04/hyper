@@ -13,11 +13,15 @@ import { UndoRedoToast } from './components/UndoRedoToast'
 import { ActionType } from './lib/types'
 import { useEditor } from '@/contexts/EditorContext'
 
-interface UndoRedoContextValue extends UseUndoRedoReturn {
+interface UndoRedoContextValue extends Omit<UseUndoRedoReturn, 'undo' | 'redo'> {
   recordAction: (
     actionType: ActionType,
     affectedCard?: { id: string; title: string; imageUrl?: string | null }
   ) => void
+  jumpToHistoryIndex: (index: number) => void
+  // Wrapped undo/redo that apply the snapshot to the editor
+  undo: () => void
+  redo: () => void
 }
 
 const UndoRedoContext = createContext<UndoRedoContextValue | undefined>(undefined)
@@ -115,9 +119,36 @@ export function UndoRedoProvider({ children }: UndoRedoProviderProps) {
     }
   }, [undoRedo.lastAction, getSnapshot, editorApplySnapshot])
 
+  // Jump to a specific history index and apply the snapshot
+  const jumpToHistoryIndex = useCallback((index: number) => {
+    const snapshot = undoRedo.jumpToIndex(index)
+    if (snapshot) {
+      editorApplySnapshot(snapshot)
+    }
+  }, [undoRedo, editorApplySnapshot])
+
+  // Wrapped undo that applies the snapshot to the editor
+  const wrappedUndo = useCallback(() => {
+    const result = undoRedo.undo()
+    if (result) {
+      editorApplySnapshot(result.snapshot)
+    }
+  }, [undoRedo, editorApplySnapshot])
+
+  // Wrapped redo that applies the snapshot to the editor
+  const wrappedRedo = useCallback(() => {
+    const result = undoRedo.redo()
+    if (result) {
+      editorApplySnapshot(result.snapshot)
+    }
+  }, [undoRedo, editorApplySnapshot])
+
   const contextValue: UndoRedoContextValue = {
     ...undoRedo,
+    undo: wrappedUndo,
+    redo: wrappedRedo,
     recordAction,
+    jumpToHistoryIndex,
   }
 
   return (

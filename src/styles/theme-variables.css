@@ -105,6 +105,11 @@
   --card-node-border: 0 0% 89.8%;
   --card-node-selected: 217 91% 60%;
 
+  /* Section tabs - animated underline styling */
+  --section-tab-underline: 0 0% 9%;           /* Primary dark for underline */
+  --section-tab-active-text: 0 0% 9%;         /* Active tab text color */
+  --section-tab-focus-ring: 217 91% 60%;      /* Blue focus ring for keyboard nav */
+
   /* Mood color CSS custom properties */
   --mood-primary: 210 70% 50%;
   --mood-secondary: 210 50% 60%;
@@ -199,6 +204,11 @@
   --card-node-bg: 270 15% 12%;
   --card-node-border: 270 40% 35%;
   --card-node-selected: 270 70% 60%;
+
+  /* Section tabs - animated underline styling */
+  --section-tab-underline: 270 70% 60%;       /* Vibrant purple for underline */
+  --section-tab-active-text: 270 70% 70%;     /* Lighter purple for active text */
+  --section-tab-focus-ring: 270 70% 60%;      /* Purple focus ring for keyboard nav */
 }
 
 

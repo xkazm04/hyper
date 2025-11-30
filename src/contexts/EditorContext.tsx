@@ -1,14 +1,18 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react'
-import { StoryStack, StoryCard, Choice, Character } from '@/lib/types'
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react'
+import { StoryStack, StoryCard, Choice, Character, CharacterCard } from '@/lib/types'
+import { getGraphStreamHub } from '@/app/features/editor/story/sub_StoryGraph/lib/graphStreamHub'
+import { invalidateSessionLayoutCache } from '@/app/features/editor/story/sub_StoryGraph/lib/layoutCache'
 
 export interface EditorSnapshot {
   storyCards: StoryCard[]
   choices: Choice[]
   characters: Character[]
+  characterCards: CharacterCard[]
   currentCardId: string | null
   currentCharacterId: string | null
+  currentCharacterCardId: string | null
   collapsedNodes: Set<string>
 }
 
@@ -22,6 +26,9 @@ interface EditorContextType {
   characters: Character[]
   currentCharacter: Character | null
   currentCharacterId: string | null
+  characterCards: CharacterCard[]
+  currentCharacterCard: CharacterCard | null
+  currentCharacterCardId: string | null
 
   // Collapsed nodes state (for story graph)
   collapsedNodes: Set<string>
@@ -45,6 +52,11 @@ interface EditorContextType {
   addCharacter: (character: Character) => void
   updateCharacter: (characterId: string, updates: Partial<Character>) => void
   deleteCharacter: (characterId: string) => void
+  setCharacterCards: (characterCards: CharacterCard[]) => void
+  setCurrentCharacterCardId: (characterCardId: string | null) => void
+  addCharacterCard: (characterCard: CharacterCard) => void
+  updateCharacterCard: (characterCardId: string, updates: Partial<CharacterCard>) => void
+  deleteCharacterCard: (characterCardId: string) => void
 
   // Snapshot for undo/redo
   getSnapshot: () => EditorSnapshot
@@ -63,15 +75,21 @@ const getCollapsedNodesKey = (stackId: string) => `hyper_collapsed_nodes_${stack
 export function EditorProvider({ children }: { children: ReactNode }) {
   const [storyStack, setStoryStackInternal] = useState<StoryStack | null>(null)
   const [storyCards, setStoryCards] = useState<StoryCard[]>([])
-  const [currentCardId, setCurrentCardId] = useState<string | null>(null)
+  const [currentCardId, setCurrentCardIdInternal] = useState<string | null>(null)
   const [choices, setChoices] = useState<Choice[]>([])
   const [characters, setCharacters] = useState<Character[]>([])
   const [currentCharacterId, setCurrentCharacterId] = useState<string | null>(null)
+  const [characterCards, setCharacterCards] = useState<CharacterCard[]>([])
+  const [currentCharacterCardId, setCurrentCharacterCardId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [collapsedNodes, setCollapsedNodesInternal] = useState<Set<string>>(new Set())
 
+  // Ref to track if we should emit to stream (prevents double emissions)
+  const isInitializedRef = useRef(false)
+
   const currentCard = storyCards.find(card => card.id === currentCardId) || null
   const currentCharacter = characters.find(char => char.id === currentCharacterId) || null
+  const currentCharacterCard = characterCards.find(card => card.id === currentCharacterCardId) || null
 
   // Load collapsed nodes from localStorage when storyStack changes
   const setStoryStack = useCallback((stack: StoryStack) => {
@@ -131,8 +149,21 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     setCollapsedNodesInternal(nodes)
   }, [])
 
+  // Wrap setCurrentCardId to emit to stream
+  const setCurrentCardId = useCallback((cardId: string | null) => {
+    setCurrentCardIdInternal(cardId)
+    if (isInitializedRef.current) {
+      const hub = getGraphStreamHub()
+      hub.emitSelectionChange(cardId)
+    }
+  }, [])
+
   const addCard = useCallback((card: StoryCard) => {
     setStoryCards(prev => [...prev, card])
+    if (isInitializedRef.current) {
+      const hub = getGraphStreamHub()
+      hub.emitNodeAdd(card)
+    }
   }, [])
 
   const updateCard = useCallback((cardId: string, updates: Partial<StoryCard>) => {
@@ -141,18 +172,35 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         card.id === cardId ? { ...card, ...updates, updatedAt: new Date().toISOString() } : card
       )
     )
+    if (isInitializedRef.current) {
+      const hub = getGraphStreamHub()
+      hub.emitNodeUpdate(cardId, updates)
+    }
   }, [])
 
   const deleteCard = useCallback((cardId: string) => {
     setStoryCards(prev => prev.filter(card => card.id !== cardId))
     if (currentCardId === cardId) {
-      setCurrentCardId(null)
+      setCurrentCardIdInternal(null)
+    }
+    if (isInitializedRef.current) {
+      const hub = getGraphStreamHub()
+      hub.emitNodeDelete(cardId)
     }
   }, [currentCardId])
 
   const addChoice = useCallback((choice: Choice) => {
     setChoices(prev => [...prev, choice])
-  }, [])
+    // Invalidate layout cache when choices change (affects graph structure)
+    const stackId = storyStack?.id
+    if (stackId) {
+      invalidateSessionLayoutCache(stackId)
+    }
+    if (isInitializedRef.current) {
+      const hub = getGraphStreamHub()
+      hub.emitEdgeAdd(choice)
+    }
+  }, [storyStack])
 
   const updateChoice = useCallback((choiceId: string, updates: Partial<Choice>) => {
     setChoices(prev =>
@@ -160,11 +208,29 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         choice.id === choiceId ? { ...choice, ...updates, updatedAt: new Date().toISOString() } : choice
       )
     )
-  }, [])
+    // Invalidate layout cache if targetCardId or orderIndex changes (affects graph structure)
+    const stackId = storyStack?.id
+    if (stackId && (updates.targetCardId !== undefined || updates.orderIndex !== undefined)) {
+      invalidateSessionLayoutCache(stackId)
+    }
+    if (isInitializedRef.current) {
+      const hub = getGraphStreamHub()
+      hub.emitEdgeUpdate(choiceId, updates)
+    }
+  }, [storyStack])
 
   const deleteChoice = useCallback((choiceId: string) => {
     setChoices(prev => prev.filter(choice => choice.id !== choiceId))
-  }, [])
+    // Invalidate layout cache when choices change (affects graph structure)
+    const stackId = storyStack?.id
+    if (stackId) {
+      invalidateSessionLayoutCache(stackId)
+    }
+    if (isInitializedRef.current) {
+      const hub = getGraphStreamHub()
+      hub.emitEdgeDelete(choiceId)
+    }
+  }, [storyStack])
 
   const addCharacter = useCallback((character: Character) => {
     setCharacters(prev => [...prev, character])
@@ -185,25 +251,70 @@ export function EditorProvider({ children }: { children: ReactNode }) {
     }
   }, [currentCharacterId])
 
+  const addCharacterCard = useCallback((characterCard: CharacterCard) => {
+    setCharacterCards(prev => [...prev, characterCard])
+  }, [])
+
+  const updateCharacterCard = useCallback((characterCardId: string, updates: Partial<CharacterCard>) => {
+    setCharacterCards(prev =>
+      prev.map(card =>
+        card.id === characterCardId ? { ...card, ...updates, updatedAt: new Date().toISOString() } : card
+      )
+    )
+  }, [])
+
+  const deleteCharacterCard = useCallback((characterCardId: string) => {
+    setCharacterCards(prev => prev.filter(card => card.id !== characterCardId))
+    if (currentCharacterCardId === characterCardId) {
+      setCurrentCharacterCardId(null)
+    }
+  }, [currentCharacterCardId])
+
   const getSnapshot = useCallback((): EditorSnapshot => {
     return {
       storyCards,
       choices,
       characters,
+      characterCards,
       currentCardId,
       currentCharacterId,
+      currentCharacterCardId,
       collapsedNodes,
     }
-  }, [storyCards, choices, characters, currentCardId, currentCharacterId, collapsedNodes])
+  }, [storyCards, choices, characters, characterCards, currentCardId, currentCharacterId, currentCharacterCardId, collapsedNodes])
 
   const applySnapshot = useCallback((snapshot: EditorSnapshot) => {
     setStoryCards(snapshot.storyCards)
     setChoices(snapshot.choices)
     setCharacters(snapshot.characters)
-    setCurrentCardId(snapshot.currentCardId)
+    setCharacterCards(snapshot.characterCards)
+    setCurrentCardIdInternal(snapshot.currentCardId)
     setCurrentCharacterId(snapshot.currentCharacterId)
+    setCurrentCharacterCardId(snapshot.currentCharacterCardId)
     setCollapsedNodesInternal(snapshot.collapsedNodes)
   }, [])
+
+  // Emit graph sync event when story data changes
+  // This allows GraphStreamHub subscribers to react to data changes
+  useEffect(() => {
+    // Skip if not initialized or no story stack
+    if (!storyStack) return
+
+    // Mark as initialized after first sync
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true
+    }
+
+    const hub = getGraphStreamHub()
+    hub.emitGraphSync(
+      storyCards,
+      choices,
+      characters,
+      storyStack.firstCardId ?? null,
+      currentCardId,
+      collapsedNodes
+    )
+  }, [storyStack, storyCards, choices, characters, currentCardId, collapsedNodes])
 
   return (
     <EditorContext.Provider
@@ -216,6 +327,9 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         characters,
         currentCharacter,
         currentCharacterId,
+        characterCards,
+        currentCharacterCard,
+        currentCharacterCardId,
         collapsedNodes,
         toggleNodeCollapsed,
         isNodeCollapsed,
@@ -235,6 +349,11 @@ export function EditorProvider({ children }: { children: ReactNode }) {
         addCharacter,
         updateCharacter,
         deleteCharacter,
+        setCharacterCards,
+        setCurrentCharacterCardId,
+        addCharacterCard,
+        updateCharacterCard,
+        deleteCharacterCard,
         getSnapshot,
         applySnapshot,
         isSaving,

@@ -12,9 +12,11 @@ HyperCard Renaissance is a Next.js 16 application that reimagines HyperCard for 
 - Supabase (PostgreSQL with RLS)
 - Anthropic Claude API (AI script generation)
 - OpenAI API (image generation)
-- Tailwind CSS with CSS custom properties for theming
+- Tailwind CSS 4 with CSS custom properties for theming
 - React Flow (story graph visualization)
 - Zustand (state management)
+- RxJS (reactive graph streaming via GraphStreamHub)
+- Vitest (testing)
 
 ## Development Commands
 
@@ -33,6 +35,12 @@ npm run lint
 
 # Type checking
 npx tsc --noEmit
+
+# Run tests
+npx vitest
+
+# Run single test file
+npx vitest src/path/to/test.ts
 ```
 
 ## Architecture
@@ -57,13 +65,23 @@ The application has evolved from a complex HyperCard clone to a streamlined inte
 - Has: label (button text), targetCardId (where it leads)
 - Ordered by `orderIndex`
 
-**Important**: There are deprecated types (Stack, Card, Element) marked in `src/lib/types/index.ts` for backward compatibility. Always use StoryStack, StoryCard, and Choice for new code.
+**Character** → A reusable character definition
+- Belongs to a StoryStack
+- Contains: name, description, archetype, pose, avatarUrl
+- Can have multiple CharacterCards
+
+**CharacterCard** → A visual representation of a character
+- Links Character to a specific visual/pose
+- Contains: imageUrl, imagePrompt, metadata
+
+**Important**: There are deprecated types (Stack, Card, Element) marked in `src/lib/types/index.ts` for backward compatibility. Always use StoryStack, StoryCard, Choice, Character, and CharacterCard for new code.
 
 ### Service Layer Architecture
 
 All data access goes through service classes in `src/lib/services/`:
 
-**StoryService** (`src/lib/services/story.ts`) - Primary service for CRUD operations
+**StoryService** (`src/lib/services/story/index.ts`) - Unified facade for all story operations
+- Composed of sub-services: `StoryCrudService`, `CardsService`, `CharactersService`, `CharacterCardsService`, `PublishingService`
 - All methods use camelCase (e.g., `getStoryStacks`, `createStoryCard`)
 - Database fields use snake_case, service layer maps to camelCase
 - Always includes RLS (Row Level Security) checks
@@ -71,7 +89,16 @@ All data access goes through service classes in `src/lib/services/`:
   - Story stacks: `getStoryStacks()`, `createStoryStack()`, `publishStoryStack()`
   - Cards: `getStoryCards()`, `createStoryCard()`, `updateStoryCard()`
   - Choices: `getChoices()`, `createChoice()`, `deleteChoice()`
+  - Characters: `getCharacters()`, `createCharacter()`, `updateCharacter()`
+  - CharacterCards: `getCharacterCards()`, `createCharacterCard()`
   - Validation: `validateStoryGraph()` - detects orphaned cards, dead ends, invalid targets
+
+**Sub-services** (can be imported directly for targeted operations):
+- `src/lib/services/story/crud.ts` - Story stack CRUD
+- `src/lib/services/story/cards.ts` - Cards and choices
+- `src/lib/services/story/characters.ts` - Character management
+- `src/lib/services/story/characterCards.ts` - Character card management
+- `src/lib/services/story/publishing.ts` - Publishing and validation
 
 **Image Services**:
 - `src/lib/services/image.ts` - Client-side image generation interface
@@ -87,9 +114,17 @@ All data access goes through service classes in `src/lib/services/`:
 
 **EditorContext** (`src/contexts/EditorContext.tsx`)
 - Centralized state management for the story editor
-- Manages: storyStack, storyCards, currentCard, choices
-- Provides actions: addCard, updateCard, deleteCard, addChoice, etc.
+- Manages: storyStack, storyCards, currentCard, choices, characters, characterCards
+- Provides actions: addCard, updateCard, deleteCard, addChoice, addCharacter, etc.
+- Provides undo/redo support via `getSnapshot()` and `applySnapshot()`
+- Tracks collapsed nodes state for story graph visualization
+- Emits changes to GraphStreamHub for reactive updates
 - Use `useEditor()` hook to access in editor components
+
+**GraphStreamHub** (`src/app/features/editor/story/sub_StoryGraph/lib/graphStreamHub.ts`)
+- RxJS-based reactive event hub for graph state synchronization
+- Emits node/edge add/update/delete events
+- Allows components to subscribe to graph changes without prop drilling
 
 **ThemeContext** (`src/contexts/ThemeContext.tsx`)
 - Manages theme switching (light, halloween, etc.)
@@ -103,31 +138,40 @@ All data access goes through service classes in `src/lib/services/`:
 
 ### Component Organization
 
+Feature components are organized in `src/app/features/` using a hierarchical structure:
+
 ```
+src/app/features/
+├── editor/                           # Story editor features
+│   ├── story/
+│   │   ├── sub_StoryGraph/           # React Flow graph visualization
+│   │   │   ├── components/           # Graph UI components (StoryNode, GraphCanvas)
+│   │   │   ├── hooks/                # Graph-specific hooks (useGraphLayout, useGraphDiff)
+│   │   │   ├── lib/                  # graphStreamHub.ts for reactive updates
+│   │   │   └── actions/              # Graph actions
+│   │   ├── sub_StoryCardEditor/      # Card editing components
+│   │   │   ├── components/           # ImageSection, ChoicesSection, ContentSection
+│   │   │   └── lib/                  # useAutoSave, cardApi
+│   │   ├── sub_Characters/           # Character management
+│   │   │   ├── components/           # CharacterEditor, ImageGenerator
+│   │   │   └── lib/                  # characterPromptComposer
+│   │   ├── sub_PromptComposer/       # AI prompt composition UI
+│   │   ├── sub_CommandPalette/       # Keyboard-driven command interface
+│   │   └── sub_InfiniteCanvas/       # Experimental infinite canvas mode
+│   └── undo-redo/                    # Undo/redo context and hooks
+├── accessibility/                    # High contrast mode, color token resolver
+├── marketplace/                      # Character asset marketplace
+└── ui/                               # Animated card components
+    └── card-animations/
+
 src/components/
 ├── dashboard/story/        # Dashboard story list components
-│   ├── StoryStackList.tsx  # Grid view of user's stories
-│   ├── CreateStoryDialog.tsx
-│   └── DeleteConfirmDialog.tsx
-├── editor/                 # Story editor components
-│   ├── story/
-│   │   ├── StoryEditorLayout.tsx   # Main editor shell
-│   │   ├── CardList.tsx            # Left sidebar card navigator
-│   │   ├── CardEditor.tsx          # Main card editing area
-│   │   ├── ChoiceEditor.tsx        # Choice creation/editing
-│   │   ├── ImageGenerator.tsx      # AI image generation UI
-│   │   ├── StoryGraph.tsx          # React Flow graph visualization
-│   │   └── PublishDialog.tsx
-│   └── AIScriptEditor.tsx  # (Legacy - for old Stack system)
-├── player/
-│   └── StoryPlayer.tsx     # Public story playback interface
-├── theme/
-│   └── ThemeToggle.tsx     # Theme switcher component
-└── ui/                     # shadcn/ui components
-    ├── button.tsx
-    ├── dialog.tsx
-    └── ...
+├── player/                 # Public story playback interface
+├── theme/                  # Theme toggle component
+└── ui/                     # shadcn/ui components (button, dialog, etc.)
 ```
+
+**Naming convention**: Nested feature modules use `sub_` prefix (e.g., `sub_StoryGraph`, `sub_Characters`).
 
 ### Routing Structure
 
@@ -147,6 +191,8 @@ Protected routes use middleware (`src/middleware.ts`) to check Supabase session.
 - `story_stacks` - Story projects
 - `story_cards` - Story scenes/moments
 - `choices` - Navigation options
+- `characters` - Reusable character definitions
+- `character_cards` - Character visual representations
 - `profiles` - User profiles (auto-created on signup)
 
 **Migrations** are in `supabase/migrations/`:
@@ -157,6 +203,8 @@ Protected routes use middleware (`src/middleware.ts`) to check Supabase session.
 5. `00005_stack_embeddings.sql` - (Optional) AI recommendations
 6. `00006_nested_stacks.sql` - (Optional) Composable stacks
 7. `00007_deployments.sql` - (Optional) Vercel/Netlify deploys
+8. `00015_character_cards.sql` - Character cards system
+9. `00016_shared_story_bundles.sql` - Shared story bundles
 
 All tables use Row Level Security (RLS). Users can only access their own data unless stories are published.
 
@@ -228,13 +276,21 @@ See SETUP.md for detailed setup instructions.
 ## Key Patterns & Conventions
 
 ### Error Handling
-Custom error classes in `src/lib/types/index.ts`:
+Custom error classes in `src/lib/types/common.ts` (re-exported from `src/lib/types/index.ts`):
 - `StoryNotFoundError`
 - `CardNotFoundError`
 - `ChoiceNotFoundError`
+- `CharacterNotFoundError`
+- `CharacterCardNotFoundError`
 - `DatabaseError`
 - `ImageGenerationError`
+- `ImageUploadError`
+- `StoryValidationError`
 - `UnauthorizedError`
+
+Marketplace-specific errors in `src/lib/types/marketplace.ts`:
+- `AssetNotFoundError`, `CollectionNotFoundError`, `ApiKeyNotFoundError`
+- `InvalidApiKeyError`, `RateLimitExceededError`, `InsufficientPermissionsError`
 
 Services throw these errors, UI components catch and display user-friendly messages.
 
@@ -248,8 +304,12 @@ All in `src/app/api/`:
 - `/api/stories` - Story stack CRUD
 - `/api/stories/[id]/cards` - Card CRUD
 - `/api/stories/[id]/cards/[cardId]/choices` - Choice CRUD
+- `/api/stories/[id]/character-cards` - Character card CRUD
+- `/api/stories/[id]/share` - Story sharing/publishing
 - `/api/ai/complete` - Claude AI completions
+- `/api/ai/compose-prompt` - AI prompt composition
 - `/api/ai/generate-image` - DALL-E image generation
+- `/api/ai/generations` - Image generation history
 
 Use Next.js 16 App Router conventions (route handlers, not pages API).
 
@@ -267,7 +327,11 @@ Use Next.js 16 App Router conventions (route handlers, not pages API).
 
 ## Testing
 
-Currently uses manual testing. Test file at `src/lib/services/__tests__/image.test.ts` shows testing pattern if adding tests.
+Uses Vitest for testing. Run tests with `npx vitest`.
+
+Example test files:
+- `src/lib/services/__tests__/image.test.ts` - Service testing pattern
+- `src/app/features/editor/story/sub_StoryGraph/hooks/hook-composition.test.ts` - Hook testing
 
 ## Common Development Tasks
 
@@ -281,6 +345,11 @@ Currently uses manual testing. Test file at `src/lib/services/__tests__/image.te
 2. Update EditorContext with `addChoice(choice)`
 3. Choice buttons render in StoryPlayer from ordered list
 
+### Adding a Character
+1. Use `StoryService.createCharacter(input)` with `storyStackId`
+2. Update EditorContext with `addCharacter(character)`
+3. Character can then have CharacterCards created for visual representations
+
 ### Publishing a Story
 1. Call `StoryService.publishStoryStack(id)`
 2. Service validates story has cards, generates unique slug
@@ -292,6 +361,17 @@ Currently uses manual testing. Test file at `src/lib/services/__tests__/image.te
 const validation = await storyService.validateStoryGraph(stackId)
 // Returns: { isValid, errors, warnings }
 // Detects: orphaned cards, dead ends, invalid targets
+```
+
+### Subscribing to Graph Changes
+```typescript
+import { getGraphStreamHub } from '@/app/features/editor/story/sub_StoryGraph/lib/graphStreamHub'
+
+const hub = getGraphStreamHub()
+const subscription = hub.events$.subscribe(event => {
+  // Handle node_add, node_update, node_delete, edge_add, etc.
+})
+// Cleanup: subscription.unsubscribe()
 ```
 
 ## Path Aliases

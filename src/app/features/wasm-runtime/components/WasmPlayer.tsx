@@ -1,18 +1,35 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ArrowLeft, Keyboard, WifiOff, Wifi } from 'lucide-react'
+import { ArrowLeft, Keyboard, WifiOff, Wifi, AlertTriangle, RefreshCw, RotateCcw, Info } from 'lucide-react'
+import { ShortcutOverlay, WASM_PLAYER_SHORTCUTS } from './ShortcutOverlay'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
-import type { CompiledStoryBundle, SerializedCard, SerializedChoice } from '../lib/types'
+import type {
+  CompiledStoryBundle,
+  SerializedCard,
+  SerializedChoice,
+  BundleLoaderState,
+  BundleValidationWarning,
+  BundleLoadOptions,
+} from '../lib/types'
 import { WasmRuntime, createRuntime } from '../lib/runtime'
+import { getErrorMessage, getErrorAction, hasLastKnownGood } from '../lib/validator'
 
 interface WasmPlayerProps {
   bundle: CompiledStoryBundle
   saveKey?: string
   onComplete?: () => void
   showOfflineIndicator?: boolean
+  /** Enable corruption-resistant loading with retry and fallback */
+  enableValidation?: boolean
+  /** Key for storing last known good bundle state */
+  lastKnownGoodKey?: string
+  /** Maximum retry attempts for corrupted bundles */
+  maxRetries?: number
+  /** Callback when bundle validation fails */
+  onValidationError?: (error: unknown) => void
 }
 
 export function WasmPlayer({
@@ -20,6 +37,10 @@ export function WasmPlayer({
   saveKey,
   onComplete,
   showOfflineIndicator = true,
+  enableValidation = true,
+  lastKnownGoodKey,
+  maxRetries = 3,
+  onValidationError,
 }: WasmPlayerProps) {
   const runtimeRef = useRef<WasmRuntime | null>(null)
   const [currentCard, setCurrentCard] = useState<SerializedCard | null>(null)
@@ -29,20 +50,55 @@ export function WasmPlayer({
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(0)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
+  const [loaderState, setLoaderState] = useState<BundleLoaderState | null>(null)
+  const [validationProgress, setValidationProgress] = useState<string>('')
+  const [showWarnings, setShowWarnings] = useState(false)
+  const [isFallback, setIsFallback] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const bundleRef = useRef(bundle)
 
-  // Initialize runtime
+  // Keep bundleRef current
+  useEffect(() => {
+    bundleRef.current = bundle
+  }, [bundle])
+
+  // Initialize runtime with validation
   useEffect(() => {
     const initRuntime = async () => {
       setLoading(true)
+      setLoaderState(null)
+      setIsFallback(false)
 
       const runtime = createRuntime()
-      const loaded = await runtime.loadBundle(bundle)
+
+      const loadOptions: BundleLoadOptions = enableValidation
+        ? {
+            validateChecksum: true,
+            validateSchema: true,
+            maxRetries,
+            retryDelay: 1000,
+            lastKnownGoodKey: lastKnownGoodKey || `lkg_${bundle.metadata.id}`,
+            onValidationProgress: setValidationProgress,
+          }
+        : {
+            validateChecksum: false,
+            validateSchema: false,
+          }
+
+      const loaded = await runtime.loadBundle(bundle, loadOptions)
+      const finalLoaderState = runtime.getLoaderState()
+      setLoaderState(finalLoaderState)
 
       if (!loaded) {
         console.error('Failed to load bundle')
+        onValidationError?.(finalLoaderState.error)
         setLoading(false)
         return
+      }
+
+      // Check if we're using fallback
+      if (finalLoaderState.status === 'fallback') {
+        setIsFallback(true)
       }
 
       runtimeRef.current = runtime
@@ -74,7 +130,36 @@ export function WasmPlayer({
     return () => {
       runtimeRef.current?.destroy()
     }
-  }, [bundle, saveKey, onComplete])
+  }, [bundle, saveKey, onComplete, enableValidation, lastKnownGoodKey, maxRetries, onValidationError])
+
+  // Handle retry
+  const handleRetry = useCallback(async () => {
+    if (!runtimeRef.current) return
+    setLoading(true)
+    setLoaderState(null)
+    const loaded = await runtimeRef.current.retryLoad(bundleRef.current)
+    const finalLoaderState = runtimeRef.current.getLoaderState()
+    setLoaderState(finalLoaderState)
+
+    if (loaded) {
+      runtimeRef.current.start()
+      updateUI()
+    }
+    setLoading(false)
+  }, [])
+
+  // Handle fallback to last known good
+  const handleLoadFallback = useCallback(() => {
+    if (!runtimeRef.current || !lastKnownGoodKey) return
+    const loaded = runtimeRef.current.loadLastKnownGood(lastKnownGoodKey)
+    if (loaded) {
+      setIsFallback(true)
+      setLoaderState(runtimeRef.current.getLoaderState())
+      runtimeRef.current.start()
+      updateUI()
+      setLoading(false)
+    }
+  }, [lastKnownGoodKey])
 
   // Update UI from runtime state
   const updateUI = useCallback(() => {
@@ -132,10 +217,40 @@ export function WasmPlayer({
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
+  // Navigate to last card (End key)
+  const handleEnd = useCallback(() => {
+    const runtime = runtimeRef.current
+    if (!runtime) return
+
+    // Navigate through the story until reaching a dead end
+    let safety = 100 // Prevent infinite loops
+    while (safety > 0) {
+      const currentChoices = runtime.getCurrentChoices()
+      if (currentChoices.length === 0) break // Reached end
+      // Select the first choice to advance
+      runtime.selectChoice(currentChoices[0].id)
+      safety--
+    }
+    updateUI()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [updateUI])
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Skip if shortcut overlay is handling ESC
+      if (showKeyboardHelp && event.key === 'Escape') {
+        return // Let ShortcutOverlay handle it
+      }
+
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return
+      }
+
+      // Handle Ctrl+K for toggling shortcuts overlay
+      if (event.key === 'k' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault()
+        setShowKeyboardHelp((prev) => !prev)
         return
       }
 
@@ -177,21 +292,21 @@ export function WasmPlayer({
           handleRestart()
           break
 
+        case 'End':
+          event.preventDefault()
+          handleEnd()
+          break
+
         case '?':
           event.preventDefault()
           setShowKeyboardHelp((prev) => !prev)
-          break
-
-        case 'Escape':
-          event.preventDefault()
-          setShowKeyboardHelp(false)
           break
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [choices, selectedChoiceIndex, handleChoiceClick, handleBack, handleRestart])
+  }, [choices, selectedChoiceIndex, handleChoiceClick, handleBack, handleRestart, handleEnd, showKeyboardHelp])
 
   // Get asset URL from runtime
   const getAssetUrl = useCallback((assetRef: string | null): string | null => {
@@ -199,16 +314,96 @@ export function WasmPlayer({
     return runtimeRef.current.getAssetUrl(assetRef)
   }, [])
 
+  // Determine if we can show fallback option
+  const canUseFallback = lastKnownGoodKey && hasLastKnownGood(lastKnownGoodKey)
+
   if (loading) {
+    const isRetrying = loaderState?.status === 'retrying'
+    const isValidating = loaderState?.status === 'validating'
     return (
       <div
         className="min-h-screen flex items-center justify-center bg-gradient-theme"
         data-testid="wasm-player-loading"
       >
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-8">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <div className="text-lg font-semibold text-foreground">Loading story...</div>
-          <div className="text-sm text-muted-foreground mt-1">Running offline</div>
+          <div className="text-lg font-semibold text-foreground">
+            {isRetrying ? 'Retrying...' : isValidating ? 'Validating bundle...' : 'Loading story...'}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">
+            {validationProgress || 'Running offline'}
+          </div>
+          {isRetrying && loaderState && (
+            <div className="text-xs text-muted-foreground mt-2">
+              Attempt {loaderState.retryCount} of {loaderState.maxRetries}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Error state with retry and fallback options
+  if (loaderState?.status === 'error' && loaderState.error) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center bg-gradient-theme"
+        data-testid="wasm-player-error"
+      >
+        <div className="text-center max-w-lg mx-auto p-8">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4 text-foreground" data-testid="wasm-player-error-title">
+            Unable to Load Story
+          </h1>
+          <p className="text-muted-foreground mb-4" data-testid="wasm-player-error-message">
+            {getErrorMessage(loaderState.error)}
+          </p>
+          <p className="text-sm text-muted-foreground mb-6">
+            {getErrorAction(loaderState.error)}
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              onClick={handleRetry}
+              variant="default"
+              className="inline-flex items-center gap-2"
+              data-testid="wasm-player-retry-btn"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </Button>
+            {canUseFallback && (
+              <Button
+                onClick={handleLoadFallback}
+                variant="outline"
+                className="inline-flex items-center gap-2"
+                data-testid="wasm-player-fallback-btn"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Load Previous Version
+              </Button>
+            )}
+          </div>
+
+          {/* Technical details for debugging */}
+          <details className="mt-6 text-left">
+            <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+              Technical Details
+            </summary>
+            <pre className="mt-2 p-3 bg-muted rounded-lg text-xs overflow-auto max-h-40">
+              {JSON.stringify(
+                {
+                  code: loaderState.error.code,
+                  field: loaderState.error.field,
+                  retryCount: loaderState.retryCount,
+                },
+                null,
+                2
+              )}
+            </pre>
+          </details>
         </div>
       </div>
     )
@@ -223,6 +418,17 @@ export function WasmPlayer({
         <div className="text-center max-w-md mx-auto p-8">
           <h1 className="text-2xl font-bold mb-4 text-foreground">Story not available</h1>
           <p className="text-muted-foreground mb-6">This story bundle appears to be empty.</p>
+          {canUseFallback && (
+            <Button
+              onClick={handleLoadFallback}
+              variant="outline"
+              className="inline-flex items-center gap-2"
+              data-testid="wasm-player-empty-fallback-btn"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Load Previous Version
+            </Button>
+          )}
         </div>
       </div>
     )
@@ -272,43 +478,73 @@ export function WasmPlayer({
         <ThemeToggle />
       </div>
 
-      {/* Keyboard shortcuts tooltip */}
-      {showKeyboardHelp && (
+      {/* Fallback mode banner */}
+      {isFallback && (
         <div
-          className="fixed top-16 right-4 z-50 bg-card border border-border rounded-lg shadow-lg p-4 max-w-xs"
-          data-testid="wasm-player-keyboard-help"
+          className="fixed top-0 left-0 right-0 z-40 bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-800 px-4 py-2"
+          data-testid="wasm-player-fallback-banner"
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-foreground text-sm">Keyboard Shortcuts</h3>
-            <button
-              onClick={() => setShowKeyboardHelp(false)}
-              className="text-muted-foreground hover:text-foreground"
-              aria-label="Close help"
-              data-testid="wasm-player-keyboard-close-btn"
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200 text-sm">
+              <RotateCcw className="w-4 h-4" />
+              <span>Running a previous version of this story. The latest version may be corrupted.</span>
+            </div>
+            <Button
+              onClick={handleRetry}
+              variant="ghost"
+              size="sm"
+              className="text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100"
+              data-testid="wasm-player-fallback-retry-btn"
             >
-              <span className="text-lg leading-none">&times;</span>
-            </button>
-          </div>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Navigate choices</span>
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono">↑ ↓</kbd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Select choice</span>
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono">Space / Enter</kbd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Go back</span>
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono">←</kbd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Restart story</span>
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono">Home</kbd>
-            </div>
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Retry
+            </Button>
           </div>
         </div>
       )}
+
+      {/* Warnings banner */}
+      {loaderState?.warnings && loaderState.warnings.length > 0 && !isFallback && (
+        <div className="fixed top-0 left-0 right-0 z-40" data-testid="wasm-player-warnings-container">
+          <button
+            onClick={() => setShowWarnings(!showWarnings)}
+            className="w-full bg-blue-100 dark:bg-blue-900/50 border-b border-blue-200 dark:border-blue-800 px-4 py-2 text-left"
+            data-testid="wasm-player-warnings-toggle"
+          >
+            <div className="max-w-4xl mx-auto flex items-center gap-2 text-blue-800 dark:text-blue-200 text-sm">
+              <Info className="w-4 h-4" />
+              <span>{loaderState.warnings.length} warning{loaderState.warnings.length > 1 ? 's' : ''} found</span>
+              <span className="text-xs">({showWarnings ? 'click to hide' : 'click to show'})</span>
+            </div>
+          </button>
+          {showWarnings && (
+            <div className="bg-blue-50 dark:bg-blue-900/30 border-b border-blue-200 dark:border-blue-800 px-4 py-3">
+              <div className="max-w-4xl mx-auto space-y-2">
+                {loaderState.warnings.map((warning, index) => (
+                  <div
+                    key={index}
+                    className="text-sm text-blue-800 dark:text-blue-200"
+                    data-testid={`wasm-player-warning-${index}`}
+                  >
+                    <span className="font-medium">{warning.message}</span>
+                    {warning.suggestion && (
+                      <span className="text-blue-600 dark:text-blue-300 ml-2">— {warning.suggestion}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Keyboard shortcuts overlay */}
+      <ShortcutOverlay
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+        shortcuts={WASM_PLAYER_SHORTCUTS}
+        data-testid="wasm-player-keyboard-help"
+      />
 
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 lg:py-12">
         {/* Story card */}

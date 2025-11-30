@@ -12,3 +12,4 @@ export {
   ErrorMessage,
 } from './ImageGenerationControls'
 export { useImageGenerator } from './useImageGenerator'
+export { MasonryGallery } from './MasonryGallery'

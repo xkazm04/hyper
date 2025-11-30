@@ -208,17 +208,29 @@ export function computeGraphDiff(
   // Check if first card changed
   const firstCardChanged = previous.firstCardId !== current.firstCardId
 
+  // Calculate how localized the changes are
+  // If changes are concentrated in one subtree, incremental layout is more efficient
+  const totalNodes = current.cardIds.size
+  const changedNodeCount = addedNodes.size + removedNodes.size
+  const changedEdgeCount = addedEdges.size + removedEdges.size + modifiedEdges.size
+  const totalChanges = changedNodeCount + changedEdgeCount
+
   // Determine if full layout is required
   // Full layout needed when:
   // 1. First card changed (root of the tree changed)
-  // 2. More than 30% of nodes were affected
-  // 3. Root subtree was affected
-  const totalNodes = current.cardIds.size
-  const affectedCount = addedNodes.size + removedNodes.size + affectedSubtreeRoots.size
+  // 2. More than 40% of nodes were structurally affected (increased threshold for better incremental reuse)
+  // 3. Multiple disjoint subtrees are affected (more than 3 subtree roots)
+  // 4. The root subtree was affected significantly
+  const affectedRatio = totalNodes > 0 ? (changedNodeCount + affectedSubtreeRoots.size) / totalNodes : 0
+  const hasMultipleDisjointChanges = affectedSubtreeRoots.size > 3
+  const rootSubtreeAffected = current.firstCardId !== null && affectedSubtreeRoots.has(current.firstCardId)
+
+  // Be more conservative about requiring full layout - favor incremental when possible
   const requiresFullLayout: boolean =
     firstCardChanged ||
-    (totalNodes > 0 && affectedCount / totalNodes > 0.3) ||
-    (current.firstCardId !== null ? affectedSubtreeRoots.has(current.firstCardId) : false)
+    (totalNodes > 0 && affectedRatio > 0.4) ||
+    (hasMultipleDisjointChanges && affectedRatio > 0.25) ||
+    (rootSubtreeAffected && changedNodeCount > totalNodes * 0.3)
 
   return {
     addedNodes,

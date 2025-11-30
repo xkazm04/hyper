@@ -1,7 +1,7 @@
 /**
  * Prompt Composer Data
  * Visual prompt builder for story card image generation
- * Max total prompt length: 1618 characters (Leonardo limit)
+ * Max total prompt length: 1500 characters (Leonardo limit with reserve)
  * 
  * Note: This module re-exports from the new centralized prompts module
  * for backward compatibility. New code should import from '@/app/prompts'.

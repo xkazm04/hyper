@@ -172,16 +172,16 @@ export interface SketchQualityPreset {
 export const SKETCH_QUALITY_PRESETS: Record<string, SketchQualityPreset> = {
   quick: {
     name: 'Quick Sketch',
-    width: 384,
-    height: 384,
+    width: 736,
+    height: 1120,
     steps: 15,
     guidanceScale: 5,
     description: 'Fast preview (5-10 seconds)',
   },
   standard: {
     name: 'Standard Sketch',
-    width: 512,
-    height: 512,
+    width: 736,
+    height: 1120,
     steps: 20,
     guidanceScale: 6,
     description: 'Balanced quality/speed (10-20 seconds)',
@@ -191,16 +191,16 @@ export const SKETCH_QUALITY_PRESETS: Record<string, SketchQualityPreset> = {
 export const FINAL_QUALITY_PRESETS: Record<string, SketchQualityPreset> = {
   high: {
     name: 'High Quality',
-    width: 768,
-    height: 768,
+    width: 736,
+    height: 1120,
     steps: 35,
     guidanceScale: 7.5,
     description: 'High detail (30-45 seconds)',
   },
   premium: {
     name: 'Premium',
-    width: 1024,
-    height: 1024,
+    width: 736,
+    height: 1120,
     steps: 50,
     guidanceScale: 8,
     description: 'Maximum quality (45-90 seconds)',

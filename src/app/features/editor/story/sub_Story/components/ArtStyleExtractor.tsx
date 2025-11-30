@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { Upload, Loader2, Sparkles, Image as ImageIcon, X, RefreshCw } from 'lucide-react'
+import { Upload, Loader2, Sparkles, Image as ImageIcon, X, RefreshCw, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -27,7 +27,27 @@ export function ArtStyleExtractor({
   const [isExtracting, setIsExtracting] = useState(false)
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(extractedImageUrl)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleCopyToClipboard = async () => {
+    if (!customPrompt) return
+    try {
+      await navigator.clipboard.writeText(customPrompt)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea')
+      textarea.value = customPrompt
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -183,24 +203,47 @@ export function ArtStyleExtractor({
           <Label className="text-xs text-muted-foreground">
             {uploadedImageUrl ? 'Extracted Style (editable)' : 'Or write custom style prompt'}
           </Label>
-          {customPrompt && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              disabled={disabled}
-              className="h-6 text-xs"
-            >
-              <RefreshCw className="w-3 h-3 mr-1" />
-              Reset
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {customPrompt && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyToClipboard}
+                  disabled={disabled}
+                  className="h-6 text-xs"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3 h-3 mr-1 text-green-500" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copy
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClear}
+                  disabled={disabled}
+                  className="h-6 text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Reset
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         <Textarea
           value={customPrompt || ''}
           onChange={(e) => onCustomPromptChange(e.target.value)}
           placeholder="Describe the visual art style you want for all images in this story..."
-          className="min-h-[180px] text-xs resize-none"
+          className="min-h-[270px] text-xs resize-none"
           disabled={disabled || isExtracting}
         />
         <p className="text-[10px] text-muted-foreground">

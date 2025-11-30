@@ -11,6 +11,7 @@ export {
   CardNotFoundError,
   ChoiceNotFoundError,
   CharacterNotFoundError,
+  CharacterCardNotFoundError,
   UnauthorizedError,
   ImageGenerationError,
   ImageUploadError,
@@ -26,10 +27,11 @@ export {
   type PackageCategory,
 } from './common'
 
-// Story types - StoryStack, StoryCard, validation, and related input types
+// Story types - StoryStack, StoryCard, CharacterCard, validation, and related input types
 export {
   type StoryStack,
   type StoryCard,
+  type CharacterCard,
   type ValidationResult,
   type ValidationError,
   type ValidationWarning,
@@ -37,6 +39,8 @@ export {
   type UpdateStoryStackInput,
   type CreateStoryCardInput,
   type UpdateStoryCardInput,
+  type CreateCharacterCardInput,
+  type UpdateCharacterCardInput,
   // Deprecated types
   type Stack,
   type CreateStackInput,

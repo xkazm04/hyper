@@ -283,8 +283,9 @@ html.mood-transitioning *::after {
 .animate-progress-shimmer {
   background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.7) 50%, hsl(var(--primary)) 100%);
   background-size: 200% 100%;
+  will-change: background-position;
 }
-.group:hover .animate-progress-shimmer { animation: progressShimmer 1.5s ease-in-out infinite; }
+.group:hover .animate-progress-shimmer { animation: progressShimmer 1.2s linear infinite; }
 
 @keyframes iconSpin {
   0%, 100% { transform: rotate(0deg); }
@@ -387,43 +388,74 @@ html.mood-transitioning *::after {
 .animate-edge-flow { animation: edgeFlow 1s linear infinite; }
 
 /*
+ * Branch Depth Progress Bar Animations
+ */
+@keyframes celebrationFlash {
+  0% {
+    background: linear-gradient(90deg,
+      hsl(var(--primary) / 0.6) 0%,
+      hsl(var(--primary) / 0.5) 50%,
+      hsl(var(--primary) / 0.4) 100%);
+  }
+  50% {
+    background: linear-gradient(90deg,
+      hsl(45, 93%, 47% / 0.8) 0%,
+      hsl(25, 95%, 53% / 0.9) 50%,
+      hsl(330, 81%, 60% / 0.8) 100%);
+  }
+  100% {
+    background: linear-gradient(90deg,
+      hsl(var(--primary) / 0.6) 0%,
+      hsl(var(--primary) / 0.5) 50%,
+      hsl(var(--primary) / 0.4) 100%);
+  }
+}
+.animate-celebration-flash { animation: celebrationFlash 0.6s ease-out; }
+
+@keyframes flashFade {
+  0% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+.animate-flash-fade { animation: flashFade 0.6s ease-out forwards; }
+
+/*
  * Path Glow Animations - Highlight lineage from root to selected node
  */
 @keyframes pathNodeGlow {
   0%, 100% {
-    box-shadow: 0 0 0 0 hsl(var(--primary) / 0),
-                0 0 0 0 hsl(var(--primary) / 0);
+    box-shadow: 0 0 8px 2px hsl(var(--primary) / 0.3);
   }
   50% {
-    box-shadow: 0 0 12px 3px hsl(var(--primary) / 0.4),
-                0 0 24px 6px hsl(var(--primary) / 0.2);
+    box-shadow: 0 0 12px 3px hsl(var(--primary) / 0.5);
   }
 }
 
 @keyframes pathNodeGlowHalloween {
   0%, 100% {
-    box-shadow: 0 0 0 0 hsl(270, 70%, 60%, 0),
-                0 0 0 0 hsl(25, 95%, 53%, 0);
+    box-shadow: 0 0 10px 2px hsl(270, 70%, 60%, 0.4);
   }
   50% {
-    box-shadow: 0 0 14px 4px hsl(270, 70%, 60%, 0.5),
-                0 0 28px 8px hsl(25, 95%, 53%, 0.25);
+    box-shadow: 0 0 14px 4px hsl(270, 70%, 60%, 0.6);
   }
 }
 
 @keyframes nodeClickBounce {
   0% { transform: scale(1); }
-  15% { transform: scale(0.95); }
-  30% { transform: scale(1.08); }
-  45% { transform: scale(0.98); }
-  60% { transform: scale(1.02); }
-  75% { transform: scale(0.99); }
+  15% { transform: scale(0.96); }
+  30% { transform: scale(1.05); }
+  45% { transform: scale(0.99); }
   100% { transform: scale(1); }
+}
+
+/* Node click bounce animation - reduced duration from 0.4s to 0.35s */
+.node-click-bounce {
+  animation: nodeClickBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
 }
 
 @keyframes pathEdgeGlow {
   0%, 100% {
-    filter: drop-shadow(0 0 0 transparent);
+    filter: drop-shadow(0 0 2px hsl(var(--primary) / 0.3));
     opacity: 0.8;
   }
   50% {
@@ -434,37 +466,41 @@ html.mood-transitioning *::after {
 
 @keyframes pathEdgeGlowHalloween {
   0%, 100% {
-    filter: drop-shadow(0 0 0 transparent);
+    filter: drop-shadow(0 0 2px hsl(270, 70%, 60%, 0.4));
     opacity: 0.8;
   }
   50% {
-    filter: drop-shadow(0 0 6px hsl(270, 70%, 60%, 0.7));
+    filter: drop-shadow(0 0 5px hsl(270, 70%, 60%, 0.7));
     opacity: 1;
   }
 }
 
-/* Path glow classes for nodes */
+/* Path glow classes for nodes - optimized with containment */
 .path-node-glow {
-  animation: pathNodeGlow 2s ease-in-out infinite;
+  animation: pathNodeGlow 2.5s ease-in-out infinite;
   z-index: 10;
+  will-change: box-shadow;
+  contain: layout style;
 }
 
 .halloween .path-node-glow {
-  animation: pathNodeGlowHalloween 2s ease-in-out infinite;
+  animation: pathNodeGlowHalloween 2.5s ease-in-out infinite;
 }
 
 /* Node click bounce animation */
+/* Node click bounce animation - reduced duration from 0.4s to 0.35s */
 .node-click-bounce {
-  animation: nodeClickBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: nodeClickBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
 }
 
 /* Path edge glow - applied via React Flow edge styles */
 .path-edge-glow path {
-  animation: pathEdgeGlow 2s ease-in-out infinite;
+  animation: pathEdgeGlow 2.5s ease-in-out infinite;
 }
 
 .halloween .path-edge-glow path {
-  animation: pathEdgeGlowHalloween 2s ease-in-out infinite;
+  animation: pathEdgeGlowHalloween 2.5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -491,6 +527,128 @@ html.mood-transitioning *::after {
 }
 .animate-suggestion-lift:hover { animation: suggestionLift 0.6s ease-in-out; }
 
+/*
+ * Masonry Gallery Styles
+ * Responsive masonry layout with lazy loading and hover parallax
+ */
+.masonry-grid {
+  column-count: 2;
+  column-gap: 0.75rem;
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 0.75rem;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Masonry image fade-in animation */
+@keyframes masonryFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+.masonry-item img {
+  animation: masonryFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Parallax hover effect styles */
+.masonry-item {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.masonry-item:hover {
+  z-index: 10;
+}
+
+/* Responsive adjustments */
+@media (min-width: 640px) {
+  .masonry-grid {
+    column-gap: 1rem;
+  }
+  .masonry-item {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .masonry-grid {
+    column-count: 2;
+  }
+}
+
+/* Reduced motion: disable parallax and fade animations */
+@media (prefers-reduced-motion: reduce) {
+  .masonry-item img {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .masonry-item:hover img {
+    transform: none !important;
+  }
+}
+
+/*
+ * Node Drop Confetti Animation
+ * Burst of particles when a node is placed in the graph
+ */
+@keyframes confettiBurst {
+  0% {
+    transform: translate(0, 0) rotate(var(--rotation, 0deg)) scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(
+      var(--velocity-x, 50px),
+      calc(var(--velocity-y, -50px) + 100px)
+    ) rotate(calc(var(--rotation, 0deg) + var(--rotation-speed, 360deg))) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.confetti-particle {
+  width: var(--size, 6px);
+  height: var(--size, 6px);
+  background-color: var(--color, hsl(var(--primary)));
+  border-radius: 2px;
+  animation: confettiBurst 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation-delay: var(--delay, 0ms);
+  will-change: transform, opacity;
+  contain: layout style paint;
+}
+
+/* Different particle shapes for variety */
+.confetti-particle:nth-child(3n) {
+  border-radius: 50%;
+}
+
+.confetti-particle:nth-child(3n+1) {
+  border-radius: 0;
+  transform-origin: center;
+}
+
+.confetti-particle:nth-child(3n+2) {
+  width: calc(var(--size, 6px) * 1.5);
+  height: calc(var(--size, 6px) * 0.6);
+  border-radius: 1px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-suggestion-spawn,
   .animate-suggestion-dismiss,
@@ -501,8 +659,10 @@ html.mood-transitioning *::after {
   .animate-ai-thinking,
   .animate-confidence-ring-high,
   .animate-edge-flow,
-  .animate-suggestion-lift:hover {
+  .animate-suggestion-lift:hover,
+  .confetti-particle {
     animation: none !important;
+    opacity: 0 !important;
   }
 }
 
@@ -667,5 +827,96 @@ html.high-contrast-transitioning *::after {
   :focus-visible {
     outline: 3px solid Highlight !important;
     outline-offset: 2px !important;
+  }
+}
+
+/* ===== GLOBAL SCROLLBAR STYLES ===== */
+/* Apply consistent scrollbar styling to ALL elements by default */
+/* Supports both light and halloween (dark/purple) themes */
+@layer base {
+  /* Light theme scrollbar (default) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #000000 #ffffff;
+  }
+
+  *::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #ffffff;
+    border-radius: 1px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 1px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #00167a;
+  }
+
+  /* Halloween theme scrollbar (black/purple) */
+  .halloween * {
+    scrollbar-color: hsl(270 70% 60%) hsl(270 15% 10%);
+  }
+
+  .halloween *::-webkit-scrollbar-track {
+    background: hsl(270 15% 10%);
+  }
+
+  .halloween *::-webkit-scrollbar-thumb {
+    background: hsl(270 70% 60%);
+  }
+
+  .halloween *::-webkit-scrollbar-thumb:hover {
+    background: hsl(270 70% 70%);
+  }
+}
+
+/*
+ * Search Highlight Glow Animation
+ * Highlights nodes matching the search query
+ */
+@keyframes searchHighlightGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 3px hsl(210 100% 50% / 0.4),
+                0 0 15px 5px hsl(210 100% 50% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px hsl(210 100% 60% / 0.6),
+                0 0 25px 10px hsl(210 100% 60% / 0.4);
+  }
+}
+
+@keyframes searchHighlightGlowHalloween {
+  0%, 100% {
+    box-shadow: 0 0 0 3px hsl(45, 93%, 47% / 0.5),
+                0 0 15px 5px hsl(45, 93%, 47% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px hsl(45, 93%, 57% / 0.7),
+                0 0 25px 10px hsl(45, 93%, 57% / 0.4);
+  }
+}
+
+.search-highlight-glow {
+  animation: searchHighlightGlow 1.5s ease-in-out infinite;
+  z-index: 50;
+}
+
+.halloween .search-highlight-glow {
+  animation: searchHighlightGlowHalloween 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-highlight-glow,
+  .halloween .search-highlight-glow {
+    animation: none;
+    box-shadow: 0 0 0 3px hsl(210 100% 50% / 0.5),
+                0 0 12px 4px hsl(210 100% 50% / 0.3);
   }
 }

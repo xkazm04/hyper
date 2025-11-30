@@ -1,10 +1,15 @@
 import dagre from 'dagre'
 import { StoryCard } from '@/lib/types'
 import { Choice } from '@/lib/types'
+import { NodeDimensions, BASE_NODE_WIDTH, NODE_HEADER_HEIGHT, MIN_TITLE_HEIGHT, NODE_FOOTER_HEIGHT, NODE_PADDING_Y } from '../lib/nodeDimensions'
 
-// Optimized node dimensions for large graphs (140px width nodes)
-export const NODE_WIDTH = 160
-export const NODE_HEIGHT = 95
+// Default node dimensions (used when dynamic dimensions not available)
+export const NODE_WIDTH = BASE_NODE_WIDTH
+export const NODE_HEIGHT = NODE_HEADER_HEIGHT + MIN_TITLE_HEIGHT + NODE_FOOTER_HEIGHT + NODE_PADDING_Y
+
+// Legacy constants for backward compatibility
+export const DEFAULT_NODE_WIDTH = 160
+export const DEFAULT_NODE_HEIGHT = 95
 
 // Spacing optimized for decision trees with up to 3 branches
 export const RANK_SEPARATION = 250
@@ -45,11 +50,13 @@ export interface LayoutResult {
  * - Depth-based ranking to ensure proper tree structure
  * - Vertical fan-out for branches at angles that remain readable
  * - Increased spacing at deeper levels to prevent overlap
+ * - Dynamic node sizing based on title length
  */
 export function createHierarchicalLayout(
   storyCards: StoryCard[],
   choices: Choice[],
-  analysis: CardAnalysis
+  analysis: CardAnalysis,
+  nodeDimensions?: Map<string, NodeDimensions>
 ): { nodePositions: Map<string, { x: number; y: number }> } {
   const g = new dagre.graphlib.Graph()
 
@@ -67,12 +74,16 @@ export function createHierarchicalLayout(
 
   g.setDefaultEdgeLabel(() => ({}))
 
-  // Add all nodes with depth-aware sizing
+  // Add all nodes with depth-aware and dynamic sizing
   storyCards.forEach(card => {
     const depth = analysis.depth.get(card.id) ?? 999
+    // Use dynamic dimensions if available, otherwise fallback to defaults
+    const dimensions = nodeDimensions?.get(card.id)
+    const nodeWidth = dimensions?.width ?? NODE_WIDTH
+    const nodeHeight = dimensions?.height ?? NODE_HEIGHT
     g.setNode(card.id, {
-      width: NODE_WIDTH,
-      height: NODE_HEIGHT,
+      width: nodeWidth,
+      height: nodeHeight,
       rank: depth,
     })
   })
@@ -111,14 +122,18 @@ export function createHierarchicalLayout(
   // Calculate layout
   dagre.layout(g)
 
-  // Extract positions
+  // Extract positions (use dynamic dimensions for offset calculation)
   const nodePositions = new Map<string, { x: number; y: number }>()
   storyCards.forEach(card => {
     const nodeWithPosition = g.node(card.id)
     if (nodeWithPosition) {
+      // Use actual node dimensions for proper centering
+      const dimensions = nodeDimensions?.get(card.id)
+      const nodeWidth = dimensions?.width ?? NODE_WIDTH
+      const nodeHeight = dimensions?.height ?? NODE_HEIGHT
       nodePositions.set(card.id, {
-        x: nodeWithPosition.x - NODE_WIDTH / 2,
-        y: nodeWithPosition.y - NODE_HEIGHT / 2,
+        x: nodeWithPosition.x - nodeWidth / 2,
+        y: nodeWithPosition.y - nodeHeight / 2,
       })
     }
   })
@@ -141,6 +156,117 @@ export function getEdgeColor(branchIndex: number, totalBranches: number): string
 }
 
 /**
+ * Finds the roots of affected subtrees (nodes that need layout but whose parents don't)
+ */
+function findSubtreeRoots(
+  nodesNeedingLayout: Set<string>,
+  analysis: CardAnalysis,
+  choices: Choice[]
+): Set<string> {
+  const roots = new Set<string>()
+  const parentMap = new Map<string, string>()
+
+  // Build parent map
+  for (const choice of choices) {
+    if (choice.targetCardId) {
+      // If a child already has a parent, keep the one with lower depth
+      const existingParent = parentMap.get(choice.targetCardId)
+      if (!existingParent) {
+        parentMap.set(choice.targetCardId, choice.storyCardId)
+      } else {
+        const existingDepth = analysis.depth.get(existingParent) ?? Infinity
+        const newDepth = analysis.depth.get(choice.storyCardId) ?? Infinity
+        if (newDepth < existingDepth) {
+          parentMap.set(choice.targetCardId, choice.storyCardId)
+        }
+      }
+    }
+  }
+
+  // Find roots: nodes in nodesNeedingLayout whose parent is NOT in nodesNeedingLayout
+  for (const nodeId of nodesNeedingLayout) {
+    const parent = parentMap.get(nodeId)
+    if (!parent || !nodesNeedingLayout.has(parent)) {
+      roots.add(nodeId)
+    }
+  }
+
+  return roots
+}
+
+/**
+ * Gets all descendants of a node
+ */
+function getDescendants(nodeId: string, childrenMap: Map<string, string[]>, visited = new Set<string>()): Set<string> {
+  const descendants = new Set<string>()
+  if (visited.has(nodeId)) return descendants
+  visited.add(nodeId)
+
+  const children = childrenMap.get(nodeId) || []
+  for (const child of children) {
+    descendants.add(child)
+    const childDescendants = getDescendants(child, childrenMap, visited)
+    childDescendants.forEach(d => descendants.add(d))
+  }
+
+  return descendants
+}
+
+/**
+ * Determines optimal layout offset to align subtree with existing graph
+ */
+function calculateSubtreeOffset(
+  subtreeRootId: string,
+  dagrePosition: NodePosition,
+  existingPositions: Map<string, NodePosition>,
+  analysis: CardAnalysis,
+  choices: Choice[]
+): { offsetX: number; offsetY: number } {
+  // Find parent of subtree root
+  let parentId: string | null = null
+  for (const choice of choices) {
+    if (choice.targetCardId === subtreeRootId) {
+      parentId = choice.storyCardId
+      break
+    }
+  }
+
+  if (parentId && existingPositions.has(parentId)) {
+    const parentPos = existingPositions.get(parentId)!
+
+    // Get all siblings (other targets from the same parent)
+    const siblings = choices
+      .filter(c => c.storyCardId === parentId && c.targetCardId)
+      .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+
+    const siblingIndex = siblings.findIndex(c => c.targetCardId === subtreeRootId)
+    const siblingCount = siblings.length
+
+    // Calculate expected Y position based on sibling distribution
+    const totalHeight = (siblingCount - 1) * (NODE_HEIGHT + NODE_SEPARATION)
+    const startY = parentPos.y - totalHeight / 2
+    const expectedY = startY + siblingIndex * (NODE_HEIGHT + NODE_SEPARATION)
+
+    // Calculate expected X position (one rank to the right of parent)
+    const expectedX = parentPos.x + RANK_SEPARATION + NODE_WIDTH
+
+    return {
+      offsetX: expectedX - dagrePosition.x,
+      offsetY: expectedY - dagrePosition.y,
+    }
+  }
+
+  // No parent found, use depth-based positioning
+  const depth = analysis.depth.get(subtreeRootId) ?? 0
+  const expectedX = 80 + depth * (RANK_SEPARATION + NODE_WIDTH)
+
+  return {
+    offsetX: expectedX - dagrePosition.x,
+    offsetY: 80 - dagrePosition.y,
+  }
+}
+
+/**
  * Creates an incremental layout for a subset of nodes (subtree)
  * Re-uses existing positions for nodes not in the affected set
  *
@@ -149,6 +275,7 @@ export function getEdgeColor(branchIndex: number, totalBranches: number): string
  * @param analysis Card analysis with depth info
  * @param existingPositions Previous positions to preserve for unchanged nodes
  * @param nodesNeedingLayout Set of node IDs that need new positions (empty = full layout)
+ * @param nodeDimensions Optional map of node dimensions for dynamic sizing
  * @returns New positions for all nodes
  */
 export function createIncrementalLayout(
@@ -156,7 +283,8 @@ export function createIncrementalLayout(
   choices: Choice[],
   analysis: CardAnalysis,
   existingPositions: Map<string, NodePosition>,
-  nodesNeedingLayout: Set<string>
+  nodesNeedingLayout: Set<string>,
+  nodeDimensions?: Map<string, NodeDimensions>
 ): LayoutResult {
   // If nodesNeedingLayout is empty or covers most nodes, do full layout
   const needsFullLayout =
@@ -164,42 +292,60 @@ export function createIncrementalLayout(
     nodesNeedingLayout.size >= storyCards.length * 0.7
 
   if (needsFullLayout) {
-    return createHierarchicalLayout(storyCards, choices, analysis)
+    return createHierarchicalLayout(storyCards, choices, analysis, nodeDimensions)
   }
 
-  // Identify subtree root(s) for incremental layout
-  // We need to find the highest ancestor in nodesNeedingLayout that is connected
-  const subtreeCards = storyCards.filter(c => nodesNeedingLayout.has(c.id))
-  const subtreeChoices = choices.filter(c =>
-    nodesNeedingLayout.has(c.storyCardId) ||
-    (c.targetCardId && nodesNeedingLayout.has(c.targetCardId))
-  )
+  // Find the roots of affected subtrees
+  const subtreeRoots = findSubtreeRoots(nodesNeedingLayout, analysis, choices)
 
-  // If subtree is too small (1-2 nodes), we can calculate positions relative to parent
-  if (subtreeCards.length <= 2 && existingPositions.size > 0) {
+  // If only 1-2 nodes need layout, use fast relative positioning
+  if (nodesNeedingLayout.size <= 2 && existingPositions.size > 0) {
+    const subtreeCards = storyCards.filter(c => nodesNeedingLayout.has(c.id))
     return calculateRelativePositions(
       subtreeCards,
       choices,
       analysis,
       existingPositions,
-      nodesNeedingLayout
+      nodesNeedingLayout,
+      nodeDimensions
     )
   }
 
-  // Run dagre only on the affected subtree
-  const subtreePositions = calculateSubtreeLayout(
-    subtreeCards,
-    subtreeChoices,
-    analysis,
-    existingPositions,
-    nodesNeedingLayout
-  )
-
-  // Merge with existing positions
+  // Start with existing positions
   const mergedPositions = new Map<string, NodePosition>(existingPositions)
-  subtreePositions.forEach((pos, id) => {
-    mergedPositions.set(id, pos)
-  })
+
+  // Process each subtree root independently
+  for (const rootId of subtreeRoots) {
+    // Get all nodes in this subtree
+    const subtreeNodeIds = new Set([rootId])
+    const descendants = getDescendants(rootId, analysis.childrenMap)
+    descendants.forEach(d => {
+      if (nodesNeedingLayout.has(d)) {
+        subtreeNodeIds.add(d)
+      }
+    })
+
+    const subtreeCards = storyCards.filter(c => subtreeNodeIds.has(c.id))
+    const subtreeChoices = choices.filter(c =>
+      subtreeNodeIds.has(c.storyCardId) ||
+      (c.targetCardId && subtreeNodeIds.has(c.targetCardId))
+    )
+
+    // Run dagre only on this subtree
+    const subtreePositions = calculateSubtreeLayout(
+      subtreeCards,
+      subtreeChoices,
+      analysis,
+      existingPositions,
+      subtreeNodeIds,
+      nodeDimensions
+    )
+
+    // Merge subtree positions
+    subtreePositions.forEach((pos, id) => {
+      mergedPositions.set(id, pos)
+    })
+  }
 
   return { nodePositions: mergedPositions }
 }
@@ -212,12 +358,18 @@ function calculateRelativePositions(
   allChoices: Choice[],
   analysis: CardAnalysis,
   existingPositions: Map<string, NodePosition>,
-  nodesNeedingLayout: Set<string>
+  nodesNeedingLayout: Set<string>,
+  nodeDimensions?: Map<string, NodeDimensions>
 ): LayoutResult {
   const newPositions = new Map<string, NodePosition>(existingPositions)
 
   for (const card of subtreeCards) {
     if (!nodesNeedingLayout.has(card.id)) continue
+
+    // Get dynamic dimensions for this card
+    const dimensions = nodeDimensions?.get(card.id)
+    const nodeWidth = dimensions?.width ?? NODE_WIDTH
+    const nodeHeight = dimensions?.height ?? NODE_HEIGHT
 
     // Find parent node (node that has a choice pointing to this card)
     const parentChoice = allChoices.find(c => c.targetCardId === card.id)
@@ -225,6 +377,9 @@ function calculateRelativePositions(
 
     if (parentId && existingPositions.has(parentId)) {
       const parentPos = existingPositions.get(parentId)!
+      // Get parent dimensions for proper offset
+      const parentDimensions = nodeDimensions?.get(parentId)
+      const parentWidth = parentDimensions?.width ?? NODE_WIDTH
 
       // Get sibling count and this node's index among siblings
       const siblings = allChoices
@@ -235,19 +390,19 @@ function calculateRelativePositions(
       const siblingCount = siblings.length
 
       // Calculate vertical offset based on sibling position
-      const totalHeight = (siblingCount - 1) * (NODE_HEIGHT + NODE_SEPARATION)
+      const totalHeight = (siblingCount - 1) * (nodeHeight + NODE_SEPARATION)
       const startY = parentPos.y - totalHeight / 2
-      const yOffset = siblingIndex * (NODE_HEIGHT + NODE_SEPARATION)
+      const yOffset = siblingIndex * (nodeHeight + NODE_SEPARATION)
 
       newPositions.set(card.id, {
-        x: parentPos.x + RANK_SEPARATION + NODE_WIDTH,
+        x: parentPos.x + RANK_SEPARATION + parentWidth,
         y: startY + yOffset,
       })
     } else {
       // No parent found, use depth-based positioning
       const depth = analysis.depth.get(card.id) ?? 0
       newPositions.set(card.id, {
-        x: 80 + depth * (RANK_SEPARATION + NODE_WIDTH),
+        x: 80 + depth * (RANK_SEPARATION + nodeWidth),
         y: 80,
       })
     }
@@ -264,7 +419,8 @@ function calculateSubtreeLayout(
   subtreeChoices: Choice[],
   analysis: CardAnalysis,
   existingPositions: Map<string, NodePosition>,
-  nodesNeedingLayout: Set<string>
+  nodesNeedingLayout: Set<string>,
+  nodeDimensions?: Map<string, NodeDimensions>
 ): Map<string, NodePosition> {
   const g = new dagre.graphlib.Graph()
 
@@ -287,9 +443,13 @@ function calculateSubtreeLayout(
 
   subtreeCards.forEach(card => {
     const depth = analysis.depth.get(card.id) ?? 999
+    // Use dynamic dimensions if available
+    const dimensions = nodeDimensions?.get(card.id)
+    const nodeWidth = dimensions?.width ?? NODE_WIDTH
+    const nodeHeight = dimensions?.height ?? NODE_HEIGHT
     g.setNode(card.id, {
-      width: NODE_WIDTH,
-      height: NODE_HEIGHT,
+      width: nodeWidth,
+      height: nodeHeight,
       rank: depth,
     })
 
@@ -343,36 +503,43 @@ function calculateSubtreeLayout(
   if (anchorNodeId) {
     const dagreAnchor = g.node(anchorNodeId)
     const anchorDepth = analysis.depth.get(anchorNodeId) ?? 0
+    // Get anchor node dimensions
+    const anchorDimensions = nodeDimensions?.get(anchorNodeId)
+    const anchorWidth = anchorDimensions?.width ?? NODE_WIDTH
+    const anchorHeight = anchorDimensions?.height ?? NODE_HEIGHT
 
     // Find existing anchor position or calculate expected position
     if (existingPositions.has(anchorNodeId) && !nodesNeedingLayout.has(anchorNodeId)) {
       // Anchor exists and doesn't need relayout - align to it
       const existingAnchor = existingPositions.get(anchorNodeId)!
       if (dagreAnchor) {
-        offsetX = existingAnchor.x - (dagreAnchor.x - NODE_WIDTH / 2)
-        offsetY = existingAnchor.y - (dagreAnchor.y - NODE_HEIGHT / 2)
+        offsetX = existingAnchor.x - (dagreAnchor.x - anchorWidth / 2)
+        offsetY = existingAnchor.y - (dagreAnchor.y - anchorHeight / 2)
       }
     } else {
       // Calculate based on depth
       if (dagreAnchor) {
-        offsetX = 80 + anchorDepth * (RANK_SEPARATION + NODE_WIDTH) - (dagreAnchor.x - NODE_WIDTH / 2)
+        offsetX = 80 + anchorDepth * (RANK_SEPARATION + anchorWidth) - (dagreAnchor.x - anchorWidth / 2)
         // Find parent's Y position for vertical alignment
         const parentChoice = subtreeChoices.find(c => c.targetCardId === anchorNodeId)
         if (parentChoice && existingPositions.has(parentChoice.storyCardId)) {
           const parentPos = existingPositions.get(parentChoice.storyCardId)!
-          offsetY = parentPos.y - (dagreAnchor.y - NODE_HEIGHT / 2)
+          offsetY = parentPos.y - (dagreAnchor.y - anchorHeight / 2)
         }
       }
     }
   }
 
-  // Apply positions with offset
+  // Apply positions with offset (use dynamic dimensions for proper centering)
   subtreeCards.forEach(card => {
     const nodeWithPosition = g.node(card.id)
     if (nodeWithPosition) {
+      const dimensions = nodeDimensions?.get(card.id)
+      const nodeWidth = dimensions?.width ?? NODE_WIDTH
+      const nodeHeight = dimensions?.height ?? NODE_HEIGHT
       subtreePositions.set(card.id, {
-        x: nodeWithPosition.x - NODE_WIDTH / 2 + offsetX,
-        y: nodeWithPosition.y - NODE_HEIGHT / 2 + offsetY,
+        x: nodeWithPosition.x - nodeWidth / 2 + offsetX,
+        y: nodeWithPosition.y - nodeHeight / 2 + offsetY,
       })
     }
   })

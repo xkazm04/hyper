@@ -1,20 +1,21 @@
 'use client'
 
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { FileText, Users, Palette } from 'lucide-react'
 import { ArtStyleEditor } from './sub_Story/components/ArtStyleEditor'
+import { HistoryPanel } from '../undo-redo'
+
+export type EditorTab = 'story' | 'cards' | 'characters'
 
 interface StoryEditorLayoutProps {
   toolbar: ReactNode
   cardList: ReactNode
-  characterList: ReactNode
+  characterList: ReactNode | ((props: { onSwitchToCharacters: () => void }) => ReactNode)
   cardEditor: ReactNode
   characterEditor: ReactNode
   cardPreview?: ReactNode
 }
-
-type EditorTab = 'story' | 'cards' | 'characters'
 
 export default function StoryEditorLayout({
   toolbar,
@@ -25,11 +26,23 @@ export default function StoryEditorLayout({
 }: StoryEditorLayoutProps) {
   const [activeEditorTab, setActiveEditorTab] = useState<EditorTab>('cards')
 
+  const switchToCharactersTab = useCallback(() => {
+    setActiveEditorTab('characters')
+  }, [])
+
   const tabs: { id: EditorTab; label: string; icon: React.ReactNode }[] = [
     { id: 'story', label: 'Story', icon: <Palette className="w-4 h-4" /> },
     { id: 'cards', label: 'Cards', icon: <FileText className="w-4 h-4" /> },
     { id: 'characters', label: 'Characters', icon: <Users className="w-4 h-4" /> },
   ]
+
+  // Render character list - supports both ReactNode and render prop patterns
+  const renderCharacterList = () => {
+    if (typeof characterList === 'function') {
+      return characterList({ onSwitchToCharacters: switchToCharactersTab })
+    }
+    return characterList
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background halloween-vignette">
@@ -38,16 +51,26 @@ export default function StoryEditorLayout({
 
       {/* Main Editor Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Split between Cards and Characters */}
+        {/* Left Sidebar - Split between Cards, Characters, and History */}
         <div className="shrink-0 w-64 hidden lg:flex lg:flex-col border-r-2 border-border">
-          {/* Cards List - Top Half */}
-          <div className="flex-1 border-b border-border overflow-hidden">
+          {/* Cards List - Top */}
+          <div className="flex-1 border-b border-border overflow-hidden min-h-0">
             {cardList}
           </div>
 
-          {/* Characters List - Bottom Half */}
-          <div className="flex-1 overflow-hidden">
-            {characterList}
+          {/* Characters List - Middle */}
+          <div className="flex-1 border-b border-border overflow-hidden min-h-0">
+            {renderCharacterList()}
+          </div>
+
+          {/* History Panel - Bottom */}
+          <div className="shrink-0 max-h-80 overflow-hidden">
+            <HistoryPanel
+              collapsible
+              defaultCollapsed={false}
+              maxVisibleEntries={15}
+              className="rounded-none border-0 shadow-none"
+            />
           </div>
         </div>
 

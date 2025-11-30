@@ -32,6 +32,7 @@ export interface StoryCard {
   script: string  // Custom JavaScript code for card interactivity
   imageUrl: string | null  // AI-generated or uploaded image
   imagePrompt: string | null  // Prompt used to generate the image
+  imageDescription: string | null  // Visual description for image generation (separate from story content)
   message: string | null  // Character/narrator dialogue displayed on card
   speaker: string | null  // Who is speaking (character name, narrator, etc.)
   speakerType: 'character' | 'narrator' | 'system' | null  // Type of speaker for styling
@@ -59,6 +60,20 @@ export interface ValidationWarning {
   message: string
 }
 
+// Character Card - a card type that references a character for reusable templates
+export interface CharacterCard {
+  id: string
+  storyStackId: string
+  characterId: string  // Reference to the character
+  title: string | null  // Optional override title (uses character name if null)
+  content: string | null  // Optional override content (uses character appearance if null)
+  imageIndex: number  // Which character image to display (0-3)
+  showAvatar: boolean  // Whether to show avatar instead of full image
+  orderIndex: number
+  createdAt: string
+  updatedAt: string
+}
+
 // Input types for creating/updating story entities
 export interface CreateStoryStackInput {
   name: string
@@ -80,6 +95,7 @@ export interface CreateStoryCardInput {
   script?: string
   imageUrl?: string | null
   imagePrompt?: string | null
+  imageDescription?: string | null
   message?: string | null
   speaker?: string | null
   speakerType?: 'character' | 'narrator' | 'system' | null
@@ -92,9 +108,29 @@ export interface UpdateStoryCardInput {
   script?: string
   imageUrl?: string | null
   imagePrompt?: string | null
+  imageDescription?: string | null
   message?: string | null
   speaker?: string | null
   speakerType?: 'character' | 'narrator' | 'system' | null
+  orderIndex?: number
+}
+
+export interface CreateCharacterCardInput {
+  storyStackId: string
+  characterId: string
+  title?: string | null
+  content?: string | null
+  imageIndex?: number
+  showAvatar?: boolean
+  orderIndex?: number
+}
+
+export interface UpdateCharacterCardInput {
+  characterId?: string
+  title?: string | null
+  content?: string | null
+  imageIndex?: number
+  showAvatar?: boolean
   orderIndex?: number
 }
 
