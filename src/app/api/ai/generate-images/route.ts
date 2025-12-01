@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { v4 as uuidv4 } from 'uuid'
+import { LeonardoService } from '@/lib/services/leonardo'
 
 /**
  * POST /api/ai/generate-images
- * Generate multiple images using the local FastAPI image service
+ * Generate images using Leonardo AI API directly
  */
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +19,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if Leonardo API is available
+    if (!LeonardoService.isAvailable()) {
+      return NextResponse.json(
+        { error: 'Leonardo API is not configured. Please set LEONARDO_API_KEY environment variable.' },
+        { status: 503 }
+      )
+    }
+
     // Parse request body
     const body = await request.json()
     const {
@@ -26,10 +34,11 @@ export async function POST(request: NextRequest) {
       numImages = 2,
       width = 512,
       height = 512,
-      provider = 'leonardo',
       model,
-      referenceImages,  // Optional array of reference image URLs
-      referenceStrength = 0.75,  // How strongly to apply reference influence
+      presetStyle,
+      negativePrompt,
+      referenceImages,
+      referenceStrength = 0.75,
     } = body
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
@@ -39,82 +48,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get image service URL from environment
-    const imageServiceUrl = process.env.IMAGE_SERVICE_URL || 'http://localhost:8003'
+    // Initialize Leonardo service
+    const leonardo = new LeonardoService()
 
-    // Generate a project ID for the image service
-    const projectId = uuidv4()
-
-    // Build the request payload
-    const requestPayload: Record<string, unknown> = {
+    // Generate images
+    const result = await leonardo.generateImages({
       prompt: prompt.trim(),
-      project_id: projectId,
       width,
       height,
-      num_images: Math.min(Math.max(numImages, 1), 10), // Clamp between 1-10
-      provider,
-      model_id: model, // Pass model as model_id
-    }
-
-    // Add reference images if provided
-    if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
-      requestPayload.reference_images = referenceImages.slice(0, 4) // Max 4 references
-      requestPayload.reference_strength = referenceStrength
-    }
-
-    // Call the FastAPI image generation service
-    const response = await fetch(`${imageServiceUrl}/unified/generate/quick`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestPayload),
+      numImages: Math.min(Math.max(numImages, 1), 8), // Clamp between 1-8
+      model,
+      presetStyle,
+      negativePrompt,
+      referenceImages: referenceImages?.slice(0, 4), // Max 4 references
+      referenceStrength,
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error('Image service error:', errorData)
+    if (!result.success || result.images.length === 0) {
       return NextResponse.json(
-        { error: errorData.detail || 'Image generation service failed' },
-        { status: response.status }
-      )
-    }
-
-    const data = await response.json()
-
-    // Extract image URLs from the response
-    // The FastAPI service returns images in the format:
-    // { images: [{ url: string, ... }], ... }
-    const images = data.images?.map((img: { url: string; width?: number; height?: number }) => ({
-      url: img.url,
-      width: img.width || width,
-      height: img.height || height,
-    })) || []
-
-    if (images.length === 0) {
-      return NextResponse.json(
-        { error: 'No images generated' },
+        { error: result.error || 'No images generated' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      images,
-      generationId: data.generation_id,
-      provider: data.provider,
-      prompt: data.prompt,
+      images: result.images,
+      generationId: result.generationId,
+      provider: result.provider,
+      prompt: result.prompt,
     })
 
   } catch (error) {
     console.error('Error generating images:', error)
 
-    // Check if it's a connection error to the image service
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      return NextResponse.json(
-        { error: 'Image generation service is not available. Please ensure the service is running.' },
-        { status: 503 }
-      )
+    // Handle specific error types
+    if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        return NextResponse.json(
+          { error: 'Leonardo API is not properly configured' },
+          { status: 503 }
+        )
+      }
+      if (error.message.includes('timed out')) {
+        return NextResponse.json(
+          { error: 'Image generation timed out. Please try again.' },
+          { status: 504 }
+        )
+      }
+      if (error.message.includes('failed')) {
+        return NextResponse.json(
+          { error: 'Image generation failed. Please try a different prompt.' },
+          { status: 500 }
+        )
+      }
     }
 
     return NextResponse.json(

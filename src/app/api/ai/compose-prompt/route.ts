@@ -37,10 +37,11 @@ CRITICAL LENGTH REQUIREMENT - MUST NOT EXCEED:
 - DO NOT summarize or shorten - elaborate and enrich instead
 
 COMPOSITION REQUIREMENT:
-- Output is for a FULL-BODY character illustration in 2:3 portrait ratio
+- Output is for a FULL-BODY character illustration in 2:3 vertical ratio
 - Include head-to-toe character details: face, hair, clothing, accessories, footwear
 - Describe the full figure stance, posture, and how the character fills the vertical frame
 - Include ground/floor context and environmental hints for the bottom of the frame
+- IMPORTANT: Do NOT use the word "portrait" - use "illustration" or "character art" instead
 
 PRIORITY ORDER (highest to lowest):
 1. CHARACTER APPEARANCE - PRESERVE EXACTLY AND COMPLETELY. Include every visual detail provided.
@@ -56,6 +57,7 @@ Rules:
 5. Be specific, descriptive, and verbose - more detail = better results
 6. Output ONLY the prompt text, no explanations or meta-commentary
 7. If approaching the limit, prioritize character appearance over archetype details
+8. NEVER use the word "portrait" - it triggers close-up face framing
 
 Input elements:
 - Character: Name and appearance details (HIGHEST PRIORITY - preserve completely)
@@ -67,15 +69,17 @@ Input elements:
 /**
  * Build a simple fallback prompt by concatenating available elements
  * Prioritizes character appearance as the most important element
+ * NOTE: Avoids "portrait" to prevent close-up face framing
  */
 function buildFallbackPrompt(request: ComposePromptRequest): string {
   const parts: string[] = []
 
   // Start with art style as rendering technique, specify full-body
+  // Use "vertical ratio" instead of "portrait ratio" to avoid triggering face close-ups
   if (request.storyArtStyle) {
-    parts.push(`Full-body character illustration, head to toe, 2:3 portrait ratio. ${request.storyArtStyle}`)
+    parts.push(`Full-body character illustration, head to toe, 2:3 vertical ratio. ${request.storyArtStyle}`)
   } else {
-    parts.push('Full-body character illustration, head to toe, 2:3 portrait ratio.')
+    parts.push('Full-body character illustration, head to toe, 2:3 vertical ratio.')
   }
 
   // PRIORITY 1: Character appearance - ALWAYS include fully (most important)
@@ -135,11 +139,11 @@ function buildUserPrompt(request: ComposePromptRequest): string {
     sections.push(`[RENDERING STYLE - Apply as technique, don't alter character features] Art Style: ${request.storyArtStyle}`)
   }
 
-  return `Compose a DETAILED, RICH image generation prompt for a FULL-BODY character illustration (2:3 portrait ratio, head to toe).
+  return `Compose a DETAILED, RICH image generation prompt for a FULL-BODY character illustration (2:3 vertical ratio, head to toe).
 
 CRITICAL LENGTH CONSTRAINT: Your output MUST be between 1200-1500 characters. NEVER exceed 1500 characters. Include ALL details provided and expand with relevant visual descriptors. DO NOT summarize - be verbose and descriptive.
 
-Remember: Character appearance details are SACRED and must be preserved completely. Describe the FULL figure from head to toe.
+Remember: Character appearance details are SACRED and must be preserved completely. Describe the FULL figure from head to toe. Do NOT use the word "portrait" anywhere.
 
 ${sections.join('\n\n')}`
 }

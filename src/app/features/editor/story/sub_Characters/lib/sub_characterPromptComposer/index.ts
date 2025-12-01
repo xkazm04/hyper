@@ -18,6 +18,7 @@ export {
 export {
   ARCHETYPE_OPTIONS,
   POSE_OPTIONS,
+  TRAINING_POSE_OPTIONS,
   EXPRESSION_OPTIONS,
   characterDimensionOptions,
 } from './promptTemplates';

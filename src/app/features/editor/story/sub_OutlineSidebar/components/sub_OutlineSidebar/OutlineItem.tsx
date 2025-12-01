@@ -2,12 +2,11 @@
 
 /**
  * OutlineItem Component
- * 
+ *
  * Renders a single item in the outline tree with drag-and-drop support.
  * Wraps OutlineNode with additional tree-specific functionality.
  */
 
-import { KeyboardEvent } from 'react'
 import { StoryCard } from '@/lib/types'
 import OutlineNode from '../OutlineNode'
 
@@ -26,7 +25,7 @@ interface OutlineItemProps {
   onDragOver: (e: React.DragEvent, index: number) => void
   onDragEnd: () => void
   onDrop: (e: React.DragEvent, dropIndex: number) => void
-  onKeyDown: (e: KeyboardEvent<HTMLDivElement>, cardId: string, index: number) => void
+  isCommandHighlighted?: boolean
 }
 
 export function OutlineItem({
@@ -44,7 +43,7 @@ export function OutlineItem({
   onDragOver,
   onDragEnd,
   onDrop,
-  onKeyDown,
+  isCommandHighlighted = false,
 }: OutlineItemProps) {
   return (
     <OutlineNode
@@ -62,7 +61,7 @@ export function OutlineItem({
       onDrop={onDrop}
       isDragOver={dragOverIndex === index && draggedIndex !== index}
       tabIndex={focusedIndex === index ? 0 : -1}
-      onKeyDown={onKeyDown}
+      isCommandHighlighted={isCommandHighlighted}
     />
   )
 }

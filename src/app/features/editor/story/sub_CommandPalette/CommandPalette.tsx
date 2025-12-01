@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { Command, CommandCategory } from './types'
 import { categoryOrder } from './useCommands'
 import { useCommandPalette } from './CommandPaletteContext'
+import { useCommandRipple } from './lib/CommandRippleContext'
 import { CommandSearch, CommandList } from './components/sub_CommandPalette'
 
 interface CommandPaletteProps {
@@ -22,6 +23,7 @@ interface CommandPaletteProps {
 
 export default function CommandPalette({ commands }: CommandPaletteProps) {
   const { isOpen, close } = useCommandPalette()
+  const { triggerRipple } = useCommandRipple()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -106,11 +108,25 @@ export default function CommandPalette({ commands }: CommandPaletteProps) {
   }, [selectedIndex])
 
   const executeCommand = useCallback(
-    (command: Command) => {
+    (command: Command, originElement?: HTMLElement | null) => {
+      // Get the origin element for the ripple effect
+      const element = originElement || listRef.current?.querySelector(`[data-index="${selectedIndex}"]`) as HTMLElement | null
+
+      // Determine target ID based on command type (for highlighting)
+      // Commands that navigate to cards will have their target highlighted
+      let targetId: string | undefined
+      if (command.id.includes('card') || command.id.includes('character')) {
+        // Target will be set by the action itself if it navigates to a specific card
+        targetId = undefined
+      }
+
+      // Trigger ripple animation and audio feedback
+      triggerRipple(element, targetId, command.id)
+
       close()
       requestAnimationFrame(() => command.action())
     },
-    [close]
+    [close, triggerRipple, selectedIndex]
   )
 
   const handleBackdropClick = useCallback(

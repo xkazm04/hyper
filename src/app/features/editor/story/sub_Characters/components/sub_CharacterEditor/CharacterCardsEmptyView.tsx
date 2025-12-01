@@ -1,96 +1,96 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { User } from 'lucide-react'
-import CharacterCardList from '@/app/features/editor/story/sub_CharacterCards/components/CharacterCardList'
-import CreateCharacterCardDialog from '@/app/features/editor/story/sub_CharacterCards/components/CreateCharacterCardDialog'
-import type { Character, CharacterCard, CreateCharacterCardInput } from '@/lib/types'
+import { useCallback } from 'react'
+import { User, Users } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { Character } from '@/lib/types'
 
 interface CharacterCardsEmptyViewProps {
-  storyStackId: string
   characters: Character[]
-  characterCards: CharacterCard[]
-  onCardSelect: (cardId: string) => void
+  selectedCharacterId: string | null
   onCharacterSelect: (characterId: string) => void
-  onCreateCard: (input: CreateCharacterCardInput) => Promise<void>
-  onDeleteCard: (cardId: string) => Promise<void>
 }
 
 /**
- * Displays the character card list when no character is selected.
- * Allows users to browse, create, and manage character cards from the empty state.
+ * Displays all characters in a 4x4 grid with avatars when no character is selected.
+ * Clicking a character avatar selects it, same as selecting from CharacterList.
  */
 export function CharacterCardsEmptyView({
-  storyStackId,
   characters,
-  characterCards,
-  onCardSelect,
+  selectedCharacterId,
   onCharacterSelect,
-  onCreateCard,
-  onDeleteCard,
 }: CharacterCardsEmptyViewProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const handleSelect = useCallback((characterId: string) => {
+    onCharacterSelect(characterId)
+  }, [onCharacterSelect])
 
-  const handleSelect = useCallback((cardId: string) => {
-    setSelectedCardId(cardId)
-    onCardSelect(cardId)
-
-    // Also select the associated character
-    const card = characterCards.find(c => c.id === cardId)
-    if (card) {
-      onCharacterSelect(card.characterId)
-    }
-  }, [characterCards, onCardSelect, onCharacterSelect])
-
-  const handleEdit = useCallback((cardId: string) => {
-    // Selecting the card will navigate to the character
-    handleSelect(cardId)
-  }, [handleSelect])
-
-  const handleDelete = useCallback(async (cardId: string) => {
-    await onDeleteCard(cardId)
-    if (selectedCardId === cardId) {
-      setSelectedCardId(null)
-    }
-  }, [onDeleteCard, selectedCardId])
-
-  const handleCreate = useCallback(async (input: CreateCharacterCardInput) => {
-    await onCreateCard(input)
-  }, [onCreateCard])
+  if (characters.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-muted p-6" data-testid="character-cards-empty-view">
+        <Users className="w-16 h-16 text-muted-foreground/30 mb-4" />
+        <h3 className="text-base font-semibold text-foreground mb-1">No Characters</h3>
+        <p className="text-sm text-muted-foreground text-center">
+          Add characters to your story to see them here
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex flex-col bg-muted" data-testid="character-cards-empty-view">
-      {/* Character Card List */}
-      <div className="flex-1 overflow-hidden border-b border-border">
-        <CharacterCardList
-          characterCards={characterCards}
-          characters={characters}
-          selectedCardId={selectedCardId}
-          onSelect={handleSelect}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onCreateNew={() => setIsDialogOpen(true)}
-        />
-      </div>
-
-      {/* Empty State Message */}
-      <div className="flex-shrink-0 p-6 text-center bg-muted">
-        <User className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-        <h3 className="text-base font-semibold text-foreground mb-1">No Character Selected</h3>
-        <p className="text-sm text-muted-foreground">
-          Select a character card above or choose a character from the list to start editing
+      {/* Header */}
+      <div className="p-4 border-b border-border">
+        <h3 className="font-bold text-sm uppercase tracking-wide text-foreground">Characters</h3>
+        <p className="text-xs text-muted-foreground mt-1">
+          Select a character to edit
         </p>
       </div>
 
-      {/* Create Character Card Dialog */}
-      <CreateCharacterCardDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        characters={characters}
-        storyStackId={storyStackId}
-        onCreate={handleCreate}
-      />
+      {/* Character Grid - 4x4 layout */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="grid grid-cols-4 gap-3">
+          {characters
+            .sort((a, b) => a.orderIndex - b.orderIndex)
+            .map((character) => (
+              <button
+                key={character.id}
+                onClick={() => handleSelect(character.id)}
+                className={cn(
+                  'aspect-square rounded-lg border-2 transition-all',
+                  'flex flex-col items-center justify-center gap-1 p-2',
+                  'hover:border-primary hover:bg-primary/5',
+                  'focus:outline-none focus:ring-2 focus:ring-primary/50',
+                  selectedCharacterId === character.id
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border bg-card'
+                )}
+                data-testid={`character-avatar-${character.id}`}
+                title={character.name || 'Unnamed Character'}
+              >
+                {/* Avatar */}
+                <div className="w-full aspect-square rounded-md overflow-hidden bg-muted border border-border">
+                  {character.avatarUrl ? (
+                    <img
+                      src={character.avatarUrl}
+                      alt={character.name || 'Character avatar'}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="w-1/2 h-1/2 text-muted-foreground/50" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Name */}
+                <span className="text-[10px] font-medium text-foreground truncate w-full text-center">
+                  {character.name || 'Unnamed'}
+                </span>
+              </button>
+            ))}
+        </div>
+      </div>
     </div>
   )
 }

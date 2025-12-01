@@ -22,6 +22,7 @@ import { getEffectiveArtStylePrompt } from '../../../sub_Story/lib/artStyleServi
 import { MOOD_OPTIONS, type PromptOption } from '@/app/prompts'
 import { deleteGenerations } from '@/lib/services/sketchCleanup'
 import { ImageAdjustmentPanel } from './ImageAdjustmentPanel'
+import { ImageInsertPanel } from './ImageInsertPanel'
 import { ImageDescriptionPanel } from './ImageDescriptionPanel'
 
 // Fixed sizing for widescreen scenes: 1184x672
@@ -384,6 +385,13 @@ export function SceneSketchPanel({
 
           {/* Image Adjustment Panel - Bria AI */}
           <ImageAdjustmentPanel
+            imageUrl={imageUrl}
+            onImageUpdate={(newUrl) => onImageSelect(newUrl, imagePrompt || '')}
+            disabled={isSaving}
+          />
+
+          {/* Image Insert Panel - Gemini AI Character Insertion */}
+          <ImageInsertPanel
             imageUrl={imageUrl}
             onImageUpdate={(newUrl) => onImageSelect(newUrl, imagePrompt || '')}
             disabled={isSaving}

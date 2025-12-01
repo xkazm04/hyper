@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { GripVertical, Trash2, ArrowRight, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { Choice, StoryCard } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { ChoicePreviewPopover } from './ChoicePreviewPopover'
 
 export interface ChoiceItemProps {
   choice: Choice
@@ -42,6 +44,11 @@ export function ChoiceItem({
   isTargetValid,
 }: ChoiceItemProps) {
   const isValid = isTargetValid(choice.targetCardId)
+
+  // Find the target card for the hover preview
+  const targetCard = useMemo(() => {
+    return otherCards.find((card) => card.id === choice.targetCardId) || null
+  }, [otherCards, choice.targetCardId])
 
   return (
     <div
@@ -90,24 +97,28 @@ export function ChoiceItem({
               <ArrowRight className="w-3 h-3" />
               Target Card
             </Label>
-            <Select
-              value={choice.targetCardId}
-              onValueChange={(value) => onTargetChange(choice.id, value)}
-              disabled={isSaving}
-            >
-              <SelectTrigger className="border-0 bg-muted/50 focus:ring-0" data-testid={`choice-target-select-${choice.id}`}>
-                <SelectValue>
-                  {getTargetCardTitle(choice.targetCardId)}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-card border-2 border-border shadow-lg">
-                {otherCards.map(card => (
-                  <SelectItem key={card.id} value={card.id} data-testid={`choice-target-option-${card.id}`}>
-                    {card.title || 'Untitled Card'}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ChoicePreviewPopover targetCard={targetCard}>
+              <div>
+                <Select
+                  value={choice.targetCardId}
+                  onValueChange={(value) => onTargetChange(choice.id, value)}
+                  disabled={isSaving}
+                >
+                  <SelectTrigger className="border-0 bg-muted/50 focus:ring-0" data-testid={`choice-target-select-${choice.id}`}>
+                    <SelectValue>
+                      {getTargetCardTitle(choice.targetCardId)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-2 border-border shadow-lg">
+                    {otherCards.map(card => (
+                      <SelectItem key={card.id} value={card.id} data-testid={`choice-target-option-${card.id}`}>
+                        {card.title || 'Untitled Card'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </ChoicePreviewPopover>
 
             {!isValid && (
               <div className="flex items-center gap-1.5 mt-1.5 text-xs text-destructive">

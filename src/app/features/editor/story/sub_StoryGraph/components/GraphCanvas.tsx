@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useMemo, useRef, useState, lazy, Suspense } from 'react'
-import ReactFlow, { Controls, MiniMap, ConnectionLineType, Node, Edge, Background, BackgroundVariant } from 'reactflow'
+import ReactFlow, { Controls, MiniMap, ConnectionLineType, Node, Edge, Background, BackgroundVariant, ReactFlowProvider } from 'reactflow'
 import 'reactflow/dist/style.css'
 import StoryNode, { StoryNodeData } from './StoryNode'
 import SuggestedCardNode, { SuggestedCardNodeData } from '../../sub_InfiniteCanvas/components/SuggestedCardNode'
@@ -9,12 +9,15 @@ import { HalloweenMapBackground, NodeParticleEffect } from './HalloweenMapBackgr
 import { NodePreviewPanel } from './NodePreviewPanel'
 import NodeDropConfetti from './NodeDropConfetti'
 import { NodeSearchWrapper } from './NodeSearchWrapper'
+import ClusterOverlay from './ClusterOverlay'
+import ClusterControls from './ClusterControls'
 import { cn } from '@/lib/utils'
 import { SuggestedCard } from '@/lib/types/ai-canvas'
 import { DefaultBackground, useGraphNodes } from './sub_GraphCanvas'
 import { useEditor } from '@/contexts/EditorContext'
 import { playDropChime, warmupAudio } from '../lib/dropChime'
 import { usePerformanceOptional } from '@/contexts/PerformanceContext'
+import { useClusterState } from '../hooks/useClusterState'
 
 // Lazy load decorative components for performance
 const FogOverlay = lazy(() => import('./decorative/FogOverlay'))
@@ -41,6 +44,8 @@ export interface GraphCanvasProps {
   onEditCard?: (cardId: string) => void
   onDeleteCard?: (cardId: string) => void
   children?: React.ReactNode
+  /** Enable cluster grouping by depth. Defaults to true */
+  enableClusters?: boolean
 }
 
 // Hover state for node preview
@@ -53,6 +58,7 @@ export function GraphCanvas({
   initialNodes, initialEdges, suggestions, hoveredSuggestionId, acceptSuggestion,
   declineSuggestion, setHoveredSuggestionId, onNodeClick, currentCardId, isHalloween,
   pathNodeIds, pathEdgeIds, onOrphanAttachClick, onEditCard, onDeleteCard, children,
+  enableClusters = true,
 }: GraphCanvasProps) {
   const graphContainerRef = useRef<HTMLDivElement>(null)
   const [particleEffects, setParticleEffects] = useState<Array<{ id: string; x: number; y: number }>>([])
@@ -72,6 +78,15 @@ export function GraphCanvas({
   const [highlightedNodeIds, setHighlightedNodeIds] = useState<Set<string>>(new Set())
 
   const { storyStack, deleteCard, setCurrentCardId } = useEditor()
+
+  // Cluster state management
+  const { clusters, toggleCluster, expandAll, collapseAll, collapsedClusters } = useClusterState({
+    stackId: storyStack?.id ?? null,
+    nodes: initialNodes,
+  })
+
+  // Cluster feature toggle
+  const [clustersEnabled, setClustersEnabled] = useState(enableClusters)
 
   // Performance context for controlling decorative animations
   const { showHeavyAnimations, isLowPower } = usePerformanceOptional()
@@ -265,6 +280,27 @@ export function GraphCanvas({
         defaultEdgeOptions={{ type: 'smoothstep', animated: false }}
         proOptions={{ hideAttribution: true }} style={{ background: 'transparent' }}
       >
+        {/* Cluster Overlay - rendered behind nodes using SVG */}
+        {clustersEnabled && clusters.length > 0 && (
+          <ClusterOverlay
+            clusters={clusters}
+            isHalloween={isHalloween}
+            onToggleCluster={toggleCluster}
+            enabled={clustersEnabled}
+          />
+        )}
+        {/* Cluster Controls Panel */}
+        {clusters.length > 0 && (
+          <ClusterControls
+            clusterCount={clusters.length}
+            collapsedCount={collapsedClusters.size}
+            expandAll={expandAll}
+            collapseAll={collapseAll}
+            enabled={clustersEnabled}
+            onToggleEnabled={setClustersEnabled}
+            isHalloween={isHalloween}
+          />
+        )}
         <Background variant={BackgroundVariant.Dots} color="hsl(var(--muted-foreground))" gap={24} size={1} className="opacity-30" />
         <Controls className="bg-card! border-2! border-border! rounded-lg! shadow-lg! [&>button]:bg-card! [&>button]:border-border! [&>button]:text-foreground! [&>button:hover]:bg-muted!" showInteractive={false} data-testid="story-graph-controls" />
         <MiniMap nodeColor={getNodeColor} nodeStrokeWidth={3} maskColor="hsl(var(--background) / 0.8)" className="bg-card/95! border-2! border-border! rounded-lg! shadow-lg!" style={{ width: 180, height: 120 }} pannable zoomable data-testid="story-graph-minimap" />

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { FileText, Users, Palette } from 'lucide-react'
 import { ArtStyleEditor } from './sub_Story/components/ArtStyleEditor'
 import { HistoryPanel } from '../undo-redo'
+import { UniversalActionBar } from './sub_UniversalActionBar'
 
 export type EditorTab = 'story' | 'cards' | 'characters'
 
@@ -15,6 +16,8 @@ interface StoryEditorLayoutProps {
   cardEditor: ReactNode
   characterEditor: ReactNode
   cardPreview?: ReactNode
+  onPreview?: () => void
+  onPublish?: () => void
 }
 
 export default function StoryEditorLayout({
@@ -23,6 +26,8 @@ export default function StoryEditorLayout({
   characterList,
   cardEditor,
   characterEditor,
+  onPreview,
+  onPublish,
 }: StoryEditorLayoutProps) {
   const [activeEditorTab, setActiveEditorTab] = useState<EditorTab>('cards')
 
@@ -44,10 +49,20 @@ export default function StoryEditorLayout({
     return characterList
   }
 
+  // Default no-op handlers if not provided
+  const handlePreview = onPreview ?? (() => {})
+  const handlePublish = onPublish ?? (() => {})
+
   return (
     <div className="h-screen flex flex-col bg-background halloween-vignette">
       {/* Toolbar */}
       {toolbar}
+
+      {/* Universal Action Bar - Sticky across all views */}
+      <UniversalActionBar
+        onPreview={handlePreview}
+        onPublish={handlePublish}
+      />
 
       {/* Main Editor Area */}
       <div className="flex-1 flex overflow-hidden">

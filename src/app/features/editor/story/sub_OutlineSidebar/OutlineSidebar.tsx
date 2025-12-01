@@ -2,30 +2,29 @@
 
 /**
  * OutlineSidebar Component
- * 
+ *
  * Displays a hierarchical outline of story cards with drag-and-drop reordering.
- * 
+ *
  * Halloween Effect: spider-web-corner decoration
  */
 
-import { useState, useCallback, useRef, KeyboardEvent, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { cn } from '@/lib/utils'
 import { StoryCard } from '@/lib/types'
 import { OutlineActions, OutlineTree } from './components/sub_OutlineSidebar'
+import { StoryProgressTracker } from './components/StoryProgressTracker'
+import { useCommandRipple } from '../sub_CommandPalette/lib/CommandRippleContext'
 
 interface OutlineSidebarProps {
   onAddCard: () => void
-  isCollapsed?: boolean
-  onToggleCollapse?: () => void
 }
 
 export default function OutlineSidebar({
   onAddCard,
-  isCollapsed = false,
-  onToggleCollapse,
 }: OutlineSidebarProps) {
-  const { storyCards, currentCardId, setCurrentCardId, setStoryCards, choices } = useEditor()
+  const { storyCards, storyStack, currentCardId, setCurrentCardId, setStoryCards, choices } = useEditor()
+  const { highlightedTargetId } = useCommandRipple()
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
@@ -73,7 +72,7 @@ export default function OutlineSidebar({
     setDragOverIndex(null)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault()
     const dragIndex = parseInt(e.dataTransfer.getData('text/plain'), 10)
     if (dragIndex === dropIndex || isNaN(dragIndex)) {
@@ -86,53 +85,22 @@ export default function OutlineSidebar({
     const updatedCards = reorderedCards.map((card, index) => ({ ...card, orderIndex: index }))
     setStoryCards(updatedCards)
     handleDragEnd()
-  }, [sortedCards, setStoryCards, handleDragEnd])
 
-  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>, cardId: string, index: number) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        if (index < sortedCards.length - 1) {
-          setFocusedIndex(index + 1)
-          setCurrentCardId(sortedCards[index + 1].id)
-        }
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        if (index > 0) {
-          setFocusedIndex(index - 1)
-          setCurrentCardId(sortedCards[index - 1].id)
-        }
-        break
-      case 'ArrowRight':
-        e.preventDefault()
-        if (!expandedNodes.has(cardId) && getChildCards(cardId).length > 0) handleToggleExpand(cardId)
-        break
-      case 'ArrowLeft':
-        e.preventDefault()
-        if (expandedNodes.has(cardId)) handleToggleExpand(cardId)
-        break
-      case 'Enter':
-      case ' ':
-        e.preventDefault()
-        handleSelect(cardId)
-        break
-      case 'Home':
-        e.preventDefault()
-        if (sortedCards.length > 0) {
-          setFocusedIndex(0)
-          setCurrentCardId(sortedCards[0].id)
-        }
-        break
-      case 'End':
-        e.preventDefault()
-        if (sortedCards.length > 0) {
-          setFocusedIndex(sortedCards.length - 1)
-          setCurrentCardId(sortedCards[sortedCards.length - 1].id)
-        }
-        break
+    // Persist reorder to database
+    if (storyStack?.id) {
+      try {
+        await fetch(`/api/stories/${storyStack.id}/cards/reorder`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cardOrders: updatedCards.map(card => ({ id: card.id, orderIndex: card.orderIndex }))
+          })
+        })
+      } catch (error) {
+        console.error('Failed to persist card reorder:', error)
+      }
     }
-  }, [sortedCards, setCurrentCardId, expandedNodes, handleToggleExpand, getChildCards, handleSelect])
+  }, [sortedCards, setStoryCards, handleDragEnd, storyStack?.id])
 
   useEffect(() => {
     if (currentCardId) {
@@ -141,63 +109,45 @@ export default function OutlineSidebar({
     }
   }, [currentCardId, sortedCards, focusedIndex])
 
-
-  if (isCollapsed) {
-    return (
-      <div
-        className={cn(
-          'h-full flex flex-col bg-card border-r-2 border-border w-12',
-          'halloween-web-corner',
-          'halloween-ethereal-glow',
-          'halloween-cobweb'
-        )}
-        data-testid="outline-sidebar-collapsed"
-      >
-        <OutlineActions
-          cardCount={storyCards.length}
-          isCollapsed={true}
-          onAddCard={onAddCard}
-          onToggleCollapse={onToggleCollapse}
-        />
-      </div>
-    )
-  }
-
   return (
     <div
       className={cn(
-        'h-full flex flex-col bg-card lg:border-r-2 border-border',
+        'h-full flex bg-card lg:border-r-2 border-border',
         'halloween-web-corner',
         'halloween-ethereal-glow',
         'halloween-cobweb'
       )}
       data-testid="outline-sidebar"
     >
-      <OutlineActions
-        cardCount={storyCards.length}
-        isCollapsed={false}
-        onAddCard={onAddCard}
-        onToggleCollapse={onToggleCollapse}
-      />
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <OutlineActions
+          cardCount={storyCards.length}
+          onAddCard={onAddCard}
+        />
 
-      <OutlineTree
-        ref={containerRef}
-        sortedCards={sortedCards}
-        currentCardId={currentCardId}
-        expandedNodes={expandedNodes}
-        focusedIndex={focusedIndex}
-        dragOverIndex={dragOverIndex}
-        draggedIndex={draggedIndex}
-        getChildCards={getChildCards}
-        onAddCard={onAddCard}
-        onSelect={handleSelect}
-        onToggleExpand={handleToggleExpand}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-        onDrop={handleDrop}
-        onKeyDown={handleKeyDown}
-      />
+        <OutlineTree
+          ref={containerRef}
+          sortedCards={sortedCards}
+          currentCardId={currentCardId}
+          expandedNodes={expandedNodes}
+          focusedIndex={focusedIndex}
+          dragOverIndex={dragOverIndex}
+          draggedIndex={draggedIndex}
+          getChildCards={getChildCards}
+          onAddCard={onAddCard}
+          onSelect={handleSelect}
+          onToggleExpand={handleToggleExpand}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDrop={handleDrop}
+          highlightedCardId={highlightedTargetId}
+        />
+      </div>
+
+      {/* Progress tracker on the right edge */}
+      <StoryProgressTracker className="border-l border-border/50" />
     </div>
   )
 }

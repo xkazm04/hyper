@@ -26,10 +26,11 @@ interface UseContentSectionProps {
   initialMessage?: string | null
   initialSpeaker?: string | null
   currentCard?: StoryCard
+  onSaveComplete?: () => void
 }
 
 export function useContentSection({
-  cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, currentCard,
+  cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, currentCard, onSaveComplete,
 }: UseContentSectionProps) {
   const { updateCard: updateCardContext, characters, currentCard: contextCard } = useEditor()
   const { error: showError, success } = useToast()
@@ -129,10 +130,10 @@ export function useContentSection({
     finally { setIsSaving(false) }
   }, [speaker, initialSpeaker, storyStackId, cardId, updateCardContext, showError])
 
-  const { scheduleSave: scheduleTitleSave } = useAutoSave({ delay: 800, onSave: saveTitle })
-  const { scheduleSave: scheduleContentSave } = useAutoSave({ delay: 800, onSave: saveContent })
-  const { scheduleSave: scheduleMessageSave } = useAutoSave({ delay: 800, onSave: saveMessage })
-  const { scheduleSave: scheduleSpeakerSave } = useAutoSave({ delay: 800, onSave: saveSpeaker })
+  const { scheduleSave: scheduleTitleSave } = useAutoSave({ delay: 800, onSave: saveTitle, onSaveComplete })
+  const { scheduleSave: scheduleContentSave } = useAutoSave({ delay: 800, onSave: saveContent, onSaveComplete })
+  const { scheduleSave: scheduleMessageSave } = useAutoSave({ delay: 800, onSave: saveMessage, onSaveComplete })
+  const { scheduleSave: scheduleSpeakerSave } = useAutoSave({ delay: 800, onSave: saveSpeaker, onSaveComplete })
 
   const handleTitleChange = useCallback((value: string) => { setTitle(value); updateCardContext(cardId, { title: value }); scheduleTitleSave() }, [cardId, updateCardContext, scheduleTitleSave])
   const handleContentChange = useCallback((value: string) => { setContent(value); updateCardContext(cardId, { content: value }); scheduleContentSave() }, [cardId, updateCardContext, scheduleContentSave])

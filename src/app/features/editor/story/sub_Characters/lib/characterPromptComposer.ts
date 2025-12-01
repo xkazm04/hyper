@@ -21,6 +21,7 @@ export {
   // Templates
   ARCHETYPE_OPTIONS,
   POSE_OPTIONS,
+  TRAINING_POSE_OPTIONS,
   EXPRESSION_OPTIONS,
   characterDimensionOptions,
   // Builder functions

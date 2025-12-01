@@ -17,8 +17,14 @@ import CardPreview from '@/app/features/editor/story/CardPreview'
 import {
   CommandPalette,
   CommandPaletteProvider,
+  CommandRippleProvider,
+  CommandRippleOverlay,
   useCommands,
 } from '@/app/features/editor/story/sub_CommandPalette'
+import {
+  StoryPathPreview,
+  StoryPathPreviewProvider,
+} from '@/app/features/editor/story/sub_StoryPathPreview'
 import { UndoRedoProvider } from '@/app/features/editor/undo-redo'
 import { StoryService } from '@/lib/services/story'
 import { Button } from '@/components/ui/button'
@@ -35,7 +41,12 @@ export default function EditorPage({ params }: { params: Promise<{ stackId: stri
   return (
     <EditorProvider>
       <CommandPaletteProvider>
-        <UndoRedoWrapper stackId={stackId} />
+        <CommandRippleProvider>
+          <StoryPathPreviewProvider>
+            <UndoRedoWrapper stackId={stackId} />
+            <CommandRippleOverlay />
+          </StoryPathPreviewProvider>
+        </CommandRippleProvider>
       </CommandPaletteProvider>
     </EditorProvider>
   )
@@ -189,6 +200,7 @@ function EditorContent({ stackId }: { stackId: string }) {
         onComplete={clearConfetti}
       />
       <CommandPalette commands={commands} />
+      <StoryPathPreview />
       <StoryEditorLayout
         toolbar={
           <StoryEditorToolbar
@@ -197,14 +209,16 @@ function EditorContent({ stackId }: { stackId: string }) {
         }
         cardList={<CardList onAddCard={handleAddCard} />}
         characterList={({ onSwitchToCharacters }) => (
-          <CharacterList 
-            onAddCharacter={handleAddCharacter} 
+          <CharacterList
+            onAddCharacter={handleAddCharacter}
             onSwitchToCharacters={onSwitchToCharacters}
           />
         )}
         cardEditor={<StoryCardEditor />}
         characterEditor={<CharacterEditor />}
         cardPreview={<CardPreview />}
+        onPreview={handlePreview}
+        onPublish={handlePublish}
       />
 
       <PublishDialog

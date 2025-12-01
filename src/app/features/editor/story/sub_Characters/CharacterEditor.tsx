@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
-import { Character, CreateCharacterCardInput } from '@/lib/types'
+import { Character } from '@/lib/types'
 import {
   CharacterForm,
   CharacterHeader,
@@ -13,14 +13,11 @@ import {
 export default function CharacterEditor() {
   const {
     currentCharacter,
+    currentCharacterId,
     storyStack,
     updateCharacter,
     characters,
-    characterCards,
     setCurrentCharacterId,
-    setCurrentCharacterCardId,
-    addCharacterCard,
-    deleteCharacterCard,
   } = useEditor()
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('preview')
@@ -71,8 +68,8 @@ export default function CharacterEditor() {
       const currentUrls = currentCharacter.imageUrls || []
       const currentPrompts = currentCharacter.imagePrompts || []
 
-      if (currentUrls.length >= 4) {
-        showError('Maximum of 4 images allowed')
+      if (currentUrls.length >= 10) {
+        showError('Maximum of 10 images allowed')
         return
       }
 
@@ -136,79 +133,18 @@ export default function CharacterEditor() {
     success('Avatar removed')
   }, [handleUpdateCharacter, success])
 
-  /**
-   * Create a new character card
-   */
-  const handleCreateCharacterCard = useCallback(
-    async (input: CreateCharacterCardInput) => {
-      if (!storyStack) return
-
-      try {
-        const response = await fetch(`/api/stories/${storyStack.id}/character-cards`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to create character card')
-        }
-
-        const data = await response.json()
-        addCharacterCard(data.characterCard)
-        success('Character card created')
-      } catch (error) {
-        console.error('Error creating character card:', error)
-        showError(error instanceof Error ? error.message : 'Failed to create character card')
-        throw error
-      }
-    },
-    [storyStack, addCharacterCard, success, showError]
-  )
-
-  /**
-   * Delete a character card
-   */
-  const handleDeleteCharacterCard = useCallback(
-    async (cardId: string) => {
-      if (!storyStack) return
-
-      try {
-        const response = await fetch(`/api/stories/${storyStack.id}/character-cards/${cardId}`, {
-          method: 'DELETE',
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to delete character card')
-        }
-
-        deleteCharacterCard(cardId)
-        success('Character card deleted')
-      } catch (error) {
-        console.error('Error deleting character card:', error)
-        showError(error instanceof Error ? error.message : 'Failed to delete character card')
-        throw error
-      }
-    },
-    [storyStack, deleteCharacterCard, success, showError]
-  )
-
   // No story stack loaded yet
   if (!storyStack) {
     return null
   }
 
-  // Empty state - no character selected, show character cards list
+  // Empty state - no character selected, show character avatar grid
   if (!currentCharacter) {
     return (
       <CharacterCardsEmptyView
-        storyStackId={storyStack.id}
         characters={characters}
-        characterCards={characterCards}
-        onCardSelect={setCurrentCharacterCardId}
+        selectedCharacterId={currentCharacterId}
         onCharacterSelect={setCurrentCharacterId}
-        onCreateCard={handleCreateCharacterCard}
-        onDeleteCard={handleDeleteCharacterCard}
       />
     )
   }

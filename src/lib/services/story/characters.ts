@@ -103,6 +103,14 @@ export class CharactersService {
       if (input.avatarUrl !== undefined) updateData.avatar_url = input.avatarUrl
       if (input.avatarPrompt !== undefined) updateData.avatar_prompt = input.avatarPrompt
       if (input.orderIndex !== undefined) updateData.order_index = input.orderIndex
+      // Bria training fields
+      if (input.briaProjectId !== undefined) updateData.bria_project_id = input.briaProjectId
+      if (input.briaDatasetId !== undefined) updateData.bria_dataset_id = input.briaDatasetId
+      if (input.briaModelId !== undefined) updateData.bria_model_id = input.briaModelId
+      if (input.briaModelStatus !== undefined) updateData.bria_model_status = input.briaModelStatus
+      if (input.briaCaptionPrefix !== undefined) updateData.bria_caption_prefix = input.briaCaptionPrefix
+      if (input.briaTrainingStartedAt !== undefined) updateData.bria_training_started_at = input.briaTrainingStartedAt
+      if (input.briaTrainingCompletedAt !== undefined) updateData.bria_training_completed_at = input.briaTrainingCompletedAt
 
       updateData.updated_at = new Date().toISOString()
 

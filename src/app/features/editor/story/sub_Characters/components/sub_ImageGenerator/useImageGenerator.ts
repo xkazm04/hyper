@@ -96,7 +96,8 @@ export function useImageGenerator({
   const canGenerate = hasCharacterData // Enable generation with just character data, no selections required
   const loading = isGeneratingSketches || isGeneratingFinal || isSaving
   const currentImageCount = character.imageUrls?.length || 0
-  const canAddMore = currentImageCount < 4
+  // Support up to 10 images for Bria AI training (was 4)
+  const canAddMore = currentImageCount < 10
 
   const handleSelect = useCallback((dimension: CharacterDimension, option: CharacterPromptOption) => {
     setSelections((prev) => {

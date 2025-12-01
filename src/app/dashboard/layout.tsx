@@ -50,7 +50,7 @@ export default function DashboardLayout({
       <header className="relative z-10 bg-card border-b-4 border-border shadow-theme-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Adventure Story Creator</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">HyperCard Renaissance</h1>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground font-mono hidden sm:inline">
                 {user?.email}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, KeyboardEvent } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { StoryCard } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ChevronRight, GripVertical, FileText } from 'lucide-react'
@@ -20,7 +20,7 @@ interface OutlineNodeProps {
   onDrop: (e: React.DragEvent, index: number) => void
   isDragOver: boolean
   tabIndex: number
-  onKeyDown: (e: KeyboardEvent<HTMLDivElement>, cardId: string, index: number) => void
+  isCommandHighlighted?: boolean
 }
 
 export default function OutlineNode({
@@ -38,13 +38,21 @@ export default function OutlineNode({
   onDrop,
   isDragOver,
   tabIndex,
-  onKeyDown,
+  isCommandHighlighted = false,
 }: OutlineNodeProps) {
   const nodeRef = useRef<HTMLDivElement>(null)
+  const [showHighlight, setShowHighlight] = useState(false)
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    onKeyDown(e, card.id, index)
-  }
+  // Handle command highlight animation
+  useEffect(() => {
+    if (isCommandHighlighted) {
+      setShowHighlight(true)
+      const timer = setTimeout(() => {
+        setShowHighlight(false)
+      }, 600)
+      return () => clearTimeout(timer)
+    }
+  }, [isCommandHighlighted])
 
   const handleClick = () => {
     onSelect(card.id)
@@ -69,7 +77,6 @@ export default function OutlineNode({
       onDragEnd={onDragEnd}
       onDrop={(e) => onDrop(e, index)}
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
       data-testid={`outline-node-${card.id}`}
       className={cn(
         'group flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer transition-all',
@@ -77,7 +84,8 @@ export default function OutlineNode({
         'focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-muted/80',
         isSelected && 'bg-primary/10 border border-primary',
         !isSelected && 'border border-transparent',
-        isDragOver && 'border-dashed border-primary bg-primary/5'
+        isDragOver && 'border-dashed border-primary bg-primary/5',
+        showHighlight && 'command-target-highlight command-target-pop'
       )}
       style={{ paddingLeft: `${depth * 16 + 8}px` }}
     >

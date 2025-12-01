@@ -2,11 +2,11 @@
 
 /**
  * OutlineTree Component
- * 
+ *
  * Renders the tree structure of story cards with empty state handling.
  */
 
-import { forwardRef, KeyboardEvent } from 'react'
+import { forwardRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText } from 'lucide-react'
 import { StoryCard } from '@/lib/types'
@@ -27,7 +27,7 @@ interface OutlineTreeProps {
   onDragOver: (e: React.DragEvent, index: number) => void
   onDragEnd: () => void
   onDrop: (e: React.DragEvent, dropIndex: number) => void
-  onKeyDown: (e: KeyboardEvent<HTMLDivElement>, cardId: string, index: number) => void
+  highlightedCardId?: string | null
 }
 
 export const OutlineTree = forwardRef<HTMLDivElement, OutlineTreeProps>(
@@ -47,7 +47,7 @@ export const OutlineTree = forwardRef<HTMLDivElement, OutlineTreeProps>(
       onDragOver,
       onDragEnd,
       onDrop,
-      onKeyDown,
+      highlightedCardId,
     },
     ref
   ) {
@@ -110,7 +110,7 @@ export const OutlineTree = forwardRef<HTMLDivElement, OutlineTreeProps>(
                 onDragOver={onDragOver}
                 onDragEnd={onDragEnd}
                 onDrop={onDrop}
-                onKeyDown={onKeyDown}
+                isCommandHighlighted={highlightedCardId === card.id}
               />
             )
           })}

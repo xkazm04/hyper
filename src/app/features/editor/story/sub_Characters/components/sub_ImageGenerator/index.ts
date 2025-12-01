@@ -13,3 +13,5 @@ export {
 } from './ImageGenerationControls'
 export { useImageGenerator } from './useImageGenerator'
 export { MasonryGallery } from './MasonryGallery'
+export { TrainingStatusPanel } from './TrainingStatusPanel'
+export { RandomSketchesGrid } from './RandomSketchesGrid'

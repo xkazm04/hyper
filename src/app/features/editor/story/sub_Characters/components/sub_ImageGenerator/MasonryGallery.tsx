@@ -159,6 +159,8 @@ function EmptySlot({ index }: EmptySlotProps) {
   )
 }
 
+const MAX_IMAGES = 10
+
 export function MasonryGallery({
   character,
   loading,
@@ -169,6 +171,10 @@ export function MasonryGallery({
   // Show gallery when there is at least 1 image
   if (currentImageCount === 0) return null
 
+  // Calculate empty slots - show up to 5 empty slots, but not more than remaining capacity
+  const remainingCapacity = MAX_IMAGES - currentImageCount
+  const emptySlots = Math.min(remainingCapacity, 5)
+
   return (
     <div
       className="bg-card rounded-lg border-2 border-border p-4"
@@ -176,12 +182,17 @@ export function MasonryGallery({
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold">
-          Character Images ({currentImageCount}/4)
+          Character Images ({currentImageCount}/{MAX_IMAGES})
         </h3>
+        {currentImageCount >= 5 && (
+          <span className="text-xs text-green-600 dark:text-green-400">
+            Ready for AI training
+          </span>
+        )}
       </div>
 
-      {/* Grid with consistent 2:3 aspect ratio cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Grid with consistent 2:3 aspect ratio cards - 5 columns for 10 images */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {character.imageUrls.map((url, index) => (
           <ImageCard
             key={`image-${index}`}
@@ -193,8 +204,8 @@ export function MasonryGallery({
           />
         ))}
 
-        {/* Empty slots to show remaining capacity */}
-        {Array.from({ length: 4 - currentImageCount }).map((_, index) => (
+        {/* Empty slots to show remaining capacity (max 5 shown) */}
+        {Array.from({ length: emptySlots }).map((_, index) => (
           <EmptySlot key={`empty-${index}`} index={currentImageCount + index} />
         ))}
       </div>

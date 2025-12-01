@@ -13,7 +13,7 @@ interface CommandItemProps {
   command: Command
   index: number
   isSelected: boolean
-  onExecute: (command: Command) => void
+  onExecute: (command: Command, element?: HTMLElement | null) => void
   onSelect: (index: number) => void
 }
 
@@ -24,13 +24,17 @@ export function CommandItem({
   onExecute,
   onSelect,
 }: CommandItemProps) {
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    onExecute(command, e.currentTarget)
+  }
+
   return (
     <button
       id={`command-${command.id}`}
       role="option"
       aria-selected={isSelected}
       data-index={index}
-      onClick={() => onExecute(command)}
+      onClick={handleClick}
       onMouseEnter={() => onSelect(index)}
       className={cn(
         'w-full flex items-center gap-3 px-4 py-2',

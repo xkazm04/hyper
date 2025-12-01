@@ -140,6 +140,151 @@ export const POSE_OPTIONS: CharacterPromptOption[] = [
   },
 ];
 
+/**
+ * Extended pose options specifically for AI model training
+ * These provide more variety in angles, positions, and scenarios
+ * to create a robust training dataset for character consistency
+ *
+ * All prompts emphasize ZOOMED OUT, WIDE SHOT framing to show full body and pose clearly
+ * NOTE: Avoid word "portrait" as it triggers close-up face framing in LLMs
+ */
+export const TRAINING_POSE_OPTIONS: CharacterPromptOption[] = [
+  // Front-facing poses
+  {
+    id: 'front-neutral',
+    label: 'Front Neutral',
+    description: 'Direct front view, neutral stance',
+    tags: ['front', 'neutral', 'training', 'full-body'],
+    icon: '🧍',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Front view, neutral standing pose facing camera directly. Arms relaxed at sides, feet shoulder-width apart. Character centered in frame with space around figure. Simple background, even lighting. Clear reference pose showing complete figure.`,
+  },
+  {
+    id: 'front-arms-crossed',
+    label: 'Arms Crossed',
+    description: 'Front view with crossed arms',
+    tags: ['front', 'confident', 'training', 'full-body'],
+    icon: '💪',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Front view, confident stance with arms crossed over chest. Weight evenly distributed, slight lean back. Character fully visible in frame with breathing room. Assertive confident expression. Professional lighting, simple backdrop.`,
+  },
+  {
+    id: 'front-hands-hips',
+    label: 'Hands on Hips',
+    description: 'Front view, assertive pose',
+    tags: ['front', 'assertive', 'training', 'full-body'],
+    icon: '🦹',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Front view, assertive stance with hands placed on hips. Elbows out, chest forward, confident bearing. Complete figure visible including feet. Direct eye contact with viewer. Strong silhouette against clean background.`,
+  },
+  // Three-quarter views
+  {
+    id: 'three-quarter-left',
+    label: 'Three-Quarter Left',
+    description: 'Angled view from left side',
+    tags: ['three-quarter', 'angled', 'training', 'full-body'],
+    icon: '↖️',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Three-quarter view from left side. Body angled 45 degrees, face turned toward camera. Natural relaxed pose showing full figure with depth. Character centered with space around. Clear facial features from angle.`,
+  },
+  {
+    id: 'three-quarter-right',
+    label: 'Three-Quarter Right',
+    description: 'Angled view from right side',
+    tags: ['three-quarter', 'angled', 'training', 'full-body'],
+    icon: '↗️',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Three-quarter view from right side. Body angled 45 degrees opposite direction, face turned toward camera. Complete figure visible showing costume and equipment details. Natural stance with body depth visible.`,
+  },
+  // Profile views
+  {
+    id: 'profile-left',
+    label: 'Profile Left',
+    description: 'Side view facing left',
+    tags: ['profile', 'side', 'training', 'full-body'],
+    icon: '👤',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Profile view facing left, complete side silhouette visible. Distinct facial profile - nose, chin, forehead contour. Standing straight, arms visible from side. Full figure proportions clear. Simple background emphasizing silhouette.`,
+  },
+  {
+    id: 'profile-right',
+    label: 'Profile Right',
+    description: 'Side view facing right',
+    tags: ['profile', 'side', 'training', 'full-body'],
+    icon: '👤',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Profile view facing right, complete side silhouette from opposite direction. Distinct facial features in profile. Natural stance, full body proportions visible from head to toe. Costume details from side angle.`,
+  },
+  // Back views
+  {
+    id: 'back-view',
+    label: 'Back View',
+    description: 'View from behind',
+    tags: ['back', 'rear', 'training', 'full-body'],
+    icon: '🔙',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Back view showing character from behind. Full rear silhouette visible, hair and costume back details clear. Head slightly turned showing partial profile. Complete figure including cape, pack, or equipment on back.`,
+  },
+  {
+    id: 'over-shoulder',
+    label: 'Over Shoulder',
+    description: 'Looking back over shoulder',
+    tags: ['back', 'dramatic', 'training', 'full-body'],
+    icon: '↩️',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Back three-quarter view looking over shoulder toward camera. Dramatic twist in torso, face visible in partial profile. Full figure visible with hair or cape caught in movement. Mysterious intriguing angle.`,
+  },
+  // Dynamic poses
+  {
+    id: 'running',
+    label: 'Running',
+    description: 'Mid-run dynamic pose',
+    tags: ['action', 'running', 'training', 'full-body'],
+    icon: '🏃',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Dynamic running pose mid-stride, complete figure in motion. One leg forward, opposite arm swinging. Hair and clothing flowing with movement. Extra frame space to show full running motion. Athletic powerful movement captured.`,
+  },
+  {
+    id: 'jumping',
+    label: 'Jumping',
+    description: 'Airborne leap pose',
+    tags: ['action', 'jumping', 'training', 'full-body'],
+    icon: '⬆️',
+    prompt: `Zoomed out wide shot, full-body character illustration showing complete airborne figure. Dynamic jumping pose suspended in air. Legs bent or extended, arms positioned for balance. Cape and hair floating upward. Wide framing with space above and below figure. Peak of leap moment.`,
+  },
+  {
+    id: 'crouching',
+    label: 'Crouching',
+    description: 'Low crouched position',
+    tags: ['stealth', 'crouching', 'training', 'full-body'],
+    icon: '🧎',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Low crouching position, complete compressed figure visible. Knees bent deeply, one hand may touch ground for balance. Alert ready expression. Stealthy or ready-to-spring posture. Full body visible despite compact pose.`,
+  },
+  {
+    id: 'kneeling',
+    label: 'Kneeling',
+    description: 'One knee down pose',
+    tags: ['kneeling', 'reverent', 'training', 'full-body'],
+    icon: '🧎',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Kneeling pose with one knee on ground, other leg bent at 90 degrees. Complete figure visible including ground contact. Hands may rest on raised knee or hold item. Respectful or resting position.`,
+  },
+  // Expressive poses
+  {
+    id: 'pointing',
+    label: 'Pointing',
+    description: 'Pointing gesture pose',
+    tags: ['gesture', 'commanding', 'training', 'full-body'],
+    icon: '👉',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Commanding pose with arm fully extended pointing forward. Complete figure visible with extended arm in frame. Other arm at side or on hip. Determined directing expression. Strong authoritative body language.`,
+  },
+  {
+    id: 'gesturing',
+    label: 'Gesturing',
+    description: 'Expressive hand gestures',
+    tags: ['gesture', 'expressive', 'training', 'full-body'],
+    icon: '🙌',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Expressive pose with hands raised in gesture, arms fully visible. Could be casting spell, giving speech, or emotional expression. Open palms, animated posture. Full figure showing complete gesture.`,
+  },
+  {
+    id: 'leaning',
+    label: 'Leaning',
+    description: 'Casual leaning pose',
+    tags: ['casual', 'leaning', 'training', 'full-body'],
+    icon: '😎',
+    prompt: `Zoomed out wide shot, full-body character illustration from head to feet. Casual leaning pose against implied wall or surface. One shoulder against support, arms crossed or thumbs in belt. Complete figure visible in relaxed posture. Cool approachable demeanor, weight shifted naturally.`,
+  },
+];
+
 export const EXPRESSION_OPTIONS: CharacterPromptOption[] = [
   {
     id: 'determined',

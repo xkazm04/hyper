@@ -276,6 +276,66 @@ html.mood-transitioning *::after {
 }
 .animate-badge-sparkle:hover { animation: badgeSparkle 1.5s ease-in-out infinite; }
 
+/*
+ * Path Progress Bar Animations
+ * Animated progress bar showing narrative journey with milestones
+ */
+@keyframes pathShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.animate-path-shimmer { animation: pathShimmer 3s ease-in-out infinite; }
+
+@keyframes pathGlow {
+  0%, 100% {
+    box-shadow: 0 0 4px 1px hsl(var(--primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 10px 3px hsl(var(--primary) / 0.4);
+  }
+}
+.animate-path-glow { animation: pathGlow 2s ease-in-out infinite; }
+
+@keyframes pathGlowHalloween {
+  0%, 100% {
+    box-shadow: 0 0 4px 1px hsl(270 70% 60% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 10px 3px hsl(270 70% 60% / 0.5);
+  }
+}
+.halloween .animate-path-glow { animation: pathGlowHalloween 2s ease-in-out infinite; }
+
+@keyframes milestonePop {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+.animate-milestone-pop { animation: milestonePop 0.3s ease-out forwards; }
+
+@keyframes pathExpand {
+  0% { width: var(--from-width); }
+  100% { width: var(--to-width); }
+}
+.animate-path-expand { animation: pathExpand 0.4s ease-out forwards; }
+
+@keyframes pathRetract {
+  0% { width: var(--from-width); }
+  100% { width: var(--to-width); }
+}
+.animate-path-retract { animation: pathRetract 0.4s ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-path-shimmer,
+  .animate-path-glow,
+  .halloween .animate-path-glow,
+  .animate-milestone-pop,
+  .animate-path-expand,
+  .animate-path-retract {
+    animation: none !important;
+  }
+}
+
 @keyframes progressShimmer {
   0% { background-position: -100% 0; }
   100% { background-position: 100% 0; }
@@ -918,5 +978,375 @@ html.high-contrast-transitioning *::after {
     animation: none;
     box-shadow: 0 0 0 3px hsl(210 100% 50% / 0.5),
                 0 0 12px 4px hsl(210 100% 50% / 0.3);
+  }
+}
+
+/*
+ * Saved Ribbon Animations
+ * Celebratory ribbon and confetti for auto-save confirmation
+ */
+@keyframes savedRibbonShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.saved-ribbon-shimmer {
+  animation: savedRibbonShimmer 1.5s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saved-ribbon-shimmer {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
+
+/*
+ * Command Ripple Feedback Animations
+ * Ripple effect propagating from command palette on execution
+ */
+
+@keyframes commandRippleExpand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes commandRippleFadeIn {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.command-ripple-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  overflow: hidden;
+}
+
+.command-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  will-change: transform, opacity;
+  background: radial-gradient(
+    circle,
+    hsl(var(--primary) / 0.3) 0%,
+    hsl(var(--primary) / 0.1) 50%,
+    transparent 70%
+  );
+  animation: commandRippleExpand 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.halloween .command-ripple {
+  background: radial-gradient(
+    circle,
+    hsl(270 70% 60% / 0.35) 0%,
+    hsl(270 70% 60% / 0.15) 50%,
+    transparent 70%
+  );
+}
+
+/* Target highlight glow for cards and outline nodes */
+@keyframes commandTargetHighlight {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 8px hsl(var(--primary) / 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
+}
+
+@keyframes commandTargetHighlightHalloween {
+  0% {
+    box-shadow: 0 0 0 0 hsl(270 70% 60% / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px 10px hsl(270 70% 60% / 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(270 70% 60% / 0);
+  }
+}
+
+.command-target-highlight {
+  animation: commandTargetHighlight 600ms ease-out forwards;
+  z-index: 20;
+}
+
+.halloween .command-target-highlight {
+  animation: commandTargetHighlightHalloween 600ms ease-out forwards;
+}
+
+/* Subtle scale pop for highlighted targets */
+@keyframes commandTargetPop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.command-target-pop {
+  animation: commandTargetPop 400ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-ripple,
+  .command-target-highlight,
+  .halloween .command-target-highlight,
+  .command-target-pop {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
+
+/*
+ * Cluster Frame Animations
+ * Smart node grouping with collapsible clusters
+ */
+
+/* Cluster frame base styles */
+.cluster-frame {
+  transition: all 200ms ease-in-out;
+  will-change: transform, opacity;
+}
+
+.cluster-frame-expanded {
+  animation: clusterExpand 200ms ease-out forwards;
+}
+
+.cluster-frame-collapsed {
+  animation: clusterCollapse 200ms ease-out forwards;
+}
+
+@keyframes clusterExpand {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes clusterCollapse {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Cluster hover effects */
+.cluster-frame:hover {
+  filter: brightness(1.05);
+}
+
+.cluster-frame-halloween:hover {
+  filter: brightness(1.1) saturate(1.1);
+}
+
+/* Cluster header animation */
+.cluster-frame .cluster-header-bg {
+  transition: opacity 200ms ease-in-out;
+}
+
+/* Collapsed cluster pulse animation */
+@keyframes clusterPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 8px 4px rgba(var(--primary), 0.2);
+  }
+}
+
+.cluster-frame-collapsed:hover {
+  animation: clusterPulse 1.5s ease-in-out infinite;
+}
+
+/* SVG cluster rect animations */
+.cluster-rect-expanded rect {
+  transition: all 200ms ease-in-out;
+}
+
+.cluster-rect-collapsed rect {
+  transition: all 200ms ease-in-out;
+}
+
+.cluster-rect-collapsed:hover rect {
+  filter: brightness(1.1);
+}
+
+/* Edge contraction animation for collapsed clusters */
+@keyframes edgeContract {
+  0% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  100% {
+    opacity: 0.3;
+    stroke-dashoffset: 100;
+  }
+}
+
+.edge-contracted {
+  animation: edgeContract 200ms ease-out forwards;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .cluster-frame,
+  .cluster-frame-expanded,
+  .cluster-frame-collapsed,
+  .cluster-rect-expanded rect,
+  .cluster-rect-collapsed rect {
+    animation: none !important;
+    transition: opacity 200ms ease-in-out !important;
+  }
+
+  .cluster-frame-collapsed:hover {
+    animation: none;
+    transform: scale(1.02);
+  }
+}
+
+/*
+ * Story Path Preview Animations
+ * Mini story path overlay with horizontal scrolling thumbnails
+ */
+
+/* Current card glow effect in path preview */
+@keyframes storyPathCurrentGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3),
+                0 0 10px 2px hsl(var(--primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.5),
+                0 0 15px 4px hsl(var(--primary) / 0.3);
+  }
+}
+
+@keyframes storyPathCurrentGlowHalloween {
+  0%, 100% {
+    box-shadow: 0 0 0 2px hsl(270 70% 60% / 0.4),
+                0 0 10px 2px hsl(270 70% 60% / 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 3px hsl(270 70% 60% / 0.6),
+                0 0 15px 4px hsl(270 70% 60% / 0.35);
+  }
+}
+
+.story-path-current-glow {
+  animation: storyPathCurrentGlow 2s ease-in-out infinite;
+}
+
+.halloween .story-path-current-glow {
+  animation: storyPathCurrentGlowHalloween 2s ease-in-out infinite;
+}
+
+/* Card thumbnail hover effect */
+.story-path-card-hover {
+  transition: transform 200ms ease-out;
+}
+
+.story-path-card-hover:hover {
+  transform: translateY(-4px) scale(1.05);
+}
+
+/* Staggered entrance for path cards */
+@keyframes storyPathCardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.story-path-card-enter {
+  animation: storyPathCardEnter 300ms ease-out forwards;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
+/* Progress line animation */
+@keyframes storyPathLineGrow {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.story-path-line-grow {
+  animation: storyPathLineGrow 400ms ease-out forwards;
+}
+
+/* Auto-close countdown indicator */
+@keyframes storyPathCountdown {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+.story-path-countdown {
+  animation: storyPathCountdown 4s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-path-current-glow,
+  .halloween .story-path-current-glow,
+  .story-path-card-hover:hover,
+  .story-path-card-enter,
+  .story-path-line-grow,
+  .story-path-countdown {
+    animation: none !important;
+  }
+
+  .story-path-card-hover:hover {
+    transform: none;
+  }
+
+  .story-path-card-enter {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

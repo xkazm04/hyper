@@ -62,13 +62,14 @@ export {
   type NestedStackProperties,
 } from './card'
 
-// Character types - Character, archetypes, poses
+// Character types - Character, archetypes, poses, Bria training
 export {
   type Character,
   type CharacterArchetype,
   type CharacterPose,
   type CreateCharacterInput,
   type UpdateCharacterInput,
+  type BriaModelStatus,
 } from './character'
 
 // Marketplace types - Character Asset Marketplace

@@ -26,6 +26,8 @@ export function OptionItem({
     onSelect,
     onFocus
 }: OptionItemProps) {
+    const isDisabled = loading || isEnriching
+
     return (
         <button
             id={`${columnId}-option-${index}`}
@@ -33,19 +35,38 @@ export function OptionItem({
             aria-selected={isSelected}
             onClick={onSelect}
             onFocus={onFocus}
-            disabled={loading || isEnriching}
+            disabled={isDisabled}
             tabIndex={isFocused || (focusedOptionIndex === -1 && index === 0) ? 0 : -1}
             className={cn(
-                'flex flex-col items-center gap-1 p-2 rounded border-2 transition-all text-center',
-                'hover:bg-muted active:scale-[0.98]',
+                // Base styles with smooth transitions
+                'flex flex-col items-center gap-1 p-2 rounded border-2 text-center',
+                'transition-all duration-150 ease-out',
+                // Background transition on hover
+                'hover:bg-muted/80 active:scale-[0.97]',
+                // Focus ring - high contrast visible ring
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                // Focused state (via keyboard navigation) - subtle background highlight
+                isFocused && !isSelected && 'bg-muted/60 border-primary/50',
+                // Selected state
                 isSelected
                     ? 'bg-primary/10 border-primary shadow-[2px_2px_0px_0px_hsl(var(--primary))] halloween-candle-flicker'
-                    : 'border-border hover:border-border/80',
-                (loading || isEnriching) && 'opacity-50 cursor-not-allowed'
+                    : 'border-border hover:border-primary/40',
+                // Disabled state
+                isDisabled && 'opacity-50 cursor-not-allowed pointer-events-none'
             )}
-            data-testid={`option-selector-${columnId}-option-${option.id}`}
+            data-testid={`option-item-${columnId}-${option.id}`}
+            data-focused={isFocused}
+            data-selected={isSelected}
         >
-            <span className="text-lg" aria-hidden="true">{option.icon}</span>
+            <span
+                className={cn(
+                    'text-lg transition-transform duration-150',
+                    isFocused && 'scale-110'
+                )}
+                aria-hidden="true"
+            >
+                {option.icon}
+            </span>
             <span className="text-[10px] font-medium leading-tight">
                 {option.label}
             </span>

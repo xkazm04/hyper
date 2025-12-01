@@ -139,6 +139,14 @@ export function mapCharacter(data: any): Character {
     orderIndex: data.order_index,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    // Bria training fields
+    briaProjectId: data.bria_project_id || null,
+    briaDatasetId: data.bria_dataset_id || null,
+    briaModelId: data.bria_model_id || null,
+    briaModelStatus: data.bria_model_status || 'none',
+    briaCaptionPrefix: data.bria_caption_prefix || null,
+    briaTrainingStartedAt: data.bria_training_started_at || null,
+    briaTrainingCompletedAt: data.bria_training_completed_at || null,
   }
 }
 

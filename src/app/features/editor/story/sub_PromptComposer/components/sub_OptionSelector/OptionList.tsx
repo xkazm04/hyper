@@ -1,6 +1,7 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useEffect } from 'react'
 import { PromptDimension, PromptOption, dimensionOptions } from '@/lib/promptComposer'
 import { OptionItem } from './OptionItem'
+import { useFocusedIndex } from './useFocusedIndex'
 
 interface OptionListProps {
     columnId: PromptDimension
@@ -13,6 +14,8 @@ interface OptionListProps {
     onFocusChange: (index: number) => void
     onToggle: (id: PromptDimension) => void
 }
+
+const NUM_COLUMNS = 4
 
 export function OptionList({
     columnId,
@@ -28,87 +31,85 @@ export function OptionList({
     const options = dimensionOptions[columnId]
     const optionsGridRef = useRef<HTMLDivElement>(null)
 
-    const handleOptionsKeyDown = useCallback((e: React.KeyboardEvent) => {
-        const numColumns = 4
-        const numOptions = options.length
-        let newIndex = focusedOptionIndex
+    const {
+        focusedIndex: internalFocusedIndex,
+        setFocusedIndex,
+        handleKeyDown: handleOptionsKeyDown,
+        typeAheadBuffer
+    } = useFocusedIndex({
+        items: options,
+        numColumns: NUM_COLUMNS,
+        getLabel: (option) => option.label,
+        onSelect: (option) => onSelect(columnId, option),
+        onEscape: () => onToggle(columnId),
+        isEnabled: !(loading || isEnriching)
+    })
 
-        switch (e.key) {
-            case 'ArrowRight':
-                e.preventDefault()
-                newIndex = Math.min(focusedOptionIndex + 1, numOptions - 1)
-                break
-            case 'ArrowLeft':
-                e.preventDefault()
-                newIndex = Math.max(focusedOptionIndex - 1, 0)
-                break
-            case 'ArrowDown':
-                e.preventDefault()
-                newIndex = Math.min(focusedOptionIndex + numColumns, numOptions - 1)
-                break
-            case 'ArrowUp':
-                e.preventDefault()
-                newIndex = Math.max(focusedOptionIndex - numColumns, 0)
-                break
-            case 'Home':
-                e.preventDefault()
-                newIndex = 0
-                break
-            case 'End':
-                e.preventDefault()
-                newIndex = numOptions - 1
-                break
-            case 'Enter':
-            case ' ':
-                e.preventDefault()
-                if (focusedOptionIndex >= 0 && focusedOptionIndex < numOptions) {
-                    onSelect(columnId, options[focusedOptionIndex])
-                }
-                return
-            case 'Escape':
-                e.preventDefault()
-                onToggle(columnId)
-                return
-            default:
-                return
+    // Sync external focus index with internal state
+    useEffect(() => {
+        if (focusedOptionIndex !== internalFocusedIndex) {
+            setFocusedIndex(focusedOptionIndex)
         }
+    }, [focusedOptionIndex, internalFocusedIndex, setFocusedIndex])
 
-        onFocusChange(newIndex)
-        const optionButtons = optionsGridRef.current?.querySelectorAll('[role="option"]')
-        if (optionButtons && optionButtons[newIndex]) {
-            (optionButtons[newIndex] as HTMLElement).focus()
+    // Notify parent when internal focus changes
+    useEffect(() => {
+        if (internalFocusedIndex !== focusedOptionIndex && internalFocusedIndex >= 0) {
+            onFocusChange(internalFocusedIndex)
+            // Focus the actual button element
+            const optionButtons = optionsGridRef.current?.querySelectorAll('[role="option"]')
+            if (optionButtons && optionButtons[internalFocusedIndex]) {
+                (optionButtons[internalFocusedIndex] as HTMLElement).focus()
+            }
         }
-    }, [focusedOptionIndex, options, columnId, onSelect, onToggle, onFocusChange])
+    }, [internalFocusedIndex, focusedOptionIndex, onFocusChange])
+
+    // Determine the effective focused index for rendering
+    const effectiveFocusedIndex = internalFocusedIndex >= 0 ? internalFocusedIndex : focusedOptionIndex
 
     return (
-        <div
-            ref={optionsGridRef}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-1.5"
-            role="listbox"
-            aria-label={`${columnLabel} options`}
-            aria-activedescendant={focusedOptionIndex >= 0 ? `${columnId}-option-${focusedOptionIndex}` : undefined}
-            onKeyDown={handleOptionsKeyDown}
-        >
-            {options.map((option, index) => {
-                const isSelected = selectedOption?.id === option.id
-                const isFocused = focusedOptionIndex === index
+        <div className="relative">
+            {/* Type-ahead indicator */}
+            {typeAheadBuffer && (
+                <div
+                    className="absolute -top-6 left-0 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-sm border border-primary/20 z-10"
+                    role="status"
+                    aria-live="polite"
+                    data-testid={`option-list-${columnId}-typeahead`}
+                >
+                    Search: {typeAheadBuffer}
+                </div>
+            )}
+            <div
+                ref={optionsGridRef}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-1.5"
+                role="listbox"
+                aria-label={`${columnLabel} options. Type to search, use arrow keys to navigate.`}
+                aria-activedescendant={effectiveFocusedIndex >= 0 ? `${columnId}-option-${effectiveFocusedIndex}` : undefined}
+                onKeyDown={handleOptionsKeyDown}
+                data-testid={`option-list-${columnId}`}
+            >
+                {options.map((option, index) => {
+                    const isSelected = selectedOption?.id === option.id
+                    const isFocused = effectiveFocusedIndex === index
 
-                return (
-                    <OptionItem
-                        key={option.id}
-                        option={option}
-                        columnId={columnId}
-                        index={index}
-                        isSelected={isSelected}
-                        isFocused={isFocused}
-                        focusedOptionIndex={focusedOptionIndex}
-                        loading={loading}
-                        isEnriching={isEnriching}
-                        onSelect={() => onSelect(columnId, option)}
-                        onFocus={() => onFocusChange(index)}
-                    />
-                )
-            })}
+                    return (
+                        <OptionItem
+                            key={option.id}
+                            option={option}
+                            columnId={columnId}
+                            index={index}
+                            isSelected={isSelected}
+                            isFocused={isFocused}
+                            focusedOptionIndex={effectiveFocusedIndex}
+                            loading={loading}
+                            isEnriching={isEnriching}
+                            onSelect={() => onSelect(columnId, option)}
+                            onFocus={() => onFocusChange(index)}
+                        />
+                    )
+                })}
+            </div>
         </div>
     )
 }

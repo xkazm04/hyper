@@ -8,7 +8,6 @@ import { PerformanceProvider } from "@/contexts/PerformanceContext";
 import { ThemeLayerProvider, HalloweenOverlay } from "@/app/features/theme-layer";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
-import { SkipLinkWrapper } from "@/components/ui/SkipLinkWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,7 +24,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <SkipLinkWrapper targetId="main-content" />
         <ServiceWorkerRegistration />
         <QueryProvider>
           <ThemeProvider>

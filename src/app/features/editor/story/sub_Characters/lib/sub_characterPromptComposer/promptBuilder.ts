@@ -40,10 +40,11 @@ export function composeCharacterPrompt(
   const parts: string[] = [];
 
   // Add art style first if provided, otherwise use a generic base
+  // Use "illustration" instead of "portrait" to avoid triggering close-up face framing
   if (artStylePrompt) {
-    parts.push(`Character portrait illustration. ${artStylePrompt}`);
+    parts.push(`Full-body character illustration. ${artStylePrompt}`);
   } else {
-    parts.push(`Character portrait illustration.`);
+    parts.push(`Full-body character illustration.`);
   }
 
   // PRIORITY 1: Character appearance - ALWAYS include fully

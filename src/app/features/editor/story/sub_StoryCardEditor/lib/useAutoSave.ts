@@ -5,6 +5,7 @@ import { useRef, useCallback, useEffect } from 'react'
 interface UseAutoSaveOptions {
   delay?: number
   onSave: () => Promise<void>
+  onSaveComplete?: () => void
   enabled?: boolean
 }
 
@@ -12,7 +13,7 @@ interface UseAutoSaveOptions {
  * Hook for debounced auto-save functionality
  * Triggers save after specified delay of inactivity
  */
-export function useAutoSave({ delay = 500, onSave, enabled = true }: UseAutoSaveOptions) {
+export function useAutoSave({ delay = 500, onSave, onSaveComplete, enabled = true }: UseAutoSaveOptions) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isSavingRef = useRef(false)
   const pendingSaveRef = useRef(false)
@@ -36,6 +37,8 @@ export function useAutoSave({ delay = 500, onSave, enabled = true }: UseAutoSave
     isSavingRef.current = true
     try {
       await onSave()
+      // Notify that save completed successfully
+      onSaveComplete?.()
     } finally {
       isSavingRef.current = false
 
@@ -45,7 +48,7 @@ export function useAutoSave({ delay = 500, onSave, enabled = true }: UseAutoSave
         triggerSave()
       }
     }
-  }, [onSave, enabled])
+  }, [onSave, onSaveComplete, enabled])
 
   const scheduleSave = useCallback(() => {
     if (!enabled) return

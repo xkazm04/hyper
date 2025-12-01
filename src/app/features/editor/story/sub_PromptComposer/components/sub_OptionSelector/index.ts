@@ -1,3 +1,5 @@
 export { OptionItem } from './OptionItem'
 export { OptionList } from './OptionList'
 export { OptionSearch } from './OptionSearch'
+export { useFocusedIndex } from './useFocusedIndex'
+export type { UseFocusedIndexOptions, UseFocusedIndexReturn } from './useFocusedIndex'

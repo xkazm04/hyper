@@ -10,6 +10,7 @@ import { useContentSection } from './sub_ContentSection/useContentSection'
 import { updateCard } from '../lib/cardApi'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
+import { SavedRibbon, useSavedRibbon } from './SavedRibbon'
 
 interface ContentSectionProps {
   cardId: string
@@ -31,11 +32,14 @@ export function ContentSection({
   // Image description is separate from story content
   const [imageDescription, setImageDescription] = useState(currentCard?.imageDescription || '')
 
+  // Saved ribbon state
+  const { showRibbon, isMuted, triggerRibbon, hideRibbon, toggleMute } = useSavedRibbon()
+
   const {
     title, content, message, speaker, isSaving, isGenerating, hasContext, isLoadingContext, characters,
     handleTitleChange, handleContentChange, handleMessageChange, handleSpeakerChange,
     saveTitle, saveContent, saveMessage, saveSpeaker, handleGenerateContent,
-  } = useContentSection({ cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, currentCard })
+  } = useContentSection({ cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, currentCard, onSaveComplete: triggerRibbon })
 
   // Handle image selection from SceneSketchPanel
   const handleImageSelect = useCallback(async (imageUrl: string, prompt: string) => {
@@ -85,7 +89,38 @@ export function ContentSection({
   }, [storyStackId, cardId, updateCardContext])
 
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="relative grid grid-cols-2 gap-6">
+      {/* Saved Ribbon - positioned at top of card */}
+      <SavedRibbon
+        show={showRibbon}
+        onHide={hideRibbon}
+        muted={isMuted}
+      />
+
+      {/* Mute toggle for saved ribbon */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        className="absolute top-0 right-0 z-40 p-1.5 text-xs text-muted-foreground hover:text-foreground
+                   bg-muted/50 hover:bg-muted rounded-bl border-l border-b border-border
+                   transition-colors duration-150"
+        title={isMuted ? 'Enable save notifications' : 'Disable save notifications'}
+        data-testid="saved-ribbon-mute-toggle"
+        aria-label={isMuted ? 'Enable save notifications' : 'Disable save notifications'}
+        aria-pressed={isMuted}
+      >
+        {isMuted ? (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+        )}
+      </button>
+
       {/* Left Column - Content Editor */}
       <div className="space-y-6">
         <ContentEditor

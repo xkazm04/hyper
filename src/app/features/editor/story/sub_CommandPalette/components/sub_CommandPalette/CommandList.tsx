@@ -21,7 +21,7 @@ interface CommandListProps {
   groupedCommands: GroupedCommands[]
   flatCommands: Command[]
   selectedIndex: number
-  onExecute: (command: Command) => void
+  onExecute: (command: Command, element?: HTMLElement | null) => void
   onSelect: (index: number) => void
 }
 
