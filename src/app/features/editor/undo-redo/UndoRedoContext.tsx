@@ -11,7 +11,12 @@ import {
 import { useUndoRedo, UseUndoRedoReturn } from './lib/useUndoRedo'
 import { UndoRedoToast } from './components/UndoRedoToast'
 import { ActionType } from './lib/types'
-import { useEditor } from '@/contexts/EditorContext'
+import { useEditor, EditorSnapshot } from '@/contexts/EditorContext'
+import {
+  validateSnapshot,
+  normalizeSnapshot,
+  logSnapshotValidationErrors,
+} from './lib/snapshotValidator'
 
 interface UndoRedoContextValue extends Omit<UseUndoRedoReturn, 'undo' | 'redo'> {
   recordAction: (
@@ -40,11 +45,64 @@ export function UndoRedoProvider({ children }: UndoRedoProviderProps) {
   const undoRedo = useUndoRedo()
   const isInitialized = useRef(false)
 
+  // Track the last known good snapshot for recovery
+  const lastGoodSnapshotRef = useRef<EditorSnapshot | null>(null)
+
+  /**
+   * Safely applies a snapshot after validation.
+   * If the snapshot is malformed, logs the error and reverts to the last known good state.
+   *
+   * @param snapshot - The snapshot to validate and apply
+   * @param context - Context string for error logging (e.g., "undo", "redo", "jump")
+   * @returns true if the snapshot was applied successfully, false if it was discarded
+   */
+  const safeApplySnapshot = useCallback(
+    (snapshot: EditorSnapshot, context: string): boolean => {
+      // Validate the snapshot structure
+      const validation = validateSnapshot(snapshot)
+
+      if (!validation.isValid) {
+        // Log the validation errors for debugging
+        logSnapshotValidationErrors(validation.errors, context)
+
+        // Attempt to recover to the last known good state
+        if (lastGoodSnapshotRef.current) {
+          console.warn(
+            `[Undo/Redo] Discarding malformed snapshot during ${context}. ` +
+            `Reverting to last known good state.`
+          )
+          editorApplySnapshot(lastGoodSnapshotRef.current)
+        } else {
+          console.error(
+            `[Undo/Redo] Cannot recover from malformed snapshot during ${context}: ` +
+            `No last known good state available.`
+          )
+        }
+
+        return false
+      }
+
+      // Normalize the snapshot (e.g., convert arrays to Sets)
+      const normalizedSnapshot = normalizeSnapshot(snapshot)
+
+      // Apply the validated and normalized snapshot
+      editorApplySnapshot(normalizedSnapshot)
+
+      // Update the last known good snapshot
+      lastGoodSnapshotRef.current = normalizedSnapshot
+
+      return true
+    },
+    [editorApplySnapshot]
+  )
+
   // Initialize state when editor data loads
   useEffect(() => {
     if (!isInitialized.current && storyCards.length > 0) {
       const snapshot = getSnapshot()
       undoRedo.initializeState(snapshot)
+      // Store the initial snapshot as the first known good state
+      lastGoodSnapshotRef.current = snapshot
       isInitialized.current = true
     }
   }, [storyCards, getSnapshot, undoRedo])
@@ -55,6 +113,8 @@ export function UndoRedoProvider({ children }: UndoRedoProviderProps) {
       affectedCard?: { id: string; title: string; imageUrl?: string | null }
     ) => {
       const snapshot = getSnapshot()
+      // Update the last known good snapshot when recording a valid action
+      lastGoodSnapshotRef.current = snapshot
       undoRedo.pushState(snapshot, actionType, affectedCard)
     },
     [getSnapshot, undoRedo]
@@ -78,7 +138,7 @@ export function UndoRedoProvider({ children }: UndoRedoProviderProps) {
         e.preventDefault()
         const result = undoRedo.undo()
         if (result) {
-          editorApplySnapshot(result.snapshot)
+          safeApplySnapshot(result.snapshot, 'undo (keyboard)')
         }
       }
 
@@ -99,14 +159,14 @@ export function UndoRedoProvider({ children }: UndoRedoProviderProps) {
         e.preventDefault()
         const result = undoRedo.redo()
         if (result) {
-          editorApplySnapshot(result.snapshot)
+          safeApplySnapshot(result.snapshot, 'redo (keyboard)')
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [undoRedo, editorApplySnapshot])
+  }, [undoRedo, safeApplySnapshot])
 
   const handleJumpToState = useCallback(() => {
     // Jump to the last affected card if available
@@ -123,25 +183,25 @@ export function UndoRedoProvider({ children }: UndoRedoProviderProps) {
   const jumpToHistoryIndex = useCallback((index: number) => {
     const snapshot = undoRedo.jumpToIndex(index)
     if (snapshot) {
-      editorApplySnapshot(snapshot)
+      safeApplySnapshot(snapshot, 'history jump')
     }
-  }, [undoRedo, editorApplySnapshot])
+  }, [undoRedo, safeApplySnapshot])
 
   // Wrapped undo that applies the snapshot to the editor
   const wrappedUndo = useCallback(() => {
     const result = undoRedo.undo()
     if (result) {
-      editorApplySnapshot(result.snapshot)
+      safeApplySnapshot(result.snapshot, 'undo')
     }
-  }, [undoRedo, editorApplySnapshot])
+  }, [undoRedo, safeApplySnapshot])
 
   // Wrapped redo that applies the snapshot to the editor
   const wrappedRedo = useCallback(() => {
     const result = undoRedo.redo()
     if (result) {
-      editorApplySnapshot(result.snapshot)
+      safeApplySnapshot(result.snapshot, 'redo')
     }
-  }, [undoRedo, editorApplySnapshot])
+  }, [undoRedo, safeApplySnapshot])
 
   const contextValue: UndoRedoContextValue = {
     ...undoRedo,

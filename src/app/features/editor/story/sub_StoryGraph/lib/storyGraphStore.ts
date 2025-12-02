@@ -41,6 +41,7 @@ import {
   getSessionLayoutCache,
   setSessionLayoutCache,
 } from './layoutCache'
+import { getLayoutWorkerManager } from './layoutWorkerManager'
 import { Subscription } from 'rxjs'
 
 // ============================================================================
@@ -73,14 +74,18 @@ export interface StoryGraphState {
   _serverLayoutPending: boolean
   _lastServerLayoutHash: string | null
   _useServerLayout: boolean
+  _useWorkerLayout: boolean
+  _workerLayoutPending: boolean
 
   // Actions
   syncFromEditor: (data: SyncData) => void
   syncFromEditorWithServerLayout: (data: SyncData) => Promise<void>
+  syncFromEditorWithWorkerLayout: (data: SyncData) => Promise<void>
   setCurrentCardId: (cardId: string | null) => void
   setCollapsedNodes: (nodes: Set<string>) => void
   toggleNodeCollapsed: (nodeId: string) => void
   setUseServerLayout: (enabled: boolean) => void
+  setUseWorkerLayout: (enabled: boolean) => void
   applyServerPositions: (positions: Record<string, { x: number; y: number }>, structureHash: string) => void
 }
 
@@ -488,7 +493,9 @@ export const useStoryGraphStore = create<StoryGraphState>()(
     _nodeDimensions: new Map(),
     _serverLayoutPending: false,
     _lastServerLayoutHash: null,
-    _useServerLayout: true, // Enable server layout by default
+    _useServerLayout: false, // Disable server layout by default (use worker instead)
+    _useWorkerLayout: true, // Enable worker layout by default for best performance
+    _workerLayoutPending: false,
 
     /**
      * Sync story data from EditorContext and recompute graph if structure changed
@@ -734,6 +741,13 @@ export const useStoryGraphStore = create<StoryGraphState>()(
     },
 
     /**
+     * Enable or disable Web Worker layout computation
+     */
+    setUseWorkerLayout: (enabled: boolean) => {
+      set({ _useWorkerLayout: enabled })
+    },
+
+    /**
      * Apply pre-computed positions from server
      */
     applyServerPositions: (positions: Record<string, { x: number; y: number }>, structureHash: string) => {
@@ -960,6 +974,261 @@ export const useStoryGraphStore = create<StoryGraphState>()(
       )
 
       // Cache the client-computed positions for future view toggles
+      if (stackId) {
+        setSessionLayoutCache(
+          stackId,
+          positions,
+          newHash,
+          currentChoiceSignature
+        )
+      }
+
+      set({
+        storyCards: data.storyCards,
+        choices: data.choices,
+        characters: data.characters,
+        firstCardId,
+        currentCardId: data.currentCardId,
+        collapsedNodes: data.collapsedNodes,
+        stackId,
+        nodes,
+        edges,
+        analysis,
+        hiddenNodes,
+        hiddenDescendantCount,
+        _snapshot: snapshot,
+        _positions: positions,
+        _lastStructureHash: newHash,
+        _lastChoiceSignature: currentChoiceSignature,
+        _nodeDimensions: nodeDimensions,
+      })
+    },
+
+    /**
+     * Sync from editor with Web Worker layout computation
+     * Offloads heavy dagre calculations to a background thread.
+     *
+     * Layout Strategy:
+     * 1. Check session cache for instant rendering (if choice structure unchanged)
+     * 2. Offload to Web Worker for heavy DAG computation
+     * 3. Fall back to main thread layout if worker unavailable
+     *
+     * This keeps the UI responsive during graph layout computation.
+     */
+    syncFromEditorWithWorkerLayout: async (data: SyncData) => {
+      const state = get()
+      const firstCardId = data.storyStack?.firstCardId ?? null
+      const stackId = data.storyStack?.id ?? null
+
+      // Create structure hash to detect changes
+      const newHash = createStructureHash(
+        data.storyCards,
+        data.choices,
+        firstCardId,
+        data.collapsedNodes
+      )
+
+      // Create choice signature for session cache validation
+      const currentChoiceSignature = createChoiceSignature(
+        data.choices.map(c => ({
+          sourceId: c.storyCardId,
+          targetId: c.targetCardId,
+          orderIndex: c.orderIndex ?? 0,
+        }))
+      )
+
+      // If structure hasn't changed, only update currentCardId if needed
+      if (newHash === state._lastStructureHash) {
+        if (data.currentCardId !== state.currentCardId) {
+          const updatedNodes = state.nodes.map(node => ({
+            ...node,
+            data: {
+              ...node.data,
+              isSelected: node.id === data.currentCardId,
+            },
+          }))
+          const updatedEdges = state.edges.map(edge => ({
+            ...edge,
+            zIndex: edge.source === data.currentCardId ? 100 : 0,
+          }))
+          set({
+            currentCardId: data.currentCardId,
+            nodes: updatedNodes,
+            edges: updatedEdges,
+          })
+        }
+        return
+      }
+
+      // Structure changed - compute analysis and hidden nodes first
+      const analysis = analyzeCards(data.storyCards, data.choices, firstCardId)
+      const hiddenNodes = computeHiddenNodes(data.collapsedNodes, analysis.childrenMap)
+      const hiddenDescendantCount = computeHiddenDescendantCounts(data.collapsedNodes, analysis.childrenMap)
+      const nodeDimensions = computeBatchNodeDimensions(data.storyCards)
+
+      // Check if choice structure changed (requires full layout recompute)
+      const choiceStructureChanged = currentChoiceSignature !== state._lastChoiceSignature
+
+      // Priority 1: Try session cache for instant rendering (if choice structure unchanged)
+      if (stackId && !choiceStructureChanged) {
+        const cachedPositions = getSessionLayoutCache(stackId, currentChoiceSignature)
+        if (cachedPositions && cachedPositions.size > 0) {
+          // Use cached positions for instant rendering!
+          const { nodes, edges, snapshot } = computeNodesAndEdgesWithPositions(
+            data.storyCards,
+            data.choices,
+            data.characters,
+            firstCardId,
+            data.currentCardId,
+            data.collapsedNodes,
+            analysis,
+            hiddenNodes,
+            hiddenDescendantCount,
+            cachedPositions,
+            nodeDimensions
+          )
+
+          set({
+            storyCards: data.storyCards,
+            choices: data.choices,
+            characters: data.characters,
+            firstCardId,
+            currentCardId: data.currentCardId,
+            collapsedNodes: data.collapsedNodes,
+            stackId,
+            nodes,
+            edges,
+            analysis,
+            hiddenNodes,
+            hiddenDescendantCount,
+            _snapshot: snapshot,
+            _positions: cachedPositions,
+            _lastStructureHash: newHash,
+            _lastChoiceSignature: currentChoiceSignature,
+            _nodeDimensions: nodeDimensions,
+          })
+
+          return
+        }
+      }
+
+      // Priority 2: Try Web Worker layout if enabled
+      if (state._useWorkerLayout) {
+        set({ _workerLayoutPending: true })
+
+        try {
+          const workerManager = getLayoutWorkerManager()
+
+          // Check worker cache first
+          const workerCached = workerManager.getCachedLayout(
+            workerManager.createStructureHash(
+              data.storyCards.map(c => ({ id: c.id, title: c.title || 'Untitled' })),
+              data.choices.map(c => ({
+                storyCardId: c.storyCardId,
+                targetCardId: c.targetCardId,
+                orderIndex: c.orderIndex ?? 0,
+              })),
+              firstCardId,
+              Array.from(data.collapsedNodes)
+            )
+          )
+
+          let positions: Record<string, { x: number; y: number }>
+
+          if (workerCached) {
+            positions = workerCached
+          } else {
+            // Compute layout in Web Worker (off main thread)
+            positions = await workerManager.computeLayout(
+              data.storyCards.map(c => ({ id: c.id, title: c.title || 'Untitled' })),
+              data.choices.map(c => ({
+                id: c.id,
+                storyCardId: c.storyCardId,
+                targetCardId: c.targetCardId,
+                orderIndex: c.orderIndex ?? 0,
+              })),
+              firstCardId,
+              Array.from(data.collapsedNodes)
+            )
+          }
+
+          // Convert to Map for internal use
+          const positionsMap = new Map<string, NodePosition>()
+          Object.entries(positions).forEach(([id, pos]) => {
+            positionsMap.set(id, pos)
+          })
+
+          // Create nodes and edges with worker-computed positions
+          const { nodes, edges, snapshot } = computeNodesAndEdgesWithPositions(
+            data.storyCards,
+            data.choices,
+            data.characters,
+            firstCardId,
+            data.currentCardId,
+            data.collapsedNodes,
+            analysis,
+            hiddenNodes,
+            hiddenDescendantCount,
+            positionsMap,
+            nodeDimensions
+          )
+
+          // Cache the worker-computed positions for future view toggles
+          if (stackId) {
+            setSessionLayoutCache(
+              stackId,
+              positionsMap,
+              newHash,
+              currentChoiceSignature
+            )
+          }
+
+          set({
+            storyCards: data.storyCards,
+            choices: data.choices,
+            characters: data.characters,
+            firstCardId,
+            currentCardId: data.currentCardId,
+            collapsedNodes: data.collapsedNodes,
+            stackId,
+            nodes,
+            edges,
+            analysis,
+            hiddenNodes,
+            hiddenDescendantCount,
+            _snapshot: snapshot,
+            _positions: positionsMap,
+            _lastStructureHash: newHash,
+            _lastChoiceSignature: currentChoiceSignature,
+            _nodeDimensions: nodeDimensions,
+            _workerLayoutPending: false,
+          })
+
+          return
+        } catch (error) {
+          console.warn('Worker layout computation failed, falling back to main thread:', error)
+          set({ _workerLayoutPending: false })
+          // Fall through to main thread computation
+        }
+      }
+
+      // Priority 3: Main thread fallback
+      const { nodes, edges, positions, snapshot } = computeNodesAndEdges(
+        data.storyCards,
+        data.choices,
+        data.characters,
+        firstCardId,
+        data.currentCardId,
+        data.collapsedNodes,
+        analysis,
+        hiddenNodes,
+        hiddenDescendantCount,
+        state._snapshot,
+        state._positions,
+        nodeDimensions
+      )
+
+      // Cache the computed positions for future view toggles
       if (stackId) {
         setSessionLayoutCache(
           stackId,

@@ -1,13 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody } from '@/components/ui/modal'
 import { Badge } from '@/components/ui/badge'
 import { CharacterAsset } from '@/lib/types'
 import { useMarketplace } from '../lib/useMarketplace'
@@ -57,32 +51,29 @@ export function AssetDetailModal({ asset, open, onClose, onDownload }: AssetDeta
   ].filter(Boolean) as string[]
 
   return (
-    <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent 
-        className="max-w-4xl max-h-[90vh] overflow-y-auto halloween-ghost-float" 
-        data-testid="asset-detail-modal"
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {asset.name}
-            {asset.isFeatured && (
-              <Badge className="bg-yellow-500 text-black">Featured</Badge>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            <Badge variant="outline" className="mr-2">
-              {assetTypeLabels[asset.assetType]}
-            </Badge>
-            <Badge variant="outline" className="mr-2">
-              {asset.category}
-            </Badge>
-            <Badge variant="secondary">
-              {licenseLabels[asset.licenseType]}
-            </Badge>
-          </DialogDescription>
-        </DialogHeader>
+    <Modal open={open} onOpenChange={() => onClose()} size="xl">
+      <ModalHeader>
+        <ModalTitle className="flex items-center gap-2">
+          {asset.name}
+          {asset.isFeatured && (
+            <Badge className="bg-yellow-500 text-black">Featured</Badge>
+          )}
+        </ModalTitle>
+        <ModalDescription>
+          <Badge variant="outline" className="mr-2">
+            {assetTypeLabels[asset.assetType]}
+          </Badge>
+          <Badge variant="outline" className="mr-2">
+            {asset.category}
+          </Badge>
+          <Badge variant="secondary">
+            {licenseLabels[asset.licenseType]}
+          </Badge>
+        </ModalDescription>
+      </ModalHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+      <ModalBody className="max-h-[70vh] overflow-y-auto" data-testid="asset-detail-modal">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Image gallery */}
           <div className="space-y-4">
             {/* Main image */}
@@ -134,7 +125,7 @@ export function AssetDetailModal({ asset, open, onClose, onDownload }: AssetDeta
             <AssetReviews asset={asset} />
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ModalBody>
+    </Modal>
   )
 }

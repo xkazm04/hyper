@@ -2,14 +2,14 @@
 
 import { useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
-import { Palette, Check, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
+import { Palette } from 'lucide-react'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
 import { ArtStylePresetSelector } from './ArtStylePresetSelector'
 import { ArtStyleExtractor } from './ArtStyleExtractor'
-import { getEffectiveArtStylePrompt, getArtStyleDetails } from '../lib/artStyleService'
+import { StoryDescription } from './StoryDescription'
+import { SaveButton } from './shared'
+import { getArtStyleDetails } from '../lib/artStyleService'
 
 interface ArtStyleEditorProps {
   onSave?: () => void
@@ -91,14 +91,19 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
   if (!storyStack) return null
 
   const currentStyleDetails = getArtStyleDetails(storyStack)
-  const hasChanges = 
+  const hasChanges =
     (activeTab === 'preset' && (selectedStyleId !== storyStack.artStyleId || storyStack.artStyleSource !== 'preset')) ||
     (activeTab === 'custom' && (customPrompt !== storyStack.customArtStylePrompt || artStyleSource !== storyStack.artStyleSource))
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 pb-4 border-b border-border">
+    <div className="space-y-8">
+      {/* Story Description Section */}
+      <StoryDescription />
+
+      {/* Art Style Section */}
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 pb-4 border-b border-border">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
           <Palette className="w-5 h-5 text-primary" />
         </div>
@@ -120,7 +125,7 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
           </div>
         </div>
         {currentStyleDetails.prompt && (
-          <p className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border border-border line-clamp-3">
+          <p className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border border-border line-clamp-5">
             {currentStyleDetails.prompt}
           </p>
         )}
@@ -152,48 +157,34 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
         </button>
       </div>
 
-      {/* Tab Content */}
-      <div className="min-h-[200px]">
-        {activeTab === 'preset' ? (
-          <ArtStylePresetSelector
-            selectedStyleId={selectedStyleId}
-            onSelect={handlePresetSelect}
-            disabled={isSaving}
-          />
-        ) : (
-          <ArtStyleExtractor
-            customPrompt={customPrompt}
-            extractedImageUrl={extractedImageUrl}
-            onExtract={handleExtract}
-            onCustomPromptChange={handleCustomPromptChange}
-            onClear={handleClearCustom}
-            disabled={isSaving}
-          />
-        )}
-      </div>
-
-      {/* Save Button */}
-      <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-        {hasChanges && (
-          <span className="text-xs text-muted-foreground">Unsaved changes</span>
-        )}
-        <Button
-          onClick={handleSave}
-          disabled={isSaving || !hasChanges}
-          className="min-w-[100px]"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
-            </>
+        {/* Tab Content */}
+        <div className="min-h-[200px]">
+          {activeTab === 'preset' ? (
+            <ArtStylePresetSelector
+              selectedStyleId={selectedStyleId}
+              onSelect={handlePresetSelect}
+              disabled={isSaving}
+            />
           ) : (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Save Style
-            </>
+            <ArtStyleExtractor
+              customPrompt={customPrompt}
+              extractedImageUrl={extractedImageUrl}
+              onExtract={handleExtract}
+              onCustomPromptChange={handleCustomPromptChange}
+              onClear={handleClearCustom}
+              disabled={isSaving}
+            />
           )}
-        </Button>
+        </div>
+
+        {/* Save Button */}
+        <SaveButton
+          onSave={handleSave}
+          isSaving={isSaving}
+          hasChanges={hasChanges}
+          label="Save Style"
+          savingLabel="Saving..."
+        />
       </div>
     </div>
   )

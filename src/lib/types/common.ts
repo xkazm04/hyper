@@ -104,6 +104,18 @@ export class DatabaseError extends Error {
   }
 }
 
+export class StaleVersionError extends Error {
+  public readonly expectedVersion: number
+  public readonly actualVersion: number
+
+  constructor(cardId: string, expectedVersion: number, actualVersion: number) {
+    super(`Card ${cardId} has been modified. Expected version ${expectedVersion}, but current version is ${actualVersion}. Please refresh to see the latest changes.`)
+    this.name = 'StaleVersionError'
+    this.expectedVersion = expectedVersion
+    this.actualVersion = actualVersion
+  }
+}
+
 // ============================================================================
 // DEPRECATED TYPES - For backward compatibility with old code
 // These will be removed in task 15 when old files are deleted

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { DialogFooter } from '@/components/ui/dialog'
+import { ModalFooter } from '@/components/ui/modal'
 
 interface KeyFormProps {
   newKeyName: string
@@ -68,7 +68,7 @@ export function KeyForm({
         </div>
       </div>
 
-      <DialogFooter>
+      <ModalFooter>
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
@@ -79,7 +79,7 @@ export function KeyForm({
         >
           {loading ? 'Creating...' : 'Create Key'}
         </Button>
-      </DialogFooter>
+      </ModalFooter>
     </div>
   )
 }

@@ -26,7 +26,10 @@ export function CurrentAvatar({
   if (!character.avatarUrl) return null
 
   return (
-    <div className="bg-card rounded-lg border-2 border-border p-4 halloween-bat-silhouette">
+    <div
+      className="bg-card rounded-lg border-2 border-border p-4 halloween-bat-silhouette"
+      data-testid="current-avatar-section"
+    >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold">Current Avatar</h3>
         <Button
@@ -35,6 +38,7 @@ export function CurrentAvatar({
           onClick={onRemoveAvatar}
           disabled={loading}
           className="h-7 text-xs text-destructive hover:text-destructive"
+          data-testid="remove-avatar-btn"
         >
           Remove
         </Button>
@@ -45,6 +49,7 @@ export function CurrentAvatar({
             src={character.avatarUrl}
             alt={`${character.name} avatar`}
             className="w-full h-full object-cover"
+            data-testid="current-avatar-img"
           />
         </div>
         {character.avatarPrompt && (
@@ -81,7 +86,10 @@ export function GeneratedAvatarsGrid({
   if (generatedAvatars.length === 0) return null
 
   return (
-    <div className="bg-card rounded-lg border-2 border-border p-4 space-y-4 halloween-bat-silhouette">
+    <div
+      className="bg-card rounded-lg border-2 border-border p-4 space-y-4 halloween-bat-silhouette"
+      data-testid="generated-avatars-grid"
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Select an Avatar</h3>
         <Button
@@ -90,6 +98,7 @@ export function GeneratedAvatarsGrid({
           onClick={onClear}
           className="h-7 text-xs"
           disabled={loading}
+          data-testid="generate-new-avatars-btn"
         >
           <RefreshCw className="w-3 h-3 mr-1" />
           Generate New
@@ -109,6 +118,7 @@ export function GeneratedAvatarsGrid({
                 ? 'border-primary shadow-[3px_3px_0px_0px_hsl(var(--primary))]'
                 : 'border-border hover:border-border/80'
             )}
+            data-testid={`avatar-option-${index}`}
           >
             <img
               src={avatar.url}
@@ -132,6 +142,7 @@ export function GeneratedAvatarsGrid({
           onClick={onSetAvatar}
           disabled={loading}
           className="w-full border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+          data-testid="set-avatar-btn"
         >
           {isSaving ? (
             <>
@@ -166,6 +177,7 @@ export function GenerateButton({
       onClick={onGenerate}
       disabled={loading}
       className="w-full border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+      data-testid="generate-avatars-btn"
     >
       {isGenerating ? (
         <>
@@ -190,7 +202,10 @@ export function ErrorMessage({ error }: ErrorMessageProps) {
   if (!error) return null
 
   return (
-    <div className="border-2 border-destructive/50 rounded-lg bg-destructive/10 p-3">
+    <div
+      className="border-2 border-destructive/50 rounded-lg bg-destructive/10 p-3"
+      data-testid="avatar-error-message"
+    >
       <p className="text-xs text-destructive">{error}</p>
     </div>
   )
@@ -205,12 +220,46 @@ export function EmptyState({ hasAvatar, generatedAvatarsLength }: EmptyStateProp
   if (hasAvatar || generatedAvatarsLength > 0) return null
 
   return (
-    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+    <div
+      className="border-2 border-dashed border-border rounded-lg p-6 text-center"
+      data-testid="avatar-empty-state"
+    >
       <User className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
       <h3 className="text-sm font-semibold mb-1">No Avatar Yet</h3>
       <p className="text-xs text-muted-foreground">
         Choose a style above and generate avatar variations for your character
       </p>
+    </div>
+  )
+}
+
+interface CancelledPlaceholderProps {
+  onRetry: () => void
+  loading?: boolean
+}
+
+export function CancelledPlaceholder({ onRetry, loading = false }: CancelledPlaceholderProps) {
+  return (
+    <div
+      className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-6 text-center bg-muted/30"
+      data-testid="cancelled-placeholder"
+    >
+      <RefreshCw className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
+      <h3 className="text-sm font-semibold mb-1 text-muted-foreground">Generation Cancelled</h3>
+      <p className="text-xs text-muted-foreground mb-4">
+        The previous image generation was cancelled. You can try again when ready.
+      </p>
+      <Button
+        onClick={onRetry}
+        disabled={loading}
+        size="sm"
+        variant="outline"
+        className="border-2"
+        data-testid="cancelled-retry-btn"
+      >
+        <RefreshCw className="w-3 h-3 mr-2" />
+        Try Again
+      </Button>
     </div>
   )
 }

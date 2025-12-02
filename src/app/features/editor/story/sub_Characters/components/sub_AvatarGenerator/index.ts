@@ -10,5 +10,6 @@ export {
   GenerateButton,
   ErrorMessage,
   EmptyState,
+  CancelledPlaceholder,
   type GeneratedAvatar,
 } from './AvatarPreview'

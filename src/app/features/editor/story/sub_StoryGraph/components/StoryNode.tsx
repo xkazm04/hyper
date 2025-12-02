@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react'
+import React, { memo, useCallback, useState, useMemo } from 'react'
 import { NodeProps } from 'reactflow'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -44,12 +44,63 @@ export interface StoryNodeData {
   // Dynamic dimensions
   nodeWidth?: number
   nodeHeight?: number
+  /** Whether this node is currently visible in the viewport (for lazy loading) */
+  isViewportVisible?: boolean
+}
+
+/**
+ * Custom comparison function for StoryNode memoization.
+ * Only re-renders when data that affects the visual output changes.
+ */
+function arePropsEqual(
+  prevProps: NodeProps<StoryNodeData>,
+  nextProps: NodeProps<StoryNodeData>
+): boolean {
+  // Quick reference equality check
+  if (prevProps === nextProps) return true
+
+  // Check id and selected state
+  if (prevProps.id !== nextProps.id || prevProps.selected !== nextProps.selected) {
+    return false
+  }
+
+  const prev = prevProps.data
+  const next = nextProps.data
+
+  // Check all data properties that affect rendering
+  return (
+    prev.label === next.label &&
+    prev.isFirst === next.isFirst &&
+    prev.isOrphaned === next.isOrphaned &&
+    prev.isDeadEnd === next.isDeadEnd &&
+    prev.isIncomplete === next.isIncomplete &&
+    prev.isSelected === next.isSelected &&
+    prev.hasImage === next.hasImage &&
+    prev.hasContent === next.hasContent &&
+    prev.hasTitle === next.hasTitle &&
+    prev.hasChoices === next.hasChoices &&
+    prev.choiceCount === next.choiceCount &&
+    prev.depth === next.depth &&
+    prev.isCollapsed === next.isCollapsed &&
+    prev.hiddenDescendantCount === next.hiddenDescendantCount &&
+    prev.isOnPath === next.isOnPath &&
+    prev.isSearchHighlighted === next.isSearchHighlighted &&
+    prev.nodeWidth === next.nodeWidth &&
+    prev.nodeHeight === next.nodeHeight &&
+    prev.isViewportVisible === next.isViewportVisible
+  )
 }
 
 /**
  * StoryNode - Redesigned for large-scale story maps (100+ nodes)
+ *
+ * Performance optimizations:
+ * - Custom memo comparison for fine-grained re-render control
+ * - CSS containment for layout isolation
+ * - Memoized computed values
+ * - Lazy content loading support via isViewportVisible
  */
-const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
+const StoryNode = memo(function StoryNode({ data, selected, id }: NodeProps<StoryNodeData>) {
   const { theme } = useTheme()
   const { toggleNodeCollapsed } = useEditor()
   const isHalloween = theme === 'halloween'
@@ -257,7 +308,7 @@ const StoryNode = memo(({ data, selected, id }: NodeProps<StoryNodeData>) => {
       </Tooltip>
     </TooltipProvider>
   )
-})
+}, arePropsEqual)
 
 StoryNode.displayName = 'StoryNode'
 export default StoryNode

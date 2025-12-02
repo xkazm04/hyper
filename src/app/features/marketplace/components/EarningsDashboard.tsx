@@ -23,15 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { CreatorBalance, CreatorEarning, PayoutRequest } from '@/lib/types'
 
 interface EarningsDashboardProps {
@@ -192,88 +184,14 @@ export function EarningsDashboard({
               <CreditCard className="w-5 h-5" />
               Request Payout
             </span>
-            <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
-              <DialogTrigger asChild>
-                <Button
-                  disabled={!balance || balance.availableBalance < minPayout}
-                  data-testid="request-payout-btn"
-                >
-                  <DollarSign className="w-4 h-4 mr-1" />
-                  Request Payout
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Request Payout</DialogTitle>
-                  <DialogDescription>
-                    Enter the amount you'd like to withdraw. Minimum payout is {formatCurrency(minPayout)}.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Amount (USD)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      min={minPayout}
-                      max={balance?.availableBalance || 0}
-                      step="0.01"
-                      value={payoutAmount}
-                      onChange={(e) => setPayoutAmount(e.target.value)}
-                      placeholder={`${minPayout}.00`}
-                      data-testid="payout-amount-input"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Available: {balance ? formatCurrency(balance.availableBalance) : '$0.00'}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Payout Method</Label>
-                    <Select value={payoutMethod} onValueChange={setPayoutMethod}>
-                      <SelectTrigger data-testid="payout-method-select">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="paypal">PayPal</SelectItem>
-                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="stripe_connect">Stripe Connect</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {payoutMethod === 'paypal' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="email">PayPal Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={payoutEmail}
-                        onChange={(e) => setPayoutEmail(e.target.value)}
-                        placeholder="your@email.com"
-                        data-testid="paypal-email-input"
-                      />
-                    </div>
-                  )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowPayoutDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleRequestPayout}
-                    disabled={
-                      submitting ||
-                      !payoutAmount ||
-                      parseFloat(payoutAmount) < minPayout ||
-                      parseFloat(payoutAmount) > (balance?.availableBalance || 0) ||
-                      (payoutMethod === 'paypal' && !payoutEmail)
-                    }
-                    data-testid="confirm-payout-btn"
-                  >
-                    {submitting ? 'Processing...' : 'Request Payout'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button
+              disabled={!balance || balance.availableBalance < minPayout}
+              onClick={() => setShowPayoutDialog(true)}
+              data-testid="request-payout-btn"
+            >
+              <DollarSign className="w-4 h-4 mr-1" />
+              Request Payout
+            </Button>
           </CardTitle>
           <CardDescription>
             {balance && balance.availableBalance >= minPayout
@@ -383,6 +301,81 @@ export function EarningsDashboard({
           )}
         </CardContent>
       </Card>
+
+      {/* Payout Request Modal */}
+      <Modal open={showPayoutDialog} onOpenChange={setShowPayoutDialog} size="md">
+        <ModalHeader>
+          <ModalTitle>Request Payout</ModalTitle>
+          <ModalDescription>
+            Enter the amount you'd like to withdraw. Minimum payout is {formatCurrency(minPayout)}.
+          </ModalDescription>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (USD)</Label>
+              <Input
+                id="amount"
+                type="number"
+                min={minPayout}
+                max={balance?.availableBalance || 0}
+                step="0.01"
+                value={payoutAmount}
+                onChange={(e) => setPayoutAmount(e.target.value)}
+                placeholder={`${minPayout}.00`}
+                data-testid="payout-amount-input"
+              />
+              <p className="text-xs text-muted-foreground">
+                Available: {balance ? formatCurrency(balance.availableBalance) : '$0.00'}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Payout Method</Label>
+              <Select value={payoutMethod} onValueChange={setPayoutMethod}>
+                <SelectTrigger data-testid="payout-method-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="paypal">PayPal</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="stripe_connect">Stripe Connect</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {payoutMethod === 'paypal' && (
+              <div className="space-y-2">
+                <Label htmlFor="email">PayPal Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={payoutEmail}
+                  onChange={(e) => setPayoutEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  data-testid="paypal-email-input"
+                />
+              </div>
+            )}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setShowPayoutDialog(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRequestPayout}
+            disabled={
+              submitting ||
+              !payoutAmount ||
+              parseFloat(payoutAmount) < minPayout ||
+              parseFloat(payoutAmount) > (balance?.availableBalance || 0) ||
+              (payoutMethod === 'paypal' && !payoutEmail)
+            }
+            data-testid="confirm-payout-btn"
+          >
+            {submitting ? 'Processing...' : 'Request Payout'}
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   )
 }

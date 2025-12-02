@@ -218,7 +218,7 @@ export function DetailSection({
           <div className="flex items-center gap-4 pt-2 text-sm text-muted-foreground">
             <span>
               <ImageIcon className="w-4 h-4 inline mr-1" />
-              {totalImages}/4 images
+              {totalImages}/10 images
             </span>
             <span>
               <User className="w-4 h-4 inline mr-1" />

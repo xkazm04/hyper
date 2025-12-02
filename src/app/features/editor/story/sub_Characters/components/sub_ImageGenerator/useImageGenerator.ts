@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { Character } from '@/lib/types'
 import {
   CharacterDimension,
@@ -17,6 +17,14 @@ interface UseImageGeneratorProps {
   isSaving: boolean
   onAddImage: (imageUrl: string, prompt: string) => Promise<void>
   storyArtStyle?: string // Story art style prompt from stack configuration (FR-3.1, FR-3.3)
+}
+
+// Custom error for aborted requests
+class AbortError extends Error {
+  constructor(message = 'Request was cancelled') {
+    super(message)
+    this.name = 'AbortError'
+  }
 }
 
 export interface ImageGeneratorState {
@@ -39,6 +47,8 @@ export interface ImageGeneratorState {
   composedPrompt: string | null
   compositionError: string | null
   usedFallbackPrompt: boolean
+  // Cancellation state
+  isCancelled: boolean
 }
 
 export interface ImageGeneratorActions {
@@ -51,6 +61,7 @@ export interface ImageGeneratorActions {
   handleUseSketch: () => Promise<void>
   setSelectedSketchIndex: (index: number | null) => void
   setFinalImage: (image: GeneratedImage | null) => void
+  cancelGeneration: () => void
 }
 
 
@@ -83,6 +94,41 @@ export function useImageGenerator({
   const [compositionError, setCompositionError] = useState<string | null>(null)
   const [usedFallbackPrompt, setUsedFallbackPrompt] = useState(false)
 
+  // Cancellation state - AbortController for concurrent request management
+  const [isCancelled, setIsCancelled] = useState(false)
+  const sketchAbortControllerRef = useRef<AbortController | null>(null)
+  const finalAbortControllerRef = useRef<AbortController | null>(null)
+  // Track request generation to discard stale responses
+  const requestGenerationRef = useRef(0)
+
+  // Cleanup AbortControllers on unmount
+  useEffect(() => {
+    return () => {
+      sketchAbortControllerRef.current?.abort()
+      finalAbortControllerRef.current?.abort()
+    }
+  }, [])
+
+  // Debounce effect: Cancel ongoing sketch generation when prompt-affecting inputs change
+  // This ensures rapid selection changes don't result in stale images
+  const selectionsJsonRef = useRef(JSON.stringify(selections))
+  useEffect(() => {
+    const currentSelectionsJson = JSON.stringify(selections)
+    const selectionsChanged = selectionsJsonRef.current !== currentSelectionsJson
+
+    // If selections changed during an active sketch generation, cancel it
+    if (selectionsChanged && isGeneratingSketches) {
+      sketchAbortControllerRef.current?.abort()
+      sketchAbortControllerRef.current = null
+      requestGenerationRef.current++
+      setIsCancelled(true)
+      setIsGeneratingSketches(false)
+      setIsComposingPrompt(false)
+    }
+
+    selectionsJsonRef.current = currentSelectionsJson
+  }, [selections, isGeneratingSketches])
+
   // Compose the prompt from selections (includes art style for preview display)
   const finalPrompt = useMemo(
     () => composeCharacterPrompt(selections, character.name, character.appearance, storyArtStyle),
@@ -108,23 +154,45 @@ export function useImageGenerator({
     })
   }, [])
 
+  // Cancel all ongoing generation requests
+  const cancelGeneration = useCallback(() => {
+    // Abort any ongoing requests
+    sketchAbortControllerRef.current?.abort()
+    finalAbortControllerRef.current?.abort()
+    sketchAbortControllerRef.current = null
+    finalAbortControllerRef.current = null
+
+    // Increment request generation to invalidate any pending responses
+    requestGenerationRef.current++
+
+    setIsCancelled(true)
+    setIsGeneratingSketches(false)
+    setIsGeneratingFinal(false)
+    setIsComposingPrompt(false)
+    setError(null)
+  }, [])
+
   const handleClear = useCallback(() => {
+    // Cancel any ongoing requests first
+    cancelGeneration()
+
     // Cleanup existing sketches before clearing state (FR-2.2)
     if (generationIds.length > 0) {
       deleteGenerations(generationIds)
     }
-    
+
     setSelections({})
     setSketches([])
     setSelectedSketchIndex(null)
     setFinalImage(null)
     setError(null)
     setGenerationIds([])
+    setIsCancelled(false)
     // Clear composition state (Task 10.1, 10.2)
     setComposedPrompt(null)
     setCompositionError(null)
     setUsedFallbackPrompt(false)
-  }, [generationIds])
+  }, [generationIds, cancelGeneration])
 
   const toggleColumn = useCallback((columnId: CharacterDimension) => {
     setExpandedColumn((prev) => (prev === columnId ? null : columnId))
@@ -134,6 +202,14 @@ export function useImageGenerator({
   const handleGenerateSketches = useCallback(async () => {
     if (!finalPrompt) return
 
+    // Cancel any previous sketch generation request
+    sketchAbortControllerRef.current?.abort()
+    const abortController = new AbortController()
+    sketchAbortControllerRef.current = abortController
+
+    // Capture the current request generation for stale response detection
+    const currentGeneration = ++requestGenerationRef.current
+
     setIsGeneratingSketches(true)
     setError(null)
     setSketches([])
@@ -141,12 +217,18 @@ export function useImageGenerator({
     setFinalImage(null)
     setCompositionError(null)
     setUsedFallbackPrompt(false)
+    setIsCancelled(false)
 
     try {
+      // Check if request was aborted before starting
+      if (abortController.signal.aborted) {
+        throw new AbortError()
+      }
+
       // Use AI-composed prompt if story art style is available (FR-3.2, FR-3.3, NFR-3)
       // Falls back to simple composition if art style unavailable or API fails
       setIsComposingPrompt(true)
-      
+
       // Use the result-based function to get detailed composition info (Task 10.2)
       const compositionResult = await composeCharacterPromptWithAIResult({
         characterName: character.name,
@@ -154,22 +236,28 @@ export function useImageGenerator({
         selections,
         storyArtStyle,
       })
-      
+
+      // Check for abort and stale response after async operation
+      if (abortController.signal.aborted || requestGenerationRef.current !== currentGeneration) {
+        throw new AbortError()
+      }
+
       const aiComposedPrompt = compositionResult.prompt
       setComposedPrompt(aiComposedPrompt)
       setUsedFallbackPrompt(compositionResult.usedFallback)
-      
+
       // Show user-friendly error message if fallback was used (Task 10.2, NFR-2)
       if (compositionResult.error) {
         setCompositionError(compositionResult.error)
       }
-      
+
       setIsComposingPrompt(false)
 
       const variationResponse = await fetch('/api/ai/prompt-variations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: aiComposedPrompt, count: 4 }),
+        signal: abortController.signal,
       })
 
       if (!variationResponse.ok) {
@@ -177,9 +265,20 @@ export function useImageGenerator({
       }
 
       const { variations } = await variationResponse.json()
+
+      // Check for abort and stale response after fetching variations
+      if (abortController.signal.aborted || requestGenerationRef.current !== currentGeneration) {
+        throw new AbortError()
+      }
+
       const sketchPreset = SKETCH_QUALITY_PRESETS.quick
 
       const sketchPromises = variations.map(async (variation: { variation: string }, index: number) => {
+        // Check abort before each individual image request
+        if (abortController.signal.aborted) {
+          return null
+        }
+
         const response = await fetch('/api/ai/generate-images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -191,6 +290,7 @@ export function useImageGenerator({
             provider: 'leonardo',
             model: 'phoenix_1.0',
           }),
+          signal: abortController.signal,
         })
 
         if (!response.ok) {
@@ -209,6 +309,12 @@ export function useImageGenerator({
       })
 
       const results = await Promise.all(sketchPromises)
+
+      // Final check for abort and stale response before updating state
+      if (abortController.signal.aborted || requestGenerationRef.current !== currentGeneration) {
+        throw new AbortError()
+      }
+
       const validSketches = results.filter((s): s is GeneratedImage => s !== null)
 
       if (validSketches.length === 0) {
@@ -223,6 +329,12 @@ export function useImageGenerator({
 
       setSketches(validSketches)
     } catch (err) {
+      // Handle abort errors gracefully - don't show error to user
+      if (err instanceof AbortError || (err instanceof Error && err.name === 'AbortError')) {
+        console.log('Sketch generation was cancelled')
+        setIsCancelled(true)
+        return
+      }
       console.error('Error generating sketches:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate sketches')
     } finally {
@@ -238,11 +350,25 @@ export function useImageGenerator({
     const selectedSketch = sketches[selectedSketchIndex]
     if (!selectedSketch.prompt) return
 
+    // Cancel any previous final generation request
+    finalAbortControllerRef.current?.abort()
+    const abortController = new AbortController()
+    finalAbortControllerRef.current = abortController
+
+    // Capture the current request generation for stale response detection
+    const currentGeneration = ++requestGenerationRef.current
+
     setIsGeneratingFinal(true)
     setError(null)
     setFinalImage(null)
+    setIsCancelled(false)
 
     try {
+      // Check if request was aborted before starting
+      if (abortController.signal.aborted) {
+        throw new AbortError()
+      }
+
       const qualityPreset = FINAL_QUALITY_PRESETS.high
 
       const response = await fetch('/api/ai/generate-images', {
@@ -256,6 +382,7 @@ export function useImageGenerator({
           provider: 'leonardo',
           model: 'flux_2',
         }),
+        signal: abortController.signal,
       })
 
       if (!response.ok) {
@@ -263,6 +390,12 @@ export function useImageGenerator({
       }
 
       const data = await response.json()
+
+      // Check for abort and stale response before updating state
+      if (abortController.signal.aborted || requestGenerationRef.current !== currentGeneration) {
+        throw new AbortError()
+      }
+
       const image = data.images?.[0]
 
       if (image) {
@@ -276,6 +409,12 @@ export function useImageGenerator({
         throw new Error('No image generated')
       }
     } catch (err) {
+      // Handle abort errors gracefully - don't show error to user
+      if (err instanceof AbortError || (err instanceof Error && err.name === 'AbortError')) {
+        console.log('Final image generation was cancelled')
+        setIsCancelled(true)
+        return
+      }
       console.error('Error generating final image:', err)
       setError(err instanceof Error ? err.message : 'Failed to generate final image')
     } finally {
@@ -324,8 +463,10 @@ export function useImageGenerator({
     isGeneratingFinal, finalImage, error, finalPrompt, hasSelections, loading,
     currentImageCount, canAddMore, canGenerate, handleSelect, handleClear, toggleColumn,
     handleGenerateSketches, handleGenerateFinal, handleAddToCharacter, handleUseSketch,
-    setSelectedSketchIndex, setFinalImage,
+    setSelectedSketchIndex, setFinalImage, cancelGeneration,
     // AI composition state (FR-3.2, Task 10.1, 10.2)
     isComposingPrompt, composedPrompt, compositionError, usedFallbackPrompt,
+    // Cancellation state
+    isCancelled,
   }
 }

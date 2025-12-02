@@ -67,6 +67,7 @@ export function useOfflineConflict(storage: OfflineStorage) {
       speaker: input.speaker || null,
       speakerType: input.speakerType || null,
       orderIndex,
+      version: 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }

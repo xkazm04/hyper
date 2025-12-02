@@ -8,13 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalBody } from '@/components/ui/modal'
 import { StoryTemplateData } from '@/lib/types'
 
 interface StoryTemplateUploadProps {
@@ -140,41 +134,10 @@ export function StoryTemplateUpload({
             Parse Template
           </Button>
           {storyTemplateData && (
-            <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" data-testid="preview-template-btn">
-                  <Eye className="w-4 h-4 mr-1" />
-                  Preview
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Template Preview</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium">Story Stack</h4>
-                    <p className="text-sm text-muted-foreground">{storyTemplateData.storyStack.title}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Cards ({storyTemplateData.storyCards.length})</h4>
-                    <div className="space-y-2">
-                      {storyTemplateData.storyCards.slice(0, 5).map((card, i) => (
-                        <Card key={i} className="p-2">
-                          <p className="font-medium text-sm">{card.title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-2">{card.content}</p>
-                        </Card>
-                      ))}
-                      {storyTemplateData.storyCards.length > 5 && (
-                        <p className="text-sm text-muted-foreground">
-                          +{storyTemplateData.storyCards.length - 5} more cards
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setPreviewOpen(true)} data-testid="preview-template-btn">
+              <Eye className="w-4 h-4 mr-1" />
+              Preview
+            </Button>
           )}
         </div>
       </div>
@@ -254,6 +217,39 @@ export function StoryTemplateUpload({
           Provide documentation to help users customize your template
         </p>
       </div>
+
+      {/* Template Preview Modal */}
+      {storyTemplateData && (
+        <Modal open={previewOpen} onOpenChange={setPreviewOpen} size="lg">
+          <ModalHeader>
+            <ModalTitle>Template Preview</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="max-h-[60vh] overflow-y-auto">
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium">Story Stack</h4>
+                <p className="text-sm text-muted-foreground">{storyTemplateData.storyStack.title}</p>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2">Cards ({storyTemplateData.storyCards.length})</h4>
+                <div className="space-y-2">
+                  {storyTemplateData.storyCards.slice(0, 5).map((card, i) => (
+                    <Card key={i} className="p-2">
+                      <p className="font-medium text-sm">{card.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{card.content}</p>
+                    </Card>
+                  ))}
+                  {storyTemplateData.storyCards.length > 5 && (
+                    <p className="text-sm text-muted-foreground">
+                      +{storyTemplateData.storyCards.length - 5} more cards
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+        </Modal>
+      )}
     </div>
   )
 }

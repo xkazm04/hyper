@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Copy, Check, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DialogFooter } from '@/components/ui/dialog'
+import { ModalFooter } from '@/components/ui/modal'
 
 interface KeyUsageProps {
   createdKey: string
@@ -57,11 +57,11 @@ export function KeyUsage({ createdKey, onClose }: KeyUsageProps) {
           </Button>
         </div>
       </div>
-      <DialogFooter>
+      <ModalFooter>
         <Button onClick={onClose} data-testid="close-dialog-btn">
           Done
         </Button>
-      </DialogFooter>
+      </ModalFooter>
     </div>
   )
 }

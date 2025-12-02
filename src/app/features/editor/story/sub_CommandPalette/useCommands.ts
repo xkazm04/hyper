@@ -17,6 +17,8 @@ import {
   Layout,
   Settings,
   RefreshCw,
+  Wand2,
+  Code,
 } from 'lucide-react'
 
 interface UseCommandsProps {
@@ -27,6 +29,9 @@ interface UseCommandsProps {
   onTogglePreview?: () => void
   onExportStory?: () => void
   onDuplicateCard?: () => void
+  onOpenScriptEditor?: () => void
+  onOpenDSLEditor?: () => void
+  scriptedCommands?: Command[]
 }
 
 export function useCommands({
@@ -37,6 +42,9 @@ export function useCommands({
   onTogglePreview,
   onExportStory,
   onDuplicateCard,
+  onOpenScriptEditor,
+  onOpenDSLEditor,
+  scriptedCommands = [],
 }: UseCommandsProps): Command[] {
   const router = useRouter()
   const { storyStack, currentCard, storyCards, deleteCard } = useEditor()
@@ -161,9 +169,34 @@ export function useCommands({
           }
         }),
       },
+
+      // Script Editor command
+      ...(onOpenScriptEditor ? [{
+        id: 'open-script-editor',
+        label: 'Command Script Editor',
+        description: 'Create and manage custom commands',
+        icon: Wand2,
+        shortcut: 'Ctrl+Shift+S',
+        category: 'view' as CommandCategory,
+        action: onOpenScriptEditor,
+      }] : []),
+
+      // Story DSL Editor command
+      ...(onOpenDSLEditor ? [{
+        id: 'open-dsl-editor',
+        label: 'Story DSL Editor',
+        description: 'Edit story graph as text (version control friendly)',
+        icon: Code,
+        shortcut: 'Ctrl+Shift+D',
+        category: 'view' as CommandCategory,
+        action: onOpenDSLEditor,
+      }] : []),
     ]
 
-    return commandList.filter((cmd) => !cmd.disabled)
+    // Combine built-in commands with scripted commands
+    const allCommands = [...commandList, ...scriptedCommands]
+
+    return allCommands.filter((cmd) => !cmd.disabled)
   }, [
     router,
     storyStack,
@@ -177,6 +210,9 @@ export function useCommands({
     onTogglePreview,
     onExportStory,
     onDuplicateCard,
+    onOpenScriptEditor,
+    onOpenDSLEditor,
+    scriptedCommands,
   ])
 
   return commands

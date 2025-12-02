@@ -21,7 +21,7 @@ import {
   ValidationIssue,
   ValidationSeverity,
   FixAction,
-} from '../lib/graphValidator'
+} from '../hooks/useGraphValidation'
 
 // ============================================================================
 // Types

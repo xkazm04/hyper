@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Check, AlertCircle, Copy, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -24,7 +25,10 @@ export function ReferenceImageSelector({
   if (!hasImages) return null
 
   return (
-    <div className="bg-card rounded-lg border-2 border-border p-4 space-y-4 halloween-bat-silhouette">
+    <div
+      className="bg-card rounded-lg border-2 border-border p-4 space-y-4 halloween-bat-silhouette"
+      data-testid="reference-image-selector"
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">Reference Image (Optional)</h3>
         {selectedReferenceIndex !== null && (
@@ -34,6 +38,7 @@ export function ReferenceImageSelector({
             onClick={() => onSelectReference(null)}
             className="h-7 text-xs"
             disabled={loading}
+            data-testid="clear-reference-btn"
           >
             Clear
           </Button>
@@ -50,17 +55,20 @@ export function ReferenceImageSelector({
             onClick={() => onSelectReference(index)}
             disabled={loading}
             className={cn(
-              'relative aspect-square rounded-lg overflow-hidden border-2 transition-all',
+              'relative aspect-[2/3] rounded-lg overflow-hidden border-2 transition-all',
               'hover:opacity-90 active:scale-[0.98]',
               selectedReferenceIndex === index
                 ? 'border-primary shadow-[2px_2px_0px_0px_hsl(var(--primary))]'
                 : 'border-border hover:border-border/80'
             )}
+            data-testid={`reference-image-${index}`}
           >
-            <img
+            <Image
               src={url}
               alt={`Reference ${index + 1}`}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 25vw, 100px"
             />
             {selectedReferenceIndex === index && (
               <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
@@ -84,7 +92,10 @@ export function NoImagesWarning({ hasImages }: NoImagesWarningProps) {
   if (hasImages) return null
 
   return (
-    <div className="bg-muted/50 rounded-lg border-2 border-border p-4 flex items-start gap-3">
+    <div
+      className="bg-muted/50 rounded-lg border-2 border-border p-4 flex items-start gap-3"
+      data-testid="no-images-warning"
+    >
       <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
       <div>
         <p className="text-sm font-medium">No Character Images</p>
@@ -152,7 +163,10 @@ export function PromptPreview({
   }
   
   return (
-    <div className="bg-muted/50 rounded-lg border-2 border-border p-4 space-y-3">
+    <div
+      className="bg-muted/50 rounded-lg border-2 border-border p-4 space-y-3"
+      data-testid="prompt-preview"
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -165,6 +179,7 @@ export function PromptPreview({
           variant="ghost"
           onClick={handleCopy}
           className="h-7 text-xs gap-1"
+          data-testid="copy-prompt-btn"
         >
           {copied ? (
             <>

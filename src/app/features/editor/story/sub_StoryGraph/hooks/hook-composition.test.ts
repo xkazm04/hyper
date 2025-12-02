@@ -27,15 +27,20 @@ const expectedHookFiles = [
   'useStoryGraphNavigation.ts',
   'useGraphLayout.ts',
   'useGraphOperations.ts',
-  'useGraphSelection.ts',
   'usePathAncestry.ts',
   'useBranchDepth.ts',
   'useBranchPath.ts',
   'useGraphDiff.ts',
   'useGraphValidation.ts',
-  'useGraphStream.ts',
-  'useNodePreview.ts',
   'useOrphanAttachment.ts',
+  'useOrphanAttachmentState.tsx',
+  'usePathProgress.ts',
+  'usePathProgressSettings.ts',
+  'usePreviousValue.ts',
+  'useClusterState.ts',
+  'useNodeSearch.ts',
+  'useStoryGraphExport.ts',
+  'useViewportVisibility.ts',
 ];
 
 // Arbitrary for generating hook file names

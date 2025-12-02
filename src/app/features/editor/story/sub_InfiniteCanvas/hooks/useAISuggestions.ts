@@ -101,6 +101,7 @@ export function useAISuggestions(
         speaker: null,
         speakerType: null,
         orderIndex: storyCards.length,
+        version: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }

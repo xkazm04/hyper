@@ -5,14 +5,19 @@ import { useEditor } from '@/contexts/EditorContext'
 import { ViewToggle, type ViewMode } from './components/ViewToggle'
 import { EmptyState } from './components/EmptyState'
 import { SectionLoadingFallback } from './components/SectionLoadingFallback'
-import StoryGraph from '../sub_StoryGraph/StoryGraph'
-import CardPreview from '../CardPreview'
-import { PathAnalyzer } from '../sub_PathAnalyzer'
 import { AICompanionBottomPanel } from '../sub_AICompanion/AICompanionBottomPanel'
 
 // Lazy load section components for reduced initial bundle size
 const ContentSection = lazy(() =>
   import('./components/ContentSection').then(mod => ({ default: mod.ContentSection }))
+)
+
+// Lazy load view panels - these pull in heavy libraries (React Flow, D3, etc.)
+// and are only needed when their respective tabs are selected
+const StoryGraph = lazy(() => import('../sub_StoryGraph/StoryGraph'))
+const CardPreview = lazy(() => import('../CardPreview'))
+const PathAnalyzer = lazy(() =>
+  import('../sub_PathAnalyzer').then(mod => ({ default: mod.PathAnalyzer }))
 )
 
 export default function StoryCardEditor() {
@@ -53,13 +58,19 @@ export default function StoryCardEditor() {
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden relative">
         {viewMode === 'graph' ? (
-          <StoryGraph />
+          <Suspense fallback={<SectionLoadingFallback section="graph" fullHeight />}>
+            <StoryGraph />
+          </Suspense>
         ) : viewMode === 'preview' ? (
-          <CardPreview />
+          <Suspense fallback={<SectionLoadingFallback section="preview" fullHeight />}>
+            <CardPreview />
+          </Suspense>
         ) : viewMode === 'analytics' ? (
           <div className="h-full overflow-y-auto p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
-              <PathAnalyzer onCardClick={handleAnalyticsCardClick} />
+              <Suspense fallback={<SectionLoadingFallback section="analytics" fullHeight />}>
+                <PathAnalyzer onCardClick={handleAnalyticsCardClick} />
+              </Suspense>
             </div>
           </div>
         ) : currentCard ? (

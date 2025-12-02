@@ -5,6 +5,19 @@ import { StoryCard, Choice } from '@/lib/types'
  * Centralizes all API calls for the card editor
  */
 
+// Custom error for version conflicts
+export class VersionConflictError extends Error {
+  public readonly expectedVersion: number
+  public readonly actualVersion: number
+
+  constructor(message: string, expectedVersion: number, actualVersion: number) {
+    super(message)
+    this.name = 'VersionConflictError'
+    this.expectedVersion = expectedVersion
+    this.actualVersion = actualVersion
+  }
+}
+
 // Card API
 
 export interface UpdateCardPayload {
@@ -16,6 +29,11 @@ export interface UpdateCardPayload {
   imageDescription?: string | null
   message?: string | null
   speaker?: string | null
+  version?: number  // Include version for optimistic concurrency control
+}
+
+export interface UpdateCardResult {
+  storyCard: StoryCard
 }
 
 export async function updateCard(
@@ -33,8 +51,38 @@ export async function updateCard(
   )
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error.message || 'Failed to update card')
+    const errorData = await response.json().catch(() => ({}))
+
+    // Handle version conflict (HTTP 409)
+    if (response.status === 409 && errorData.code === 'STALE_VERSION') {
+      throw new VersionConflictError(
+        errorData.message || 'Card has been modified by another session',
+        errorData.expectedVersion,
+        errorData.actualVersion
+      )
+    }
+
+    throw new Error(errorData.message || 'Failed to update card')
+  }
+
+  const data = await response.json()
+  return data.storyCard
+}
+
+/**
+ * Fetch the latest version of a card from the server
+ * Used to refresh after a version conflict
+ */
+export async function fetchCard(
+  storyStackId: string,
+  cardId: string
+): Promise<StoryCard> {
+  const response = await fetch(
+    `/api/stories/${storyStackId}/cards/${cardId}`
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch card')
   }
 
   const data = await response.json()

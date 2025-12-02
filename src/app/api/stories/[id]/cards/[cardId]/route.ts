@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { StoryService } from '@/lib/services/story'
-import { DatabaseError, CardNotFoundError } from '@/lib/types'
+import { DatabaseError, CardNotFoundError, StaleVersionError } from '@/lib/types'
 
 /**
  * GET /api/stories/[id]/cards/[cardId]
@@ -141,9 +141,9 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json()
-    const { title, content, script, imageUrl, imagePrompt, message, speaker, speakerType, orderIndex } = body
+    const { title, content, script, imageUrl, imagePrompt, message, speaker, speakerType, orderIndex, version } = body
 
-    // Update story card
+    // Update story card with version for optimistic concurrency control
     const storyCard = await storyService.updateStoryCard(cardId, {
       title,
       content,
@@ -154,6 +154,7 @@ export async function PATCH(
       speaker,
       speakerType,
       orderIndex,
+      version,
     })
 
     return NextResponse.json({
@@ -162,6 +163,19 @@ export async function PATCH(
     })
   } catch (error) {
     console.error('Error updating story card:', error)
+
+    if (error instanceof StaleVersionError) {
+      return NextResponse.json(
+        {
+          error: 'Card has been modified by another session',
+          code: 'STALE_VERSION',
+          message: error.message,
+          expectedVersion: error.expectedVersion,
+          actualVersion: error.actualVersion,
+        },
+        { status: 409 }
+      )
+    }
 
     if (error instanceof CardNotFoundError) {
       return NextResponse.json(

@@ -5,6 +5,12 @@
 
 export type AICompanionMode = 'suggest' | 'generate' | 'architect'
 
+export interface GeneratedChoice {
+  label: string
+  targetTitle: string
+  targetContent?: string
+}
+
 export interface ContentVariant {
   id: string
   title: string
@@ -13,6 +19,7 @@ export interface ContentVariant {
   speaker?: string | null
   confidence: number
   reasoning?: string
+  choices?: GeneratedChoice[]
 }
 
 export interface NextStepSuggestion {

@@ -1,6 +1,6 @@
 /**
  * OutlineSidebar Sub-components
- * 
+ *
  * Extracted components for the OutlineSidebar module.
  */
 

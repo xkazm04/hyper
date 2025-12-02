@@ -13,7 +13,6 @@ import { useEditor } from '@/contexts/EditorContext'
 import { cn } from '@/lib/utils'
 import { StoryCard } from '@/lib/types'
 import { OutlineActions, OutlineTree } from './components/sub_OutlineSidebar'
-import { StoryProgressTracker } from './components/StoryProgressTracker'
 import { useCommandRipple } from '../sub_CommandPalette/lib/CommandRippleContext'
 
 interface OutlineSidebarProps {
@@ -112,42 +111,36 @@ export default function OutlineSidebar({
   return (
     <div
       className={cn(
-        'h-full flex bg-card lg:border-r-2 border-border',
+        'h-full flex flex-col bg-card',
         'halloween-web-corner',
         'halloween-ethereal-glow',
         'halloween-cobweb'
       )}
       data-testid="outline-sidebar"
     >
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <OutlineActions
-          cardCount={storyCards.length}
-          onAddCard={onAddCard}
-        />
+      <OutlineActions
+        cardCount={storyCards.length}
+        onAddCard={onAddCard}
+      />
 
-        <OutlineTree
-          ref={containerRef}
-          sortedCards={sortedCards}
-          currentCardId={currentCardId}
-          expandedNodes={expandedNodes}
-          focusedIndex={focusedIndex}
-          dragOverIndex={dragOverIndex}
-          draggedIndex={draggedIndex}
-          getChildCards={getChildCards}
-          onAddCard={onAddCard}
-          onSelect={handleSelect}
-          onToggleExpand={handleToggleExpand}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-          onDrop={handleDrop}
-          highlightedCardId={highlightedTargetId}
-        />
-      </div>
-
-      {/* Progress tracker on the right edge */}
-      <StoryProgressTracker className="border-l border-border/50" />
+      <OutlineTree
+        ref={containerRef}
+        sortedCards={sortedCards}
+        currentCardId={currentCardId}
+        expandedNodes={expandedNodes}
+        focusedIndex={focusedIndex}
+        dragOverIndex={dragOverIndex}
+        draggedIndex={draggedIndex}
+        getChildCards={getChildCards}
+        onAddCard={onAddCard}
+        onSelect={handleSelect}
+        onToggleExpand={handleToggleExpand}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDrop={handleDrop}
+        highlightedCardId={highlightedTargetId}
+      />
     </div>
   )
 }

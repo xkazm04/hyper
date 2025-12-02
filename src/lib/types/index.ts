@@ -17,6 +17,7 @@ export {
   ImageUploadError,
   StoryValidationError,
   DatabaseError,
+  StaleVersionError,
   // Deprecated types
   type PaginatedResponse,
   type PaginationStrategy,

@@ -4,13 +4,7 @@ import { useState, useEffect } from 'react'
 import { Key, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody } from '@/components/ui/modal'
 import { MarketplaceApiKey } from '@/lib/types'
 import { useMarketplace } from '../lib/useMarketplace'
 import { KeyList } from './sub_ApiKeyManager/KeyList'
@@ -95,20 +89,20 @@ export function ApiKeyManager() {
         <KeyList apiKeys={apiKeys} onRevoke={handleRevoke} />
       </CardContent>
 
-      {/* Create Key Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={closeCreateDialog}>
-        <DialogContent data-testid="create-api-key-dialog">
-          <DialogHeader>
-            <DialogTitle>
-              {createdKey ? 'API Key Created' : 'Create New API Key'}
-            </DialogTitle>
-            <DialogDescription>
-              {createdKey
-                ? 'Copy this key now. It will not be shown again.'
-                : 'Create an API key to access the marketplace from external services.'}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Create Key Modal */}
+      <Modal open={showCreateDialog} onOpenChange={closeCreateDialog} size="md">
+        <ModalHeader>
+          <ModalTitle>
+            {createdKey ? 'API Key Created' : 'Create New API Key'}
+          </ModalTitle>
+          <ModalDescription>
+            {createdKey
+              ? 'Copy this key now. It will not be shown again.'
+              : 'Create an API key to access the marketplace from external services.'}
+          </ModalDescription>
+        </ModalHeader>
 
+        <ModalBody data-testid="create-api-key-dialog">
           {createdKey ? (
             <KeyUsage createdKey={createdKey} onClose={closeCreateDialog} />
           ) : (
@@ -122,8 +116,8 @@ export function ApiKeyManager() {
               onCreate={handleCreate}
             />
           )}
-        </DialogContent>
-      </Dialog>
+        </ModalBody>
+      </Modal>
     </Card>
   )
 }

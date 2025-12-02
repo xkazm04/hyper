@@ -6,6 +6,8 @@
  * - inline: Header-only mode with add button and AI suggestions (for embedding in larger editors)
  * - standalone: Full CRUD mode with complete state management (legacy API)
  * - integrated: Full CRUD mode using useChoicesSection hook
+ *
+ * Note: ChoiceItem and ChoicePreviewPopover have been consolidated into ChoiceList.
  */
 
 export { ChoiceEditor, type ChoiceEditorProps, default as ChoiceEditorDefault } from './ChoiceEditor'
@@ -13,6 +15,5 @@ export { ChoiceEditorHeader, type ChoiceEditorHeaderProps } from './components/C
 export { ChoiceForm, type ChoiceFormProps } from './components/ChoiceForm'
 export { ChoiceTargets, type ChoiceTargetsProps } from './components/ChoiceTargets'
 export { ChoiceConditions, type ChoiceConditionsProps } from './components/ChoiceConditions'
-export { ChoiceItem, type ChoiceItemProps } from './components/ChoiceItem'
 export { ChoiceList, type ChoiceListProps } from './components/ChoiceList'
 export { useChoicesSection, type UseChoicesSectionProps } from './hooks/useChoicesSection'

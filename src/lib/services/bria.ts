@@ -88,13 +88,21 @@ export class BriaService {
       options.body = JSON.stringify(body)
     }
 
+    console.log(`[Bria] ${method} ${endpoint}`, body ? JSON.stringify(body).slice(0, 200) : '')
+
     const response = await fetch(url, options)
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        errorData.message || `Bria API error: ${response.status} ${response.statusText}`
-      )
+      const errorText = await response.text()
+      let errorMessage: string
+      try {
+        const errorData = JSON.parse(errorText)
+        errorMessage = errorData.message || errorData.error || errorData.detail || errorText
+      } catch {
+        errorMessage = errorText || `${response.status} ${response.statusText}`
+      }
+      console.error(`[Bria] API Error: ${response.status} - ${errorMessage}`)
+      throw new Error(`Bria API error: ${response.status} - ${errorMessage}`)
     }
 
     return response.json()
@@ -104,23 +112,25 @@ export class BriaService {
 
   /**
    * Create a new project for character training
+   * API Reference: https://docs.bria.ai/tailored-generation/training-endpoints/create-project
    */
-  async createProject(name: string, medium: 'illustration' | 'photo' = 'illustration'): Promise<string> {
+  async createProject(name: string, medium: 'illustration' | 'photography' = 'illustration'): Promise<string> {
     const result = await this.request<BriaProject>('/tailored-gen/projects', 'POST', {
-      name,
+      project_name: name,
       ip_type: 'defined_character',
-      medium,
+      ip_medium: medium,
     })
     return result.id
   }
 
   /**
    * Create a dataset within a project
+   * API Reference: https://docs.bria.ai/tailored-generation/training-endpoints/create-dataset
    */
   async createDataset(projectId: string, name: string): Promise<string> {
     const result = await this.request<BriaDataset>('/tailored-gen/datasets', 'POST', {
       project_id: projectId,
-      name,
+      dataset_name: name,
     })
     return result.id
   }
@@ -166,6 +176,7 @@ export class BriaService {
 
   /**
    * Create a model configuration
+   * API Reference: https://docs.bria.ai/tailored-generation/endpoints/create-model
    */
   async createModel(
     datasetId: string,
@@ -174,7 +185,7 @@ export class BriaService {
   ): Promise<string> {
     const result = await this.request<BriaModel>('/tailored-gen/models', 'POST', {
       dataset_id: datasetId,
-      name,
+      model_name: name,
       training_mode: 'fully_automated',
       training_version: version,
     })

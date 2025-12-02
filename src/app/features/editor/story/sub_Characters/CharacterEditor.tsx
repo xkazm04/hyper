@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
 import { Character } from '@/lib/types'
@@ -59,28 +59,113 @@ export default function CharacterEditor() {
   )
 
   /**
+   * Track pending image additions to handle concurrent calls properly.
+   * This ensures that when multiple images are added rapidly (e.g., from random poses),
+   * each addition builds on top of the previous one instead of overriding.
+   *
+   * We also track the "known" image URLs that have been submitted but not yet
+   * reflected in currentCharacter state to avoid race conditions.
+   */
+  const pendingImagesRef = useRef<{ urls: string[]; prompts: string[] }>({ urls: [], prompts: [] })
+  const knownImageUrlsRef = useRef<string[]>([])
+  const isAddingRef = useRef(false)
+
+  // Keep knownImageUrlsRef in sync when currentCharacter changes
+  React.useEffect(() => {
+    if (currentCharacter?.imageUrls) {
+      knownImageUrlsRef.current = [...currentCharacter.imageUrls]
+    }
+  }, [currentCharacter?.imageUrls])
+
+  /**
    * Add a new image to the character's imageUrls array
+   * Handles concurrent calls by queuing images and batching the final update
    */
   const handleAddImage = useCallback(
     async (imageUrl: string, prompt: string) => {
-      if (!currentCharacter) return
+      if (!currentCharacter || !storyStack) return
 
-      const currentUrls = currentCharacter.imageUrls || []
-      const currentPrompts = currentCharacter.imagePrompts || []
+      // Add to pending queue
+      pendingImagesRef.current.urls.push(imageUrl)
+      pendingImagesRef.current.prompts.push(prompt)
 
-      if (currentUrls.length >= 10) {
-        showError('Maximum of 10 images allowed')
-        return
+      // If already processing, let the current process handle it
+      if (isAddingRef.current) return
+
+      isAddingRef.current = true
+
+      // Small delay to batch rapid additions
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      try {
+        // Get all pending images
+        const pendingUrls = [...pendingImagesRef.current.urls]
+        const pendingPrompts = [...pendingImagesRef.current.prompts]
+
+        // Clear pending queue
+        pendingImagesRef.current = { urls: [], prompts: [] }
+
+        if (pendingUrls.length === 0) return
+
+        // Use knownImageUrlsRef which tracks all submitted URLs (not just those in state)
+        const baseUrls = [...knownImageUrlsRef.current]
+        const basePrompts = [...(currentCharacter.imagePrompts || [])]
+
+        // Calculate how many we can add
+        const availableSlots = 10 - baseUrls.length
+        if (availableSlots <= 0) {
+          showError('Maximum of 10 images allowed')
+          return
+        }
+
+        // Only add up to available slots
+        const urlsToAdd = pendingUrls.slice(0, availableSlots)
+        const promptsToAdd = pendingPrompts.slice(0, availableSlots)
+
+        if (urlsToAdd.length === 0) return
+
+        // Update knownImageUrlsRef BEFORE the API call to prevent race conditions
+        const newUrls = [...baseUrls, ...urlsToAdd]
+        const newPrompts = [...basePrompts, ...promptsToAdd]
+        knownImageUrlsRef.current = newUrls
+
+        // Make the API call directly to avoid stale closure issues
+        const response = await fetch(
+          `/api/stories/${storyStack.id}/characters/${currentCharacter.id}`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageUrls: newUrls,
+              imagePrompts: newPrompts,
+            }),
+          }
+        )
+
+        if (!response.ok) {
+          // Rollback knownImageUrlsRef on failure
+          knownImageUrlsRef.current = baseUrls
+          throw new Error('Failed to update character')
+        }
+
+        const data = await response.json()
+        updateCharacter(currentCharacter.id, data.character)
+
+        const addedCount = urlsToAdd.length
+        success(addedCount === 1 ? 'Image added to character' : `${addedCount} images added to character`)
+
+        // If some images couldn't be added due to limit
+        if (pendingUrls.length > availableSlots) {
+          showError(`${pendingUrls.length - availableSlots} image(s) not added - maximum of 10 reached`)
+        }
+      } catch (error) {
+        console.error('Error adding images:', error)
+        showError(error instanceof Error ? error.message : 'Failed to add images')
+      } finally {
+        isAddingRef.current = false
       }
-
-      await handleUpdateCharacter({
-        imageUrls: [...currentUrls, imageUrl],
-        imagePrompts: [...currentPrompts, prompt],
-      })
-
-      success('Image added to character')
     },
-    [currentCharacter, handleUpdateCharacter, success, showError]
+    [currentCharacter, storyStack, updateCharacter, success, showError]
   )
 
   /**

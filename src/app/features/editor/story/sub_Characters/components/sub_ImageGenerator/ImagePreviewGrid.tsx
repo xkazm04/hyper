@@ -33,7 +33,7 @@ export function CurrentImagesGallery({
     <div className="bg-card rounded-lg border-2 border-border p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold">
-          Character Images ({currentImageCount}/4)
+          Character Images ({currentImageCount}/10)
         </h3>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

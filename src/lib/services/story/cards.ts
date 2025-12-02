@@ -10,6 +10,7 @@ import {
   CardNotFoundError,
   ChoiceNotFoundError,
   DatabaseError,
+  StaleVersionError,
   mapStoryCard,
   mapStoryCards,
   mapChoice,
@@ -119,6 +120,26 @@ export class CardsService {
 
       updateData.updated_at = new Date().toISOString()
 
+      // If version is provided, use optimistic concurrency control
+      if (input.version !== undefined) {
+        // First, check the current version
+        const { data: currentCard, error: fetchError } = await this.supabase
+          .from('story_cards')
+          .select('version')
+          .eq('id', id)
+          .single()
+
+        if (fetchError) {
+          if (fetchError.code === 'PGRST116') throw new CardNotFoundError(id)
+          throw new DatabaseError(fetchError.message)
+        }
+
+        const actualVersion = currentCard?.version ?? 1
+        if (actualVersion !== input.version) {
+          throw new StaleVersionError(id, input.version, actualVersion)
+        }
+      }
+
       const { data, error } = await (this.supabase
         .from('story_cards') as any)
         .update(updateData)
@@ -133,7 +154,7 @@ export class CardsService {
 
       return mapStoryCard(data)
     } catch (error) {
-      if (error instanceof CardNotFoundError || error instanceof DatabaseError) throw error
+      if (error instanceof CardNotFoundError || error instanceof DatabaseError || error instanceof StaleVersionError) throw error
       throw new DatabaseError('Failed to update story card')
     }
   }

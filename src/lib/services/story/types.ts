@@ -28,6 +28,7 @@ import {
   CharacterNotFoundError,
   CharacterCardNotFoundError,
   DatabaseError,
+  StaleVersionError,
 } from '@/lib/types'
 
 // Re-export types for convenience
@@ -60,6 +61,7 @@ export {
   CharacterNotFoundError,
   CharacterCardNotFoundError,
   DatabaseError,
+  StaleVersionError,
 }
 
 // Mapping utilities
@@ -101,6 +103,7 @@ export function mapStoryCard(data: any): StoryCard {
     speaker: data.speaker || null,
     speakerType: data.speaker_type || null,
     orderIndex: data.order_index,
+    version: data.version ?? 1,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   }

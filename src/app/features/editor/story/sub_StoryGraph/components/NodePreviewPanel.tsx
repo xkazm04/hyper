@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useEditor } from '@/contexts/EditorContext'
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash2, X, ImageIcon, Type, FileText, GitBranch } from 'lucide-react'
+import { Pencil, Trash2, X, ImageIcon, Type, FileText, GitBranch, Settings } from 'lucide-react'
+import { LazyNodeImage } from './LazyNodeImage'
 
 export interface NodePreviewPanelProps {
   nodeId: string
@@ -17,6 +18,7 @@ export interface NodePreviewPanelProps {
   onEdit: (cardId: string) => void
   onDelete: (cardId: string) => void
   onClose: () => void
+  onGoToSetup?: (cardId: string) => void
 }
 
 /**
@@ -36,6 +38,7 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
   onEdit,
   onDelete,
   onClose,
+  onGoToSetup,
 }: NodePreviewPanelProps) {
   const { theme } = useTheme()
   const { storyCards, choices } = useEditor()
@@ -58,6 +61,13 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
     onEdit(nodeId)
     onClose()
   }, [nodeId, onEdit, onClose])
+
+  const handleGoToSetup = useCallback(() => {
+    if (onGoToSetup) {
+      onGoToSetup(nodeId)
+      onClose()
+    }
+  }, [nodeId, onGoToSetup, onClose])
 
   const handleDelete = useCallback(async () => {
     if (isDeleting) return
@@ -132,7 +142,6 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
         top: finalY,
         pointerEvents: 'auto',
       }}
-      onMouseLeave={onClose}
       data-testid="node-preview-panel"
     >
       {/* Close button */}
@@ -150,30 +159,22 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
         <X className="w-4 h-4" />
       </button>
 
-      {/* Image thumbnail */}
-      {card.imageUrl ? (
-        <div className="relative h-32 w-full overflow-hidden">
-          <img
-            src={card.imageUrl}
-            alt={card.title || 'Card image'}
-            className="w-full h-full object-cover"
-            data-testid="node-preview-image"
-          />
+      {/* Image thumbnail with lazy loading */}
+      <div className="relative h-32 w-full overflow-hidden">
+        <LazyNodeImage
+          src={card.imageUrl}
+          alt={card.title || 'Card image'}
+          isVisible={true}
+          isHalloween={isHalloween}
+          className="w-full h-full"
+          placeholderClassName="h-32"
+        />
+        {card.imageUrl && (
           <div className={cn(
-            'absolute inset-0 bg-gradient-to-t from-card to-transparent'
+            'absolute inset-0 bg-gradient-to-t from-card to-transparent pointer-events-none'
           )} />
-        </div>
-      ) : (
-        <div className={cn(
-          'h-24 w-full flex items-center justify-center',
-          isHalloween ? 'bg-purple-900/30' : 'bg-muted/50'
-        )}>
-          <ImageIcon className={cn(
-            'w-8 h-8',
-            isHalloween ? 'text-purple-400/50' : 'text-muted-foreground/50'
-          )} />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Content */}
       <div className="p-3 space-y-3">
@@ -225,7 +226,7 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
           />
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons - row 1: Edit & Setup */}
         <div className="flex items-center gap-2 pt-2 border-t border-border/50">
           <Button
             size="sm"
@@ -240,6 +241,25 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
             <Pencil className="w-3.5 h-3.5 mr-1.5" />
             Edit
           </Button>
+          {onGoToSetup && (
+            <Button
+              size="sm"
+              variant="outline"
+              className={cn(
+                'flex-1 h-8',
+                isHalloween && 'border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50'
+              )}
+              onClick={handleGoToSetup}
+              data-testid="node-preview-setup-btn"
+            >
+              <Settings className="w-3.5 h-3.5 mr-1.5" />
+              Setup
+            </Button>
+          )}
+        </div>
+
+        {/* Action buttons - row 2: Delete */}
+        <div className="flex items-center pt-2">
           <Button
             size="sm"
             variant="outline"

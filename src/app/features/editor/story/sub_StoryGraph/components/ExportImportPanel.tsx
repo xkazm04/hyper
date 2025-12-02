@@ -3,14 +3,7 @@
 import { useRef, useState } from 'react'
 import { Download, Upload, FileJson, Check, AlertTriangle, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { useStoryGraphExport } from '../hooks/useStoryGraphExport'
 
 interface ExportImportPanelProps {
@@ -143,18 +136,18 @@ export function ExportImportPanel({ className }: ExportImportPanelProps) {
       </div>
 
       {/* Import Confirmation Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileJson className="w-5 h-5 text-primary" />
-              Import Story Graph
-            </DialogTitle>
-            <DialogDescription>
-              This will replace all cards, choices, and characters in your current story.
-            </DialogDescription>
-          </DialogHeader>
+      <Modal open={showConfirmDialog} onOpenChange={setShowConfirmDialog} size="md">
+        <ModalHeader>
+          <ModalTitle className="flex items-center gap-2">
+            <FileJson className="w-5 h-5 text-primary" />
+            Import Story Graph
+          </ModalTitle>
+          <ModalDescription>
+            This will replace all cards, choices, and characters in your current story.
+          </ModalDescription>
+        </ModalHeader>
 
+        <ModalBody>
           {importData && validationResult && (
             <div className="space-y-4">
               {/* Import Summary */}
@@ -227,36 +220,36 @@ export function ExportImportPanel({ className }: ExportImportPanelProps) {
               )}
             </div>
           )}
+        </ModalBody>
 
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={handleCancelImport}
-              disabled={isImporting}
-              data-testid="cancel-import-btn"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmImport}
-              disabled={isImporting || !validationResult?.isValid}
-              data-testid="confirm-import-btn"
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <ModalFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={handleCancelImport}
+            disabled={isImporting}
+            data-testid="cancel-import-btn"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmImport}
+            disabled={isImporting || !validationResult?.isValid}
+            data-testid="confirm-import-btn"
+          >
+            {isImporting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                Import
+              </>
+            )}
+          </Button>
+        </ModalFooter>
+      </Modal>
     </>
   )
 }

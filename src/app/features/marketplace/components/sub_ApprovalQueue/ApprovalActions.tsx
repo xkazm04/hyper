@@ -3,14 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { CharacterAsset } from '@/lib/types'
 
 interface ApprovalActionsProps {
@@ -40,21 +33,21 @@ export function ApprovalActions({
   onConfirm,
 }: ApprovalActionsProps) {
   return (
-    <Dialog open={!!reviewAsset} onOpenChange={onClose}>
-      <DialogContent data-testid="review-dialog">
-        <DialogHeader>
-          <DialogTitle>
-            {reviewStatus === 'approved' && 'Approve Asset'}
-            {reviewStatus === 'rejected' && 'Reject Asset'}
-            {reviewStatus === 'needs_changes' && 'Request Changes'}
-          </DialogTitle>
-          <DialogDescription>
-            {reviewStatus === 'approved' && 'This asset will be published to the marketplace.'}
-            {reviewStatus === 'rejected' && 'This asset will be rejected and the creator will be notified.'}
-            {reviewStatus === 'needs_changes' && 'The creator will be asked to make changes before resubmitting.'}
-          </DialogDescription>
-        </DialogHeader>
+    <Modal open={!!reviewAsset} onOpenChange={onClose} size="md">
+      <ModalHeader>
+        <ModalTitle>
+          {reviewStatus === 'approved' && 'Approve Asset'}
+          {reviewStatus === 'rejected' && 'Reject Asset'}
+          {reviewStatus === 'needs_changes' && 'Request Changes'}
+        </ModalTitle>
+        <ModalDescription>
+          {reviewStatus === 'approved' && 'This asset will be published to the marketplace.'}
+          {reviewStatus === 'rejected' && 'This asset will be rejected and the creator will be notified.'}
+          {reviewStatus === 'needs_changes' && 'The creator will be asked to make changes before resubmitting.'}
+        </ModalDescription>
+      </ModalHeader>
 
+      <ModalBody data-testid="review-dialog">
         <div className="space-y-4">
           {reviewAsset && (
             <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
@@ -92,28 +85,28 @@ export function ApprovalActions({
             />
           </div>
         </div>
+      </ModalBody>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={onConfirm}
-            disabled={submitting || (reviewStatus !== 'approved' && !reviewNotes.trim())}
-            variant={reviewStatus === 'rejected' ? 'destructive' : 'default'}
-            className={reviewStatus === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}
-            data-testid="confirm-review-btn"
-          >
-            {submitting ? 'Submitting...' : (
-              <>
-                {reviewStatus === 'approved' && 'Approve'}
-                {reviewStatus === 'rejected' && 'Reject'}
-                {reviewStatus === 'needs_changes' && 'Request Changes'}
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <ModalFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          onClick={onConfirm}
+          disabled={submitting || (reviewStatus !== 'approved' && !reviewNotes.trim())}
+          variant={reviewStatus === 'rejected' ? 'destructive' : 'default'}
+          className={reviewStatus === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}
+          data-testid="confirm-review-btn"
+        >
+          {submitting ? 'Submitting...' : (
+            <>
+              {reviewStatus === 'approved' && 'Approve'}
+              {reviewStatus === 'rejected' && 'Reject'}
+              {reviewStatus === 'needs_changes' && 'Request Changes'}
+            </>
+          )}
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }

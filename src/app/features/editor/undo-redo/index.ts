@@ -12,6 +12,12 @@ export {
   getActionColorClass,
   generateDiffSummary,
 } from './lib/diffUtils'
+export {
+  validateSnapshot,
+  normalizeSnapshot,
+  logSnapshotValidationErrors,
+  createEmptySnapshot,
+} from './lib/snapshotValidator'
 export type {
   ActionType,
   EditorSnapshot,
@@ -20,3 +26,7 @@ export type {
   DiffChange,
   DiffSummary,
 } from './lib/types'
+export type {
+  SnapshotValidationResult,
+  SnapshotValidationError,
+} from './lib/snapshotValidator'

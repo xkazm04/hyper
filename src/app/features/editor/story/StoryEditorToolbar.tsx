@@ -47,7 +47,9 @@ export default function StoryEditorToolbar({
             )}
           </div>
           {storyStack.description && (
-            <p className="text-xs text-muted-foreground truncate hidden sm:block">{storyStack.description}</p>
+            <p className="text-xs text-muted-foreground truncate hidden sm:block" title={storyStack.description}>
+              {storyStack.description.length > 50 ? `${storyStack.description.slice(0, 50)}...` : storyStack.description}
+            </p>
           )}
         </div>
       </div>

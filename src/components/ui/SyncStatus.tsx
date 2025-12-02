@@ -148,7 +148,7 @@ export function SyncStatus({ className, showDetails = false }: SyncStatusProps) 
         disabled={status.isSyncing || !status.isOnline}
         className={cn(
           'flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors',
-          'bg-card/95 backdrop-blur-sm border border-border',
+          'bg-card border border-border',
           'hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
           'disabled:cursor-not-allowed disabled:opacity-50',
           indicator.color
@@ -166,7 +166,7 @@ export function SyncStatus({ className, showDetails = false }: SyncStatusProps) 
       {showTooltip && (
         <div
           className={cn(
-            'absolute right-0 top-full z-50 mt-2 w-48 rounded-md border bg-popover p-3 shadow-md',
+            'absolute right-0 top-full z-50 mt-2 w-48 rounded-md border border-border bg-popover p-3 shadow-lg',
             'text-popover-foreground'
           )}
           data-testid="sync-status-tooltip"

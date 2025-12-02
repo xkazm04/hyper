@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, useRef } from 'react'
 import { Node, Panel } from 'reactflow'
 import { useEditor } from '@/contexts/EditorContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { usePerformanceOptional } from '@/contexts/PerformanceContext'
 import { useStoryGraphData } from './hooks/useStoryGraphData'
 import { useStoryGraphNavigation } from './hooks/useStoryGraphNavigation'
 import { usePathAncestry } from './hooks/usePathAncestry'
@@ -13,14 +14,15 @@ import { usePreviousValue } from './hooks/usePreviousValue'
 import { usePathProgressSettings } from './hooks/usePathProgressSettings'
 import { useOrphanAttachmentActions } from './hooks/useOrphanAttachmentState'
 import { useGraphValidation } from './hooks/useGraphValidation'
+import { useStoryGraphExport } from './hooks/useStoryGraphExport'
 import { GraphCanvas } from './components/GraphCanvas'
 import { GraphControls, GraphStats } from './components/GraphControls'
 import { BranchDepthProgressBar } from './components/BranchDepthProgressBar'
 import { PathProgressBar } from './components/PathProgressBar'
 import { OrphanAttachmentHelper } from './components/OrphanAttachmentHelper'
-import { ValidationDiagnosticsOverlay, ValidationToggleButton } from './components/ValidationDiagnosticsOverlay'
+import { ValidationDiagnosticsOverlay } from './components/ValidationDiagnosticsOverlay'
 import { BranchNavigator } from './components/BranchNavigator'
-import { ExportImportPanel } from './components/ExportImportPanel'
+import { GraphToolsSidebar, PumpkinOverlay } from './components/GraphToolsSidebar'
 
 /**
  * StoryGraph - Main component for visualizing and navigating the story structure
@@ -38,8 +40,12 @@ import { ExportImportPanel } from './components/ExportImportPanel'
 export default function StoryGraph() {
   const { setCurrentCardId, currentCardId, choices, storyStack, storyCards, collapsedNodes } = useEditor()
   const { theme } = useTheme()
+  const { showHeavyAnimations } = usePerformanceOptional()
   const isHalloween = theme === 'halloween'
   const { nodes: initialNodes, edges: initialEdges, analysis, hiddenNodes } = useStoryGraphData()
+
+  // File input ref for import
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Graph validation
   const {
@@ -49,6 +55,31 @@ export default function StoryGraph() {
     isDiagnosticsVisible,
     toggleDiagnosticsVisibility,
   } = useGraphValidation()
+
+  // Export/Import functionality
+  const {
+    handleExport,
+    isExporting,
+    handleImportFile,
+    isImporting,
+  } = useStoryGraphExport()
+
+  // Handle file input change for import
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      await handleImportFile(file)
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [handleImportFile])
+
+  // Trigger file input click
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
 
   // Orphan attachment state
   const [activeOrphanId, setActiveOrphanId] = useState<string | null>(null)
@@ -158,34 +189,36 @@ export default function StoryGraph() {
       pathEdgeIds={pathEdgeIds}
       onOrphanAttachClick={handleOrphanAttachClick}
     >
-      {/* Animated Path Progress Bar - positioned at top of canvas, spanning width */}
-      <Panel position="top-center" className="w-[calc(100%-32rem)] max-w-2xl group">
-        <PathProgressBar
-          progress={pathProgress.progress}
-          previousProgress={pathProgress.previousProgress}
-          isMovingForward={pathProgress.isMovingForward}
-          isTerminal={pathProgress.isTerminal}
-          milestones={pathProgress.milestones}
-          currentDepth={pathProgress.currentDepth}
-          maxDepth={pathProgress.maxDepth}
-          isVisible={isPathProgressVisible}
-          onToggleVisibility={togglePathProgressVisibility}
+      {/* Pumpkin overlay - shown when effects are ON and halloween theme */}
+      {isHalloween && <PumpkinOverlay visible={showHeavyAnimations} />}
+
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        onChange={handleFileChange}
+        className="hidden"
+        data-testid="import-file-input"
+      />
+
+      {/* Stats Overview - top right */}
+      <GraphControls stats={stats} />
+
+      {/* Icon-only Tools Sidebar - replaces separate panels */}
+      <Panel position="top-right" className="mt-[140px]">
+        <GraphToolsSidebar
+          validationResult={validationResult}
+          isValidationVisible={isDiagnosticsVisible}
+          onToggleValidation={toggleDiagnosticsVisibility}
+          onExport={handleExport}
+          onImportClick={handleImportClick}
+          isExporting={isExporting}
+          isImporting={isImporting}
           isHalloween={isHalloween}
         />
       </Panel>
-      {/* Branch Depth Progress Bar - positioned at top-left */}
-      <Panel position="top-left" className="w-64">
-        <BranchDepthProgressBar
-          currentDepth={branchDepth.currentDepth}
-          maxDepth={branchDepth.maxDepthInBranch}
-          isTerminal={branchDepth.isTerminal}
-        />
-      </Panel>
-      <GraphControls stats={stats} />
-      {/* Export/Import Panel - positioned below stats */}
-      <Panel position="top-right" className="mt-[180px] mr-0">
-        <ExportImportPanel className="w-[280px]" />
-      </Panel>
+
       {activeOrphanId && (
         <OrphanAttachmentHelper
           orphanCardId={activeOrphanId}
@@ -196,6 +229,8 @@ export default function StoryGraph() {
           isVisible={!!activeOrphanId}
         />
       )}
+
+      {/* Validation Diagnostics Overlay - shown when toggled from sidebar */}
       <ValidationDiagnosticsOverlay
         validationResult={validationResult}
         onApplyFix={applyFix}
@@ -203,11 +238,7 @@ export default function StoryGraph() {
         isVisible={isDiagnosticsVisible}
         onToggleVisibility={toggleDiagnosticsVisibility}
       />
-      <ValidationToggleButton
-        validationResult={validationResult}
-        isVisible={isDiagnosticsVisible}
-        onToggle={toggleDiagnosticsVisibility}
-      />
+
       {/* BranchNavigator - positioned at left, vertically centered to avoid AI Companion at bottom */}
       <Panel position="top-left" className="mt-24">
         <BranchNavigator

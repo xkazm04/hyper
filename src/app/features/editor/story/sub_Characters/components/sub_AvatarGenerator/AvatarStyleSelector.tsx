@@ -19,7 +19,10 @@ export function AvatarStyleSelector({
   onSelectStyle,
 }: AvatarStyleSelectorProps) {
   return (
-    <div className="bg-card rounded-lg border-2 border-border p-4 space-y-4 halloween-bat-silhouette">
+    <div
+      className="bg-card rounded-lg border-2 border-border p-4 space-y-4 halloween-bat-silhouette"
+      data-testid="avatar-style-selector"
+    >
       <h3 className="text-sm font-semibold">Avatar Style</h3>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -27,7 +30,7 @@ export function AvatarStyleSelector({
           // Disable "story" style if no story art style is defined
           const isStoryStyle = style.id === 'story'
           const isDisabled = loading || (isStoryStyle && !hasStoryArtStyle)
-          
+
           return (
             <button
               key={style.id}
@@ -42,6 +45,7 @@ export function AvatarStyleSelector({
                 isDisabled && 'opacity-50 cursor-not-allowed hover:bg-transparent'
               )}
               title={isStoryStyle && !hasStoryArtStyle ? 'Set a story art style first' : undefined}
+              data-testid={`avatar-style-${style.id}`}
             >
               <span className="text-2xl">{style.icon}</span>
               <span className="text-xs font-medium">{style.label}</span>

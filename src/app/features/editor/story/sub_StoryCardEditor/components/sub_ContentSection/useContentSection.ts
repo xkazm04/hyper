@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAutoSave } from '../../lib/useAutoSave'
-import { updateCard } from '../../lib/cardApi'
+import { updateCard, fetchCard, VersionConflictError } from '../../lib/cardApi'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
 import { useUndoRedoContext } from '@/app/features/editor/undo-redo'
@@ -33,7 +33,7 @@ export function useContentSection({
   cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, currentCard, onSaveComplete,
 }: UseContentSectionProps) {
   const { updateCard: updateCardContext, characters, currentCard: contextCard } = useEditor()
-  const { error: showError, success } = useToast()
+  const { error: showError, success, warning: showWarning } = useToast()
   const { recordAction } = useUndoRedoContext()
   const activeCard = currentCard || contextCard
 
@@ -47,11 +47,51 @@ export function useContentSection({
   const [successors, setSuccessors] = useState<SuccessorInfo[]>([])
   const [hasContext, setHasContext] = useState(false)
   const [isLoadingContext, setIsLoadingContext] = useState(true)
+  const [hasVersionConflict, setHasVersionConflict] = useState(false)
+
+  // Track the current version of the card for optimistic concurrency control
+  const versionRef = useRef<number>(activeCard?.version ?? 1)
 
   useEffect(() => {
     setTitle(initialTitle); setContent(initialContent)
     setMessage(initialMessage || ''); setSpeaker(initialSpeaker || '')
-  }, [cardId, initialTitle, initialContent, initialMessage, initialSpeaker])
+    // Update version when card changes
+    versionRef.current = activeCard?.version ?? 1
+    setHasVersionConflict(false)
+  }, [cardId, initialTitle, initialContent, initialMessage, initialSpeaker, activeCard?.version])
+
+  // Handle version conflict by refreshing the card
+  const handleVersionConflict = useCallback(async (error: VersionConflictError): Promise<boolean> => {
+    setHasVersionConflict(true)
+    showWarning('This card was modified in another tab. Refreshing to latest version...')
+
+    try {
+      // Fetch the latest version of the card
+      const latestCard = await fetchCard(storyStackId, cardId)
+
+      // Update local state with the latest values
+      setTitle(latestCard.title)
+      setContent(latestCard.content)
+      setMessage(latestCard.message || '')
+      setSpeaker(latestCard.speaker || '')
+
+      // Update the version ref
+      versionRef.current = latestCard.version
+
+      // Update context with the refreshed card
+      updateCardContext(cardId, latestCard)
+
+      setHasVersionConflict(false)
+      success('Card refreshed to latest version')
+
+      // Return false to indicate we should not retry the save
+      // (the user's local changes have been overwritten with server state)
+      return false
+    } catch (err) {
+      showError('Failed to refresh card. Please reload the page.')
+      return false
+    }
+  }, [storyStackId, cardId, updateCardContext, success, showError, showWarning])
 
   useEffect(() => {
     const fetchContext = async () => {
@@ -100,40 +140,84 @@ export function useContentSection({
     if (title === initialTitle) return
     recordAction('UPDATE_CARD', { id: cardId, title, imageUrl: activeCard?.imageUrl })
     setIsSaving(true)
-    try { const updated = await updateCard(storyStackId, cardId, { title }); updateCardContext(cardId, updated) }
-    catch (err) { showError(err instanceof Error ? err.message : 'Failed to save title'); setTitle(initialTitle) }
-    finally { setIsSaving(false) }
-  }, [title, initialTitle, storyStackId, cardId, updateCardContext, showError, recordAction, activeCard])
+    try {
+      const updated = await updateCard(storyStackId, cardId, { title, version: versionRef.current })
+      versionRef.current = updated.version // Update version after successful save
+      updateCardContext(cardId, updated)
+    } catch (err) {
+      if (err instanceof VersionConflictError) {
+        await handleVersionConflict(err)
+      } else {
+        showError(err instanceof Error ? err.message : 'Failed to save title')
+        setTitle(initialTitle)
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }, [title, initialTitle, storyStackId, cardId, updateCardContext, showError, recordAction, activeCard, handleVersionConflict])
 
   const saveContent = useCallback(async () => {
     if (content === initialContent) return
     recordAction('UPDATE_CARD', { id: cardId, title: activeCard?.title || title, imageUrl: activeCard?.imageUrl })
     setIsSaving(true)
-    try { const updated = await updateCard(storyStackId, cardId, { content }); updateCardContext(cardId, updated) }
-    catch (err) { showError(err instanceof Error ? err.message : 'Failed to save content'); setContent(initialContent) }
-    finally { setIsSaving(false) }
-  }, [content, initialContent, storyStackId, cardId, updateCardContext, showError, recordAction, activeCard, title])
+    try {
+      const updated = await updateCard(storyStackId, cardId, { content, version: versionRef.current })
+      versionRef.current = updated.version // Update version after successful save
+      updateCardContext(cardId, updated)
+    } catch (err) {
+      if (err instanceof VersionConflictError) {
+        await handleVersionConflict(err)
+      } else {
+        showError(err instanceof Error ? err.message : 'Failed to save content')
+        setContent(initialContent)
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }, [content, initialContent, storyStackId, cardId, updateCardContext, showError, recordAction, activeCard, title, handleVersionConflict])
 
   const saveMessage = useCallback(async () => {
     if (message === (initialMessage || '')) return
     setIsSaving(true)
-    try { const updated = await updateCard(storyStackId, cardId, { message: message || null }); updateCardContext(cardId, updated) }
-    catch (err) { showError(err instanceof Error ? err.message : 'Failed to save message'); setMessage(initialMessage || '') }
-    finally { setIsSaving(false) }
-  }, [message, initialMessage, storyStackId, cardId, updateCardContext, showError])
+    try {
+      const updated = await updateCard(storyStackId, cardId, { message: message || null, version: versionRef.current })
+      versionRef.current = updated.version // Update version after successful save
+      updateCardContext(cardId, updated)
+    } catch (err) {
+      if (err instanceof VersionConflictError) {
+        await handleVersionConflict(err)
+      } else {
+        showError(err instanceof Error ? err.message : 'Failed to save message')
+        setMessage(initialMessage || '')
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }, [message, initialMessage, storyStackId, cardId, updateCardContext, showError, handleVersionConflict])
 
   const saveSpeaker = useCallback(async () => {
     if (speaker === (initialSpeaker || '')) return
     setIsSaving(true)
-    try { const updated = await updateCard(storyStackId, cardId, { speaker: speaker || null }); updateCardContext(cardId, updated) }
-    catch (err) { showError(err instanceof Error ? err.message : 'Failed to save speaker'); setSpeaker(initialSpeaker || '') }
-    finally { setIsSaving(false) }
-  }, [speaker, initialSpeaker, storyStackId, cardId, updateCardContext, showError])
+    try {
+      const updated = await updateCard(storyStackId, cardId, { speaker: speaker || null, version: versionRef.current })
+      versionRef.current = updated.version // Update version after successful save
+      updateCardContext(cardId, updated)
+    } catch (err) {
+      if (err instanceof VersionConflictError) {
+        await handleVersionConflict(err)
+      } else {
+        showError(err instanceof Error ? err.message : 'Failed to save speaker')
+        setSpeaker(initialSpeaker || '')
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }, [speaker, initialSpeaker, storyStackId, cardId, updateCardContext, showError, handleVersionConflict])
 
-  const { scheduleSave: scheduleTitleSave } = useAutoSave({ delay: 800, onSave: saveTitle, onSaveComplete })
-  const { scheduleSave: scheduleContentSave } = useAutoSave({ delay: 800, onSave: saveContent, onSaveComplete })
-  const { scheduleSave: scheduleMessageSave } = useAutoSave({ delay: 800, onSave: saveMessage, onSaveComplete })
-  const { scheduleSave: scheduleSpeakerSave } = useAutoSave({ delay: 800, onSave: saveSpeaker, onSaveComplete })
+  const { scheduleSave: scheduleTitleSave } = useAutoSave({ delay: 800, onSave: saveTitle, onSaveComplete, onVersionConflict: handleVersionConflict })
+  const { scheduleSave: scheduleContentSave } = useAutoSave({ delay: 800, onSave: saveContent, onSaveComplete, onVersionConflict: handleVersionConflict })
+  const { scheduleSave: scheduleMessageSave } = useAutoSave({ delay: 800, onSave: saveMessage, onSaveComplete, onVersionConflict: handleVersionConflict })
+  const { scheduleSave: scheduleSpeakerSave } = useAutoSave({ delay: 800, onSave: saveSpeaker, onSaveComplete, onVersionConflict: handleVersionConflict })
 
   const handleTitleChange = useCallback((value: string) => { setTitle(value); updateCardContext(cardId, { title: value }); scheduleTitleSave() }, [cardId, updateCardContext, scheduleTitleSave])
   const handleContentChange = useCallback((value: string) => { setContent(value); updateCardContext(cardId, { content: value }); scheduleContentSave() }, [cardId, updateCardContext, scheduleContentSave])
@@ -141,7 +225,7 @@ export function useContentSection({
   const handleSpeakerChange = useCallback((value: string) => { setSpeaker(value); updateCardContext(cardId, { speaker: value || null }); scheduleSpeakerSave() }, [cardId, updateCardContext, scheduleSpeakerSave])
 
   return {
-    title, content, message, speaker, isSaving, isGenerating, hasContext, isLoadingContext, characters,
+    title, content, message, speaker, isSaving, isGenerating, hasContext, isLoadingContext, characters, hasVersionConflict,
     handleTitleChange, handleContentChange, handleMessageChange, handleSpeakerChange,
     saveTitle, saveContent, saveMessage, saveSpeaker, handleGenerateContent,
   }

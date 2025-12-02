@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { Upload, Loader2, Sparkles, Image as ImageIcon, X, RefreshCw, Copy, Check } from 'lucide-react'
+import { Sparkles, RefreshCw, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { ImageUploadArea } from './shared'
 
 interface ArtStyleExtractorProps {
   customPrompt: string | null
@@ -28,7 +29,21 @@ export function ArtStyleExtractor({
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(extractedImageUrl)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isHalloweenTheme, setIsHalloweenTheme] = useState(false)
+
+  // Check for halloween theme class on document
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsHalloweenTheme(document.documentElement.classList.contains('halloween'))
+    }
+    checkTheme()
+
+    // Watch for class changes on html element
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
+    return () => observer.disconnect()
+  }, [])
 
   const handleCopyToClipboard = async () => {
     if (!customPrompt) return
@@ -49,10 +64,7 @@ export function ArtStyleExtractor({
     }
   }
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
+  const handleFileSelect = useCallback(async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       setError('Please select an image file')
@@ -89,40 +101,21 @@ export function ArtStyleExtractor({
 
         const data = await response.json()
         onExtract(base64Url, data.prompt)
+        setIsExtracting(false)
       }
       reader.readAsDataURL(file)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to extract art style')
       setUploadedImageUrl(null)
-    } finally {
       setIsExtracting(false)
     }
-  }
+  }, [onExtract])
 
-  const handleDrop = async (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const file = event.dataTransfer.files?.[0]
-    if (file) {
-      // Create a fake event for reuse
-      const fakeEvent = {
-        target: { files: [file] }
-      } as unknown as React.ChangeEvent<HTMLInputElement>
-      await handleFileSelect(fakeEvent)
-    }
-  }
-
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-  }
-
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setUploadedImageUrl(null)
     setError(null)
     onClear()
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
+  }, [onClear])
 
   return (
     <div className="space-y-4">
@@ -132,66 +125,17 @@ export function ArtStyleExtractor({
       </Label>
 
       {/* Image Upload Area */}
-      {!uploadedImageUrl ? (
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          className={cn(
-            'border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer',
-            'hover:border-primary/50 hover:bg-primary/5',
-            disabled && 'opacity-50 cursor-not-allowed',
-            error && 'border-destructive'
-          )}
-          onClick={() => !disabled && fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={disabled}
-          />
-          
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-              {isExtracting ? (
-                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-              ) : (
-                <Upload className="w-6 h-6 text-muted-foreground" />
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-medium">
-                {isExtracting ? 'Extracting art style...' : 'Upload an image'}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Drop image here or click to browse
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Uploaded Image Preview */
-        <div className="relative rounded-lg border-2 border-border overflow-hidden">
-          <img
-            src={uploadedImageUrl}
-            alt="Uploaded style reference"
-            className="w-full h-32 object-cover"
-          />
-          <button
-            onClick={handleClear}
-            className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background text-foreground"
-            disabled={disabled}
-          >
-            <X className="w-4 h-4" />
-          </button>
-          <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-background/80 text-xs font-medium">
-            <ImageIcon className="w-3 h-3 inline mr-1" />
-            Style Reference
-          </div>
-        </div>
-      )}
+      <ImageUploadArea
+        onFileSelect={handleFileSelect}
+        isLoading={isExtracting}
+        disabled={disabled}
+        error={error}
+        uploadedImageUrl={uploadedImageUrl}
+        onClear={handleClear}
+        uploadLabel={isExtracting ? 'Extracting art style...' : 'Upload an image'}
+        uploadHint="Drop image here or click to browse"
+        previewLabel="Style Reference"
+      />
 
       {error && (
         <p className="text-xs text-destructive">{error}</p>
@@ -239,13 +183,26 @@ export function ArtStyleExtractor({
             )}
           </div>
         </div>
-        <Textarea
-          value={customPrompt || ''}
-          onChange={(e) => onCustomPromptChange(e.target.value)}
-          placeholder="Describe the visual art style you want for all images in this story..."
-          className="min-h-[270px] text-xs resize-none"
-          disabled={disabled || isExtracting}
-        />
+        <div className="relative">
+          {/* Halloween theme skull background */}
+          {isHalloweenTheme && (
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.03] bg-no-repeat bg-center bg-contain z-0"
+              style={{ backgroundImage: 'url(/decorative/skull.svg)' }}
+              aria-hidden="true"
+            />
+          )}
+          <Textarea
+            value={customPrompt || ''}
+            onChange={(e) => onCustomPromptChange(e.target.value)}
+            placeholder="Describe the visual art style you want for all images in this story..."
+            className={cn(
+              'min-h-[270px] text-xs resize-none relative z-10',
+              isHalloweenTheme && 'bg-transparent'
+            )}
+            disabled={disabled || isExtracting}
+          />
+        </div>
         <p className="text-[10px] text-muted-foreground">
           This style will be applied to all card images in your story
         </p>

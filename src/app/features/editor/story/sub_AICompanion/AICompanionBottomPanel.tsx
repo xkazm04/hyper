@@ -24,7 +24,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAICompanion } from './useAICompanion'
-import type { AICompanionMode, ContentVariant, NextStepSuggestion } from './types'
+import type { AICompanionMode, ContentVariant, NextStepSuggestion, GeneratedChoice } from './types'
 
 interface AICompanionBottomPanelProps {
   className?: string
@@ -446,9 +446,29 @@ function GenerateContent({
               </span>
             </div>
             <p className="text-xs text-muted-foreground line-clamp-3">{variant.content}</p>
+
+            {/* Display generated choices if present */}
+            {variant.choices && variant.choices.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <p className="text-[10px] font-medium text-muted-foreground mb-1">
+                  {variant.choices.length} choice{variant.choices.length > 1 ? 's' : ''} included:
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {variant.choices.map((choice, i) => (
+                    <span
+                      key={i}
+                      className="px-1.5 py-0.5 text-[10px] bg-primary/10 text-primary rounded"
+                    >
+                      {choice.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Button size="sm" variant="ghost" className="mt-2 h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
               <Check className="w-3 h-3 mr-1" />
-              Apply
+              Apply{variant.choices && variant.choices.length > 0 ? ' with choices' : ''}
             </Button>
           </div>
         ))}

@@ -124,7 +124,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     }
   }, [storyStack, storyCards, choices, currentCard, currentCardId, characters])
 
-  // Generate content variants for current card
+  // Generate content variants for current card (with 1-4 choices each)
   const generateContentVariants = useCallback(async () => {
     const context = buildStoryContext()
     if (!context || !currentCard) {
@@ -142,6 +142,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
           action: 'generate-variants',
           storyContext: context,
           variantCount: 3,
+          includeChoices: true, // Request 1-4 choices per variant
         }),
       })
 
@@ -257,6 +258,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
               speaker: null,
               speakerType: null,
               orderIndex: storyCards.length + index,
+              version: 1,
               createdAt: now,
               updatedAt: now,
             })
@@ -288,7 +290,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     [storyStack, storyCards, addCard, addChoice, success, showError]
   )
 
-  // Apply selected content variant to current card
+  // Apply selected content variant to current card (and create choices if present)
   const applyContentVariant = useCallback(
     async (variant: ContentVariant) => {
       if (!currentCard || !storyStack) return
@@ -318,17 +320,63 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
           throw new Error('Failed to save content')
         }
 
+        // Create choices if present in the variant
+        if (variant.choices && variant.choices.length > 0) {
+          const now = new Date().toISOString()
+          let createdChoices = 0
+
+          for (let i = 0; i < variant.choices.length; i++) {
+            const choice = variant.choices[i]
+
+            // Create target card for the choice
+            const newCardId = uuidv4()
+            addCard({
+              id: newCardId,
+              storyStackId: storyStack.id,
+              title: choice.targetTitle,
+              content: choice.targetContent || '',
+              script: '',
+              imageUrl: null,
+              imagePrompt: null,
+              imageDescription: null,
+              message: null,
+              speaker: null,
+              speakerType: null,
+              orderIndex: storyCards.length + i,
+              version: 1,
+              createdAt: now,
+              updatedAt: now,
+            })
+
+            // Create the choice
+            addChoice({
+              id: uuidv4(),
+              storyCardId: currentCard.id,
+              targetCardId: newCardId,
+              label: choice.label,
+              orderIndex: choices.filter((c) => c.storyCardId === currentCard.id).length + i,
+              createdAt: now,
+              updatedAt: now,
+            })
+
+            createdChoices++
+          }
+
+          success(`Content applied with ${createdChoices} choice${createdChoices > 1 ? 's' : ''} created`)
+        } else {
+          success('Content applied successfully')
+        }
+
         setState((prev) => ({
           ...prev,
           selectedVariantId: variant.id,
           contentVariants: [],
         }))
-        success('Content applied successfully')
       } catch (err) {
         showError('Failed to apply content')
       }
     },
-    [currentCard, storyStack, updateCardContext, success, showError]
+    [currentCard, storyStack, storyCards, choices, updateCardContext, addCard, addChoice, success, showError]
   )
 
   // Accept a next step suggestion - create new card and choice
@@ -353,6 +401,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
         speaker: null,
         speakerType: null,
         orderIndex: storyCards.length,
+        version: 1,
         createdAt: now,
         updatedAt: now,
       })
@@ -416,27 +465,14 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     setState((prev) => ({ ...prev, error: null }))
   }, [])
 
-  // Auto-suggest when card changes (debounced)
+  // Clear timer on unmount
   useEffect(() => {
-    if (!enabled || !currentCardId || storyCards.length === 0) return
-
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current)
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      // Only auto-generate if we don't have suggestions
-      if (state.nextStepSuggestions.length === 0) {
-        generateNextSteps(currentCardId)
-      }
-    }, autoSuggestDebounceMs)
-
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
       }
     }
-  }, [currentCardId, enabled, storyCards.length, autoSuggestDebounceMs])
+  }, [])
 
   return {
     state,

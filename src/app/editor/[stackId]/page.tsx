@@ -20,6 +20,10 @@ import {
   CommandRippleProvider,
   CommandRippleOverlay,
   useCommands,
+  ScriptStateProvider,
+  ScriptEditor,
+  StoryDSLEditor,
+  useScriptState,
 } from '@/app/features/editor/story/sub_CommandPalette'
 import {
   StoryPathPreview,
@@ -55,8 +59,22 @@ export default function EditorPage({ params }: { params: Promise<{ stackId: stri
 function UndoRedoWrapper({ stackId }: { stackId: string }) {
   return (
     <UndoRedoProvider>
-      <EditorContent stackId={stackId} />
+      <ScriptStateProvider>
+        <EditorContentWithDSL stackId={stackId} />
+      </ScriptStateProvider>
     </UndoRedoProvider>
+  )
+}
+
+function EditorContentWithDSL({ stackId }: { stackId: string }) {
+  const { isDslEditorOpen, closeDslEditor } = useScriptState()
+
+  return (
+    <>
+      <EditorContent stackId={stackId} />
+      <ScriptEditor />
+      <StoryDSLEditor isOpen={isDslEditorOpen} onClose={closeDslEditor} />
+    </>
   )
 }
 
@@ -72,6 +90,7 @@ function EditorContent({ stackId }: { stackId: string }) {
     setCurrentCharacterId,
     addCharacter,
   } = useEditor()
+  const { compiledCommands, openScriptEditor, openDslEditor } = useScriptState()
   const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const storyService = new StoryService()
   const { isConfettiActive, celebrateNewCharacter, clearConfetti } = useCharacterCelebration()
@@ -176,6 +195,9 @@ function EditorContent({ stackId }: { stackId: string }) {
     onAddCharacter: handleAddCharacter,
     onPreview: handlePreview,
     onPublish: handlePublish,
+    onOpenScriptEditor: openScriptEditor,
+    onOpenDSLEditor: openDslEditor,
+    scriptedCommands: compiledCommands,
   })
 
   if (loading) {
@@ -217,8 +239,6 @@ function EditorContent({ stackId }: { stackId: string }) {
         cardEditor={<StoryCardEditor />}
         characterEditor={<CharacterEditor />}
         cardPreview={<CardPreview />}
-        onPreview={handlePreview}
-        onPublish={handlePublish}
       />
 
       <PublishDialog

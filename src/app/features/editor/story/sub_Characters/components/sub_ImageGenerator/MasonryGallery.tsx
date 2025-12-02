@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { Trash2, Plus, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Character } from '@/lib/types'
@@ -17,6 +17,7 @@ interface ImageCardProps {
   index: number
   loading: boolean
   onRemove: () => void
+  isNew?: boolean
 }
 
 function ImageCard({
@@ -25,10 +26,12 @@ function ImageCard({
   index,
   loading,
   onRemove,
+  isNew = false,
 }: ImageCardProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [isInView, setIsInView] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
+  const [showNewAnimation, setShowNewAnimation] = useState(isNew)
   const imageRef = useRef<HTMLDivElement>(null)
 
   // Intersection Observer for lazy loading
@@ -50,13 +53,23 @@ function ImageCard({
     return () => observer.disconnect()
   }, [])
 
+  // Clear new animation after it plays
+  useEffect(() => {
+    if (showNewAnimation) {
+      const timer = setTimeout(() => setShowNewAnimation(false), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [showNewAnimation])
+
   return (
     <div
       ref={imageRef}
       className={cn(
         'relative aspect-[2/3] rounded-lg overflow-hidden border-2 border-border group',
         'transition-all duration-300 ease-out',
-        'hover:shadow-lg hover:border-primary/50'
+        'hover:shadow-lg hover:border-primary/50',
+        // Fade-in and scale animation for new images
+        showNewAnimation && 'animate-in fade-in-0 zoom-in-95 duration-500'
       )}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -168,6 +181,29 @@ export function MasonryGallery({
 }: CharacterImagesGalleryProps) {
   const currentImageCount = character.imageUrls?.length || 0
 
+  // Track previously known URLs to detect new ones
+  const previousUrlsRef = useRef<Set<string>>(new Set())
+
+  // Determine which images are new (not seen before)
+  const newImageIndices = useMemo(() => {
+    const newIndices = new Set<number>()
+    const currentUrls = character.imageUrls || []
+
+    currentUrls.forEach((url, index) => {
+      if (!previousUrlsRef.current.has(url)) {
+        newIndices.add(index)
+      }
+    })
+
+    // Update the ref with current URLs after computing new indices
+    // Use a timeout to avoid updating during render
+    setTimeout(() => {
+      previousUrlsRef.current = new Set(currentUrls)
+    }, 0)
+
+    return newIndices
+  }, [character.imageUrls])
+
   // Show gallery when there is at least 1 image
   if (currentImageCount === 0) return null
 
@@ -195,12 +231,13 @@ export function MasonryGallery({
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {character.imageUrls.map((url, index) => (
           <ImageCard
-            key={`image-${index}`}
+            key={`image-${url}-${index}`}
             src={url}
             alt={`${character.name} - Image ${index + 1}`}
             index={index}
             loading={loading}
             onRemove={() => onRemoveImage(index)}
+            isNew={newImageIndices.has(index)}
           />
         ))}
 

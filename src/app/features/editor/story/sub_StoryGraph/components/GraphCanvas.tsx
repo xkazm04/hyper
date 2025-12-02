@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useCallback, useMemo, useRef, useState, lazy, Suspense } from 'react'
-import ReactFlow, { Controls, MiniMap, ConnectionLineType, Node, Edge, Background, BackgroundVariant, ReactFlowProvider } from 'reactflow'
+import React, { useCallback, useMemo, useRef, useState, useEffect, lazy, Suspense } from 'react'
+import ReactFlow, { Controls, MiniMap, ConnectionLineType, Node, Edge, Background, BackgroundVariant, ReactFlowProvider, Viewport, OnMove } from 'reactflow'
 import 'reactflow/dist/style.css'
 import StoryNode, { StoryNodeData } from './StoryNode'
 import SuggestedCardNode, { SuggestedCardNodeData } from '../../sub_InfiniteCanvas/components/SuggestedCardNode'
@@ -18,6 +18,7 @@ import { useEditor } from '@/contexts/EditorContext'
 import { playDropChime, warmupAudio } from '../lib/dropChime'
 import { usePerformanceOptional } from '@/contexts/PerformanceContext'
 import { useClusterState } from '../hooks/useClusterState'
+import { throttleToFrame, viewportsEqual } from '../lib/viewportThrottle'
 
 // Lazy load decorative components for performance
 const FogOverlay = lazy(() => import('./decorative/FogOverlay'))
@@ -43,6 +44,7 @@ export interface GraphCanvasProps {
   onOrphanAttachClick?: (nodeId: string) => void
   onEditCard?: (cardId: string) => void
   onDeleteCard?: (cardId: string) => void
+  onGoToSetup?: (cardId: string) => void
   children?: React.ReactNode
   /** Enable cluster grouping by depth. Defaults to true */
   enableClusters?: boolean
@@ -57,7 +59,7 @@ interface NodeHoverState {
 export function GraphCanvas({
   initialNodes, initialEdges, suggestions, hoveredSuggestionId, acceptSuggestion,
   declineSuggestion, setHoveredSuggestionId, onNodeClick, currentCardId, isHalloween,
-  pathNodeIds, pathEdgeIds, onOrphanAttachClick, onEditCard, onDeleteCard, children,
+  pathNodeIds, pathEdgeIds, onOrphanAttachClick, onEditCard, onDeleteCard, onGoToSetup, children,
   enableClusters = true,
 }: GraphCanvasProps) {
   const graphContainerRef = useRef<HTMLDivElement>(null)
@@ -91,10 +93,42 @@ export function GraphCanvas({
   // Performance context for controlling decorative animations
   const { showHeavyAnimations, isLowPower } = usePerformanceOptional()
 
+  // Viewport tracking for throttled updates
+  const lastViewportRef = useRef<Viewport | null>(null)
+  const isInteractingRef = useRef(false)
+
   const { nodes, edges, onNodesChange, onEdgesChange, nodeColor } = useGraphNodes({
     initialNodes, initialEdges, suggestions, hoveredSuggestionId, acceptSuggestion, declineSuggestion, setHoveredSuggestionId,
     pathNodeIds, pathEdgeIds, onOrphanAttachClick, highlightedNodeIds,
   })
+
+  // Throttled viewport change handler for 60fps performance
+  const throttledOnMove = useMemo(() => {
+    return throttleToFrame((event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+      // Skip if viewport hasn't changed meaningfully
+      if (viewportsEqual(lastViewportRef.current, viewport)) {
+        return
+      }
+      lastViewportRef.current = viewport
+    })
+  }, [])
+
+  // Handle move start - mark as interacting
+  const handleMoveStart = useCallback(() => {
+    isInteractingRef.current = true
+  }, [])
+
+  // Handle move end - mark as not interacting
+  const handleMoveEnd = useCallback(() => {
+    isInteractingRef.current = false
+  }, [])
+
+  // Cleanup throttled handler on unmount
+  useEffect(() => {
+    return () => {
+      throttledOnMove.cancel()
+    }
+  }, [throttledOnMove])
 
   const nodeTypes = useMemo(() => ({ storyNode: StoryNode, suggestedNode: SuggestedCardNode }), [])
 
@@ -117,6 +151,9 @@ export function GraphCanvas({
   const handleNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
     if (!isDraggingRef.current) return
     isDraggingRef.current = false
+
+    // Guard against undefined node
+    if (!node || !node.type) return
 
     // Only trigger for story nodes, not suggested nodes
     if (node.type !== 'storyNode') return
@@ -156,35 +193,37 @@ export function GraphCanvas({
     }
   }, [])
 
-  // Handle node mouse enter for preview
-  const handleNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node<StoryNodeData>) => {
+  // Handle node right-click for preview (replaces hover behavior)
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node<StoryNodeData>) => {
+    event.preventDefault()
+
     // Only show preview for story nodes, not suggested nodes
     if (node.type !== 'storyNode') return
 
     clearHoverTimeouts()
 
-    // Delay showing preview to avoid flickering and excessive re-renders (increased to 400ms)
-    hoverTimeoutRef.current = setTimeout(() => {
-      const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`)
-      if (nodeElement) {
-        const rect = nodeElement.getBoundingClientRect()
-        setHoverState({
-          nodeId: node.id,
-          screenPosition: { x: rect.right, y: rect.top }
-        })
-      }
-    }, 400)
+    // Show preview immediately on right-click
+    const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`)
+    if (nodeElement) {
+      const rect = nodeElement.getBoundingClientRect()
+      setHoverState({
+        nodeId: node.id,
+        screenPosition: { x: rect.right, y: rect.top }
+      })
+    }
   }, [clearHoverTimeouts])
 
-  // Handle node mouse leave
+  // Handle node mouse enter - disabled (no longer showing preview on hover)
+  const handleNodeMouseEnter = useCallback((_event: React.MouseEvent, _node: Node<StoryNodeData>) => {
+    // Preview is now triggered by right-click, not hover
+    // This handler is kept for potential future use
+  }, [])
+
+  // Handle node mouse leave - disabled (no longer hiding preview on mouse leave)
   const handleNodeMouseLeave = useCallback(() => {
-    clearHoverTimeouts()
-
-    // Delay hiding to allow mouse to move to preview panel (increased to 200ms)
-    hideTimeoutRef.current = setTimeout(() => {
-      setHoverState({ nodeId: null, screenPosition: null })
-    }, 200)
-  }, [clearHoverTimeouts])
+    // Preview is now closed via close button or clicking elsewhere
+    // This handler is kept for potential future use
+  }, [])
 
   // Close preview panel
   const closePreview = useCallback(() => {
@@ -222,6 +261,17 @@ export function GraphCanvas({
     }
     closePreview()
   }, [onDeleteCard, storyStack, deleteCard, closePreview])
+
+  // Handle go to setup action from preview panel
+  const handleGoToSetupFromPreview = useCallback((cardId: string) => {
+    if (onGoToSetup) {
+      onGoToSetup(cardId)
+    } else {
+      // Default: select the card (same as edit for now)
+      setCurrentCardId(cardId)
+    }
+    closePreview()
+  }, [onGoToSetup, setCurrentCardId, closePreview])
 
   const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     onNodeClick(event, node)
@@ -273,8 +323,10 @@ export function GraphCanvas({
         onNodeClick={handleNodeClick}
         onNodeDragStart={handleNodeDragStart}
         onNodeDragStop={handleNodeDragStop}
-        onNodeMouseEnter={handleNodeMouseEnter}
-        onNodeMouseLeave={handleNodeMouseLeave}
+        onNodeContextMenu={handleNodeContextMenu}
+        onMove={throttledOnMove}
+        onMoveStart={handleMoveStart}
+        onMoveEnd={handleMoveEnd}
         nodeTypes={nodeTypes} connectionLineType={ConnectionLineType.SmoothStep}
         fitView fitViewOptions={{ padding: 0.2, maxZoom: 1 }} minZoom={0.05} maxZoom={2}
         defaultEdgeOptions={{ type: 'smoothstep', animated: false }}
@@ -313,7 +365,7 @@ export function GraphCanvas({
         {children}
       </ReactFlow>
 
-      {/* Node Preview Panel - rendered via portal */}
+      {/* Node Preview Panel - rendered via portal, triggered by right-click */}
       {hoverState.nodeId && hoverState.screenPosition && (
         <NodePreviewPanel
           nodeId={hoverState.nodeId}
@@ -322,6 +374,7 @@ export function GraphCanvas({
           onEdit={handleEditFromPreview}
           onDelete={handleDeleteFromPreview}
           onClose={closePreview}
+          onGoToSetup={handleGoToSetupFromPreview}
         />
       )}
     </div>

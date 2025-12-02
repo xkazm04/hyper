@@ -2,13 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { Copy, Check, ExternalLink, Share2 } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 
 interface ShareUrlDialogProps {
@@ -62,24 +56,20 @@ export function ShareUrlDialog({
   }, [storyName, shareUrl, handleCopy])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-md border-4 border-border bg-card
-                   shadow-[6px_6px_0px_0px_hsl(var(--border))]"
-        data-testid="share-url-dialog"
-      >
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <Share2 className="w-5 h-5 text-primary" />
-            Story Shared Successfully!
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            Anyone with this link can view your interactive story in their
-            browser.
-          </DialogDescription>
-        </DialogHeader>
+    <Modal open={open} onOpenChange={onOpenChange} size="md">
+      <ModalHeader>
+        <ModalTitle className="text-xl font-bold flex items-center gap-2">
+          <Share2 className="w-5 h-5 text-primary" />
+          Story Shared Successfully!
+        </ModalTitle>
+        <ModalDescription className="text-sm">
+          Anyone with this link can view your interactive story in their
+          browser.
+        </ModalDescription>
+      </ModalHeader>
 
-        <div className="space-y-4 py-4">
+      <ModalBody>
+        <div className="space-y-4">
           {/* Story info */}
           <div
             className="p-3 bg-muted/50 rounded-lg border-2 border-border"
@@ -112,10 +102,6 @@ export function ShareUrlDialog({
                 onClick={handleCopy}
                 variant="outline"
                 size="icon"
-                className="flex-shrink-0 border-2 border-border
-                         shadow-[2px_2px_0px_0px_hsl(var(--border))]
-                         hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
-                         hover:-translate-x-px hover:-translate-y-px transition-all"
                 data-testid="share-url-copy-btn"
               >
                 {copied ? (
@@ -140,54 +126,48 @@ export function ShareUrlDialog({
 
           {/* Info box */}
           <div
-            className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800"
+            className="p-3 bg-muted/50 rounded-lg border-2 border-border"
             data-testid="share-url-info"
           >
-            <p className="text-xs text-blue-800 dark:text-blue-200">
+            <p className="text-xs text-muted-foreground">
               <strong>How it works:</strong> Your story bundle is stored on our
               servers. When someone opens this link, they can play your story
               entirely in their browser - no download required!
             </p>
           </div>
         </div>
+      </ModalBody>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-2">
+      {/* Actions */}
+      <ModalFooter className="flex-col sm:flex-row gap-2">
+        <Button
+          onClick={handleOpen}
+          variant="outline"
+          className="flex-1"
+          data-testid="share-url-open-btn"
+        >
+          <ExternalLink className="w-4 h-4 mr-2" />
+          Open in New Tab
+        </Button>
+        {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
           <Button
-            onClick={handleOpen}
-            variant="outline"
-            className="flex-1 border-2 border-border
-                     shadow-[2px_2px_0px_0px_hsl(var(--border))]
-                     hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
-                     hover:-translate-x-px hover:-translate-y-px transition-all"
-            data-testid="share-url-open-btn"
+            onClick={handleShare}
+            className="flex-1"
+            data-testid="share-url-share-btn"
           >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Open in New Tab
+            <Share2 className="w-4 h-4 mr-2" />
+            Share
           </Button>
-          {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
-            <Button
-              onClick={handleShare}
-              className="flex-1 border-2 border-border bg-primary text-primary-foreground
-                       shadow-[2px_2px_0px_0px_hsl(var(--border))]
-                       hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
-                       hover:-translate-x-px hover:-translate-y-px transition-all"
-              data-testid="share-url-share-btn"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-          )}
-          <Button
-            onClick={() => onOpenChange(false)}
-            variant="ghost"
-            className="sm:w-auto"
-            data-testid="share-url-close-btn"
-          >
-            Done
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        )}
+        <Button
+          onClick={() => onOpenChange(false)}
+          variant="ghost"
+          className="sm:w-auto"
+          data-testid="share-url-close-btn"
+        >
+          Done
+        </Button>
+      </ModalFooter>
+    </Modal>
   )
 }

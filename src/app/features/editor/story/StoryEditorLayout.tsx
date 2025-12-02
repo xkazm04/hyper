@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils'
 import { FileText, Users, Palette } from 'lucide-react'
 import { ArtStyleEditor } from './sub_Story/components/ArtStyleEditor'
 import { HistoryPanel } from '../undo-redo'
-import { UniversalActionBar } from './sub_UniversalActionBar'
 
 export type EditorTab = 'story' | 'cards' | 'characters'
 
@@ -16,8 +15,6 @@ interface StoryEditorLayoutProps {
   cardEditor: ReactNode
   characterEditor: ReactNode
   cardPreview?: ReactNode
-  onPreview?: () => void
-  onPublish?: () => void
 }
 
 export default function StoryEditorLayout({
@@ -26,8 +23,6 @@ export default function StoryEditorLayout({
   characterList,
   cardEditor,
   characterEditor,
-  onPreview,
-  onPublish,
 }: StoryEditorLayoutProps) {
   const [activeEditorTab, setActiveEditorTab] = useState<EditorTab>('cards')
 
@@ -49,24 +44,14 @@ export default function StoryEditorLayout({
     return characterList
   }
 
-  // Default no-op handlers if not provided
-  const handlePreview = onPreview ?? (() => {})
-  const handlePublish = onPublish ?? (() => {})
-
   return (
     <div className="h-screen flex flex-col bg-background halloween-vignette">
       {/* Toolbar */}
       {toolbar}
 
-      {/* Universal Action Bar - Sticky across all views */}
-      <UniversalActionBar
-        onPreview={handlePreview}
-        onPublish={handlePublish}
-      />
-
       {/* Main Editor Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Split between Cards, Characters, and History */}
+        {/* Left Sidebar - Cards, Characters, and History */}
         <div className="shrink-0 w-64 hidden lg:flex lg:flex-col border-r-2 border-border">
           {/* Cards List - Top */}
           <div className="flex-1 border-b border-border overflow-hidden min-h-0">
@@ -92,25 +77,21 @@ export default function StoryEditorLayout({
         {/* Main Editor - Center Panel with tabs for Story/Cards/Characters */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Tab Switcher - Story / Cards / Characters */}
-          <div className="shrink-0 border-b-2 border-border bg-muted/30">
+          <div className="shrink-0 border-b-2 border-border bg-card">
             <div className="flex">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveEditorTab(tab.id)}
                   className={cn(
-                    'relative flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-200',
+                    'relative flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 -mb-[2px]',
                     activeEditorTab === tab.id
-                      ? 'text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-transparent text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50'
                   )}
                   data-testid={`${tab.id}-tab-btn`}
                 >
-                  {/* Active tab background */}
-                  {activeEditorTab === tab.id && (
-                    <span className="absolute inset-1 bg-primary rounded-md shadow-sm" />
-                  )}
-                  <span className="relative flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     {tab.icon}
                     {tab.label}
                   </span>

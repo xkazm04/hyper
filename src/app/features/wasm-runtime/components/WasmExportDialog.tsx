@@ -11,14 +11,7 @@ import {
   Share2,
   Link2,
 } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import type { StoryStack, StoryCard, Choice, Character } from '@/lib/types'
 import type { CompileResult, ExportFormat } from '../lib/types'
@@ -176,24 +169,20 @@ export function WasmExportDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent
-        className="sm:max-w-lg border-4 border-border bg-card
-                   shadow-[6px_6px_0px_0px_hsl(var(--border))]"
-        data-testid="wasm-export-dialog"
-      >
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <Package className="w-5 h-5 text-primary" />
-            Export Offline Bundle
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            Compile your story into a standalone file that runs entirely offline, without any server
-            connection.
-          </DialogDescription>
-        </DialogHeader>
+    <Modal open={open} onOpenChange={handleClose} size="md">
+      <ModalHeader>
+        <ModalTitle className="text-xl font-bold flex items-center gap-2">
+          <Package className="w-5 h-5 text-primary" />
+          Export Offline Bundle
+        </ModalTitle>
+        <ModalDescription className="text-sm">
+          Compile your story into a standalone file that runs entirely offline, without any server
+          connection.
+        </ModalDescription>
+      </ModalHeader>
 
-        <div className="space-y-4 py-4">
+      <ModalBody data-testid="wasm-export-dialog">
+        <div className="space-y-4">
           {/* Story info */}
           <div
             className="p-3 bg-muted/50 rounded-lg border-2 border-border"
@@ -289,8 +278,9 @@ export function WasmExportDialog({
             </div>
           )}
         </div>
+      </ModalBody>
 
-        <DialogFooter className="flex-row justify-end gap-2">
+      <ModalFooter className="flex-row justify-end gap-2">
           {status === 'idle' && (
             <>
               <Button
@@ -394,8 +384,7 @@ export function WasmExportDialog({
               </Button>
             </>
           )}
-        </DialogFooter>
-      </DialogContent>
+      </ModalFooter>
 
       {/* Share URL Dialog */}
       {shareResult && (
@@ -407,7 +396,7 @@ export function WasmExportDialog({
           storyName={stack.name}
         />
       )}
-    </Dialog>
+    </Modal>
   )
 }
 

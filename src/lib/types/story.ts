@@ -37,6 +37,7 @@ export interface StoryCard {
   speaker: string | null  // Who is speaking (character name, narrator, etc.)
   speakerType: 'character' | 'narrator' | 'system' | null  // Type of speaker for styling
   orderIndex: number  // For editor organization
+  version: number  // Optimistic concurrency control version
   createdAt: string
   updatedAt: string
 }
@@ -113,6 +114,7 @@ export interface UpdateStoryCardInput {
   speaker?: string | null
   speakerType?: 'character' | 'narrator' | 'system' | null
   orderIndex?: number
+  version?: number  // Required for optimistic concurrency control
 }
 
 export interface CreateCharacterCardInput {

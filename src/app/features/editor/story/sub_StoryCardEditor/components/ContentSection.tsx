@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { StoryCard } from '@/lib/types'
 import { ContentEditor } from './sub_ContentSection/ContentEditor'
 import { ContentToolbar } from './sub_ContentSection/ContentToolbar'
 import { SceneSketchPanel } from './sub_ContentSection/SceneSketchPanel'
 import { ChoiceEditor } from '../../sub_ChoiceEditor'
 import { useContentSection } from './sub_ContentSection/useContentSection'
-import { updateCard } from '../lib/cardApi'
+import { updateCard, fetchCard, VersionConflictError } from '../lib/cardApi'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
 import { SavedRibbon, useSavedRibbon } from './SavedRibbon'
@@ -27,19 +27,41 @@ export function ContentSection({
   cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, availableCards, currentCard,
 }: ContentSectionProps) {
   const { updateCard: updateCardContext } = useEditor()
-  const { success, error: showError } = useToast()
+  const { success, error: showError, warning: showWarning } = useToast()
   const [isImageSaving, setIsImageSaving] = useState(false)
   // Image description is separate from story content
   const [imageDescription, setImageDescription] = useState(currentCard?.imageDescription || '')
+
+  // Track card version for optimistic concurrency control
+  const versionRef = useRef<number>(currentCard?.version ?? 1)
+
+  // Update version when card changes
+  useEffect(() => {
+    versionRef.current = currentCard?.version ?? 1
+  }, [currentCard?.version])
 
   // Saved ribbon state
   const { showRibbon, isMuted, triggerRibbon, hideRibbon, toggleMute } = useSavedRibbon()
 
   const {
-    title, content, message, speaker, isSaving, isGenerating, hasContext, isLoadingContext, characters,
+    title, content, message, speaker, isSaving, isGenerating, hasContext, isLoadingContext, characters, hasVersionConflict,
     handleTitleChange, handleContentChange, handleMessageChange, handleSpeakerChange,
     saveTitle, saveContent, saveMessage, saveSpeaker, handleGenerateContent,
   } = useContentSection({ cardId, storyStackId, initialTitle, initialContent, initialMessage, initialSpeaker, currentCard, onSaveComplete: triggerRibbon })
+
+  // Handle version conflict by refreshing the card
+  const handleVersionConflict = useCallback(async () => {
+    showWarning('This card was modified in another tab. Refreshing to latest version...')
+    try {
+      const latestCard = await fetchCard(storyStackId, cardId)
+      versionRef.current = latestCard.version
+      updateCardContext(cardId, latestCard)
+      setImageDescription(latestCard.imageDescription || '')
+      success('Card refreshed to latest version')
+    } catch (err) {
+      showError('Failed to refresh card. Please reload the page.')
+    }
+  }, [storyStackId, cardId, updateCardContext, success, showError, showWarning])
 
   // Handle image selection from SceneSketchPanel
   const handleImageSelect = useCallback(async (imageUrl: string, prompt: string) => {
@@ -48,15 +70,21 @@ export function ContentSection({
       const updated = await updateCard(storyStackId, cardId, {
         imageUrl,
         imagePrompt: prompt,
+        version: versionRef.current,
       })
+      versionRef.current = updated.version
       updateCardContext(cardId, updated)
       success('Scene image saved')
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to save image')
+      if (err instanceof VersionConflictError) {
+        await handleVersionConflict()
+      } else {
+        showError(err instanceof Error ? err.message : 'Failed to save image')
+      }
     } finally {
       setIsImageSaving(false)
     }
-  }, [storyStackId, cardId, updateCardContext, success, showError])
+  }, [storyStackId, cardId, updateCardContext, success, showError, handleVersionConflict])
 
   // Handle image removal
   const handleRemoveImage = useCallback(async () => {
@@ -65,28 +93,39 @@ export function ContentSection({
       const updated = await updateCard(storyStackId, cardId, {
         imageUrl: null,
         imagePrompt: null,
+        version: versionRef.current,
       })
+      versionRef.current = updated.version
       updateCardContext(cardId, updated)
       success('Image removed')
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to remove image')
+      if (err instanceof VersionConflictError) {
+        await handleVersionConflict()
+      } else {
+        showError(err instanceof Error ? err.message : 'Failed to remove image')
+      }
     } finally {
       setIsImageSaving(false)
     }
-  }, [storyStackId, cardId, updateCardContext, success, showError])
+  }, [storyStackId, cardId, updateCardContext, success, showError, handleVersionConflict])
 
   // Handle image description change (separate from story content)
   const handleImageDescriptionChange = useCallback(async (description: string) => {
     setImageDescription(description)
     // Auto-save image description to database
     try {
-      const updated = await updateCard(storyStackId, cardId, { imageDescription: description })
+      const updated = await updateCard(storyStackId, cardId, { imageDescription: description, version: versionRef.current })
+      versionRef.current = updated.version
       updateCardContext(cardId, updated)
     } catch (err) {
-      // Silent fail for auto-save, user can still use the description
-      console.error('Failed to save image description:', err)
+      if (err instanceof VersionConflictError) {
+        await handleVersionConflict()
+      } else {
+        // Silent fail for auto-save, user can still use the description
+        console.error('Failed to save image description:', err)
+      }
     }
-  }, [storyStackId, cardId, updateCardContext])
+  }, [storyStackId, cardId, updateCardContext, handleVersionConflict])
 
   return (
     <div className="relative grid grid-cols-2 gap-6">

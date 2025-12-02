@@ -43,7 +43,7 @@ export function CharacterHeader({ character }: CharacterHeaderProps) {
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <ImageIcon className="w-3 h-3" aria-hidden="true" />
-              <span>{character.imageUrls?.length || 0}/4 images</span>
+              <span>{character.imageUrls?.length || 0}/10 images</span>
             </span>
             <span className="flex items-center gap-1">
               <User className="w-3 h-3" aria-hidden="true" />

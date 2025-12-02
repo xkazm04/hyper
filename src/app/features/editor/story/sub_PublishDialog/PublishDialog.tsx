@@ -1,17 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, Check, Copy, ExternalLink, Globe, Lock, Sparkles } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Globe, Sparkles } from 'lucide-react'
+import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { PublishStatus } from './PublishStatus'
 import { PublishPreview } from './PublishPreview'
 import { PublishForm } from './PublishForm'
@@ -86,34 +78,30 @@ export function PublishDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-md border-4 border-border bg-card
-                   shadow-[6px_6px_0px_0px_hsl(var(--border))]"
-        data-testid="publish-dialog"
-      >
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            {isPublished ? (
-              <>
-                <Globe className="w-5 h-5 text-green-600" />
-                Story Published
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 text-primary" />
-                Publish Story
-              </>
-            )}
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            {isPublished
-              ? 'Your story is live and can be shared with anyone.'
-              : 'Make your story available for the world to play.'}
-          </DialogDescription>
-        </DialogHeader>
+    <Modal open={open} onOpenChange={onOpenChange} size="md">
+      <ModalHeader>
+        <ModalTitle className="text-xl font-bold flex items-center gap-2">
+          {isPublished ? (
+            <>
+              <Globe className="w-5 h-5 text-green-600" />
+              Story Published
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5 text-primary" />
+              Publish Story
+            </>
+          )}
+        </ModalTitle>
+        <ModalDescription className="text-sm">
+          {isPublished
+            ? 'Your story is live and can be shared with anyone.'
+            : 'Make your story available for the world to play.'}
+        </ModalDescription>
+      </ModalHeader>
 
-        <div className="space-y-4 py-4">
+      <ModalBody>
+        <div className="space-y-4">
           {/* Status Messages */}
           <PublishStatus
             canPublish={canPublish}
@@ -138,61 +126,47 @@ export function PublishDialog({
             />
           )}
         </div>
+      </ModalBody>
 
-        <DialogFooter className="flex-row justify-end gap-2">
-          {isPublished ? (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                data-testid="publish-close-btn"
-                className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]
-                           hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
-                           hover:-translate-x-px hover:-translate-y-px transition-all"
-              >
-                Close
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleUnpublish}
-                disabled={isLoading}
-                data-testid="publish-unpublish-btn"
-                className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]
-                           hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
-                           hover:-translate-x-px hover:-translate-y-px transition-all"
-              >
-                {isLoading ? 'Unpublishing...' : 'Unpublish'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                data-testid="publish-cancel-btn"
-                className="border-2 border-border shadow-[2px_2px_0px_0px_hsl(var(--border))]
-                           hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
-                           hover:-translate-x-px hover:-translate-y-px transition-all"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handlePublish}
-                disabled={!canPublish || isLoading}
-                data-testid="publish-submit-btn"
-                className="border-2 border-border bg-primary text-primary-foreground
-                           shadow-[2px_2px_0px_0px_hsl(var(--border))]
-                           hover:shadow-[3px_3px_0px_0px_hsl(var(--border))]
-                           hover:-translate-x-px hover:-translate-y-px transition-all
-                           disabled:opacity-50 disabled:cursor-not-allowed
-                           halloween-candle-flicker"
-              >
-                {isLoading ? 'Publishing...' : 'Publish Story'}
-              </Button>
-            </>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <ModalFooter className="flex-row justify-end gap-2">
+        {isPublished ? (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              data-testid="publish-close-btn"
+            >
+              Close
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleUnpublish}
+              disabled={isLoading}
+              data-testid="publish-unpublish-btn"
+            >
+              {isLoading ? 'Unpublishing...' : 'Unpublish'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              data-testid="publish-cancel-btn"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePublish}
+              disabled={!canPublish || isLoading}
+              data-testid="publish-submit-btn"
+              className="halloween-candle-flicker"
+            >
+              {isLoading ? 'Publishing...' : 'Publish Story'}
+            </Button>
+          </>
+        )}
+      </ModalFooter>
+    </Modal>
   )
 }
