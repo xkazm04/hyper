@@ -44,13 +44,23 @@ export function SyncStatus({ className, showDetails = false }: SyncStatusProps) 
         }))
       }
 
-      if (event.type === 'sync_completed' || event.type === 'sync_failed') {
-        // Immediately set isSyncing to false, then fetch full status
+      if (event.type === 'sync_completed') {
+        // Immediately set full synced state
         setStatus(prev => ({
           ...prev,
           isSyncing: false,
+          pendingCount: 0,
+          lastSyncTime: event.timestamp,
+          lastError: null,
         }))
-        syncService.getStatus().then(setStatus)
+      }
+
+      if (event.type === 'sync_failed') {
+        setStatus(prev => ({
+          ...prev,
+          isSyncing: false,
+          lastError: event.data?.error ?? 'Sync failed',
+        }))
       }
 
       if (event.type === 'item_synced' || event.type === 'item_failed') {
@@ -166,9 +176,10 @@ export function SyncStatus({ className, showDetails = false }: SyncStatusProps) 
       {showTooltip && (
         <div
           className={cn(
-            'absolute right-0 top-full z-50 mt-2 w-48 rounded-md border border-border bg-popover p-3 shadow-lg',
+            'absolute right-0 top-full z-50 mt-2 w-48 rounded-md border border-border p-3 shadow-lg',
             'text-popover-foreground'
           )}
+          style={{ backgroundColor: 'hsl(var(--popover))' }}
           data-testid="sync-status-tooltip"
         >
           <div className="space-y-2 text-xs">

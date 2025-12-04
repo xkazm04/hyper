@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState, useRef } from 'react'
 import { Node, Panel } from 'reactflow'
 import { useEditor } from '@/contexts/EditorContext'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 import { usePerformanceOptional } from '@/contexts/PerformanceContext'
 import { useStoryGraphData } from './hooks/useStoryGraphData'
 import { useStoryGraphNavigation } from './hooks/useStoryGraphNavigation'
@@ -16,7 +16,7 @@ import { useOrphanAttachmentActions } from './hooks/useOrphanAttachmentState'
 import { useGraphValidation } from './hooks/useGraphValidation'
 import { useStoryGraphExport } from './hooks/useStoryGraphExport'
 import { GraphCanvas } from './components/GraphCanvas'
-import { GraphControls, GraphStats } from './components/GraphControls'
+import type { GraphStats } from './components/sub_GraphControls'
 import { BranchDepthProgressBar } from './components/BranchDepthProgressBar'
 import { PathProgressBar } from './components/PathProgressBar'
 import { OrphanAttachmentHelper } from './components/OrphanAttachmentHelper'
@@ -188,6 +188,7 @@ export default function StoryGraph() {
       pathNodeIds={pathNodeIds}
       pathEdgeIds={pathEdgeIds}
       onOrphanAttachClick={handleOrphanAttachClick}
+      stats={stats}
     >
       {/* Pumpkin overlay - shown when effects are ON and halloween theme */}
       {isHalloween && <PumpkinOverlay visible={showHeavyAnimations} />}
@@ -202,11 +203,8 @@ export default function StoryGraph() {
         data-testid="import-file-input"
       />
 
-      {/* Stats Overview - top right */}
-      <GraphControls stats={stats} />
-
       {/* Icon-only Tools Sidebar - replaces separate panels */}
-      <Panel position="top-right" className="mt-[140px]">
+      <Panel position="top-right" className="mt-2">
         <GraphToolsSidebar
           validationResult={validationResult}
           isValidationVisible={isDiagnosticsVisible}

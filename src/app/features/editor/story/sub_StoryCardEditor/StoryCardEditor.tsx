@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useCallback, lazy, Suspense } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { ViewToggle, type ViewMode } from './components/ViewToggle'
 import { EmptyState } from './components/EmptyState'
 import { SectionLoadingFallback } from './components/SectionLoadingFallback'
 import { AICompanionBottomPanel } from '../sub_AICompanion/AICompanionBottomPanel'
+import type { SwitchToGraphFn } from '../StoryEditorLayout'
 
 // Lazy load section components for reduced initial bundle size
 const ContentSection = lazy(() =>
@@ -20,10 +21,25 @@ const PathAnalyzer = lazy(() =>
   import('../sub_PathAnalyzer').then(mod => ({ default: mod.PathAnalyzer }))
 )
 
-export default function StoryCardEditor() {
+interface StoryCardEditorProps {
+  registerSwitchToGraph?: (fn: SwitchToGraphFn) => void
+}
+
+export default function StoryCardEditor({ registerSwitchToGraph }: StoryCardEditorProps) {
   const { currentCard, storyStack, storyCards, setCurrentCardId } = useEditor()
 
   const [viewMode, setViewMode] = useState<ViewMode>('content')
+
+  // Expose the switchToGraph function to parent via register callback
+  const switchToGraph = useCallback(() => {
+    setViewMode('graph')
+  }, [])
+
+  useEffect(() => {
+    if (registerSwitchToGraph) {
+      registerSwitchToGraph(switchToGraph)
+    }
+  }, [registerSwitchToGraph, switchToGraph])
 
   // Handle card click from analytics - navigate to card and switch to content
   const handleAnalyticsCardClick = useCallback((cardId: string) => {
@@ -56,7 +72,7 @@ export default function StoryCardEditor() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 pb-[100px] overflow-hidden relative">
         {viewMode === 'graph' ? (
           <Suspense fallback={<SectionLoadingFallback section="graph" fullHeight />}>
             <StoryGraph />

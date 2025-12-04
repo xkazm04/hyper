@@ -27,6 +27,7 @@ export interface UpdateCardPayload {
   imageUrl?: string | null
   imagePrompt?: string | null
   imageDescription?: string | null
+  audioUrl?: string | null
   message?: string | null
   speaker?: string | null
   version?: number  // Include version for optimistic concurrency control

@@ -27,6 +27,7 @@ export function TrainingStatusPanel({
   const [isStartingTraining, setIsStartingTraining] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pollingStatus, setPollingStatus] = useState<BriaModelStatus | null>(null)
+  const [pollingError, setPollingError] = useState<string | null>(null)
 
   const imageCount = character.imageUrls?.length || 0
   const canTrain = imageCount >= MIN_IMAGES_FOR_TRAINING
@@ -35,11 +36,17 @@ export function TrainingStatusPanel({
   const isCompleted = currentStatus === 'completed'
   const isFailed = currentStatus === 'failed'
 
-  // Poll for training status when training is in progress
-  useEffect(() => {
-    if (!isTraining || !character.briaModelId) return
+  // Combined error message from local state or polling
+  const displayError = error || pollingError || character.briaErrorMessage
 
-    const pollInterval = setInterval(async () => {
+  // Poll for training status when training is in progress
+  // Poll faster (3s) when pending to catch initialization errors quickly
+  // Poll slower (30s) when training is actually running
+  useEffect(() => {
+    if (!isTraining) return
+
+    // Poll immediately on mount
+    const pollStatus = async () => {
       try {
         const response = await fetch(
           `/api/ai/bria/model?characterId=${character.id}&storyStackId=${storyStackId}`
@@ -47,18 +54,34 @@ export function TrainingStatusPanel({
         if (response.ok) {
           const data = await response.json()
           setPollingStatus(data.status)
+          if (data.errorMessage) {
+            setPollingError(data.errorMessage)
+          }
           if (data.status === 'completed' || data.status === 'failed') {
             onTrainingStatusChange?.(data.status)
-            clearInterval(pollInterval)
+            return true // Signal to stop polling
           }
         }
       } catch (err) {
         console.error('Error polling training status:', err)
       }
-    }, 30000) // Poll every 30 seconds
+      return false
+    }
+
+    // Initial poll
+    pollStatus()
+
+    // Poll every 3 seconds when pending (to catch init errors fast), 30 seconds when training
+    const pollIntervalMs = currentStatus === 'pending' ? 3000 : 30000
+    const pollInterval = setInterval(async () => {
+      const shouldStop = await pollStatus()
+      if (shouldStop) {
+        clearInterval(pollInterval)
+      }
+    }, pollIntervalMs)
 
     return () => clearInterval(pollInterval)
-  }, [isTraining, character.briaModelId, character.id, storyStackId, onTrainingStatusChange])
+  }, [isTraining, currentStatus, character.id, storyStackId, onTrainingStatusChange])
 
   const handleStartTraining = useCallback(async () => {
     if (!canTrain || isStartingTraining) return
@@ -84,7 +107,10 @@ export function TrainingStatusPanel({
       setPollingStatus('pending')
       onTrainingStatusChange?.('pending')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start training')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start training'
+      setError(errorMessage)
+      setPollingStatus('failed')
+      onTrainingStatusChange?.('failed')
     } finally {
       setIsStartingTraining(false)
     }
@@ -93,6 +119,7 @@ export function TrainingStatusPanel({
   const handleRetry = useCallback(() => {
     setPollingStatus('none')
     setError(null)
+    setPollingError(null)
   }, [])
 
   // Progress bar for image collection
@@ -240,24 +267,24 @@ export function TrainingStatusPanel({
         {/* Failed State */}
         {isFailed && (
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-              <AlertCircle className="w-8 h-8 text-red-500 shrink-0" />
-              <div className="flex-1">
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-red-600 dark:text-red-400">
                   Training Failed
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {error || 'An error occurred during training. Please try again.'}
+                <p className="text-xs text-muted-foreground mt-1 break-words">
+                  {displayError || 'An error occurred during training. Please try again.'}
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Error Message */}
-        {error && !isFailed && (
+        {/* Error Message (when not in failed state) */}
+        {displayError && !isFailed && (
           <div className="p-2 rounded bg-destructive/10 border border-destructive/30">
-            <p className="text-xs text-destructive">{error}</p>
+            <p className="text-xs text-destructive break-words">{displayError}</p>
           </div>
         )}
 

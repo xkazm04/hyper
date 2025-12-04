@@ -80,19 +80,25 @@ export class CardsService {
           ? (maxOrderData as any).order_index + 1 
           : 0
 
+      // Build insert data - only include fields that are provided
+      const insertData: Record<string, any> = {
+        story_stack_id: input.storyStackId,
+        title: input.title || 'Untitled Card',
+        content: input.content || '',
+        script: input.script || '',
+        order_index: nextOrderIndex,
+      }
+
+      // Only add optional fields if they are explicitly provided
+      if (input.imageUrl !== undefined) insertData.image_url = input.imageUrl
+      if (input.imagePrompt !== undefined) insertData.image_prompt = input.imagePrompt
+      if (input.audioUrl !== undefined) insertData.audio_url = input.audioUrl
+      if (input.message !== undefined) insertData.message = input.message
+      if (input.speaker !== undefined) insertData.speaker = input.speaker
+
       const { data, error } = await (this.supabase
         .from('story_cards') as any)
-        .insert({
-          story_stack_id: input.storyStackId,
-          title: input.title || 'Untitled Card',
-          content: input.content || '',
-          script: input.script || '',
-          image_url: input.imageUrl || null,
-          image_prompt: input.imagePrompt || null,
-          message: input.message || null,
-          speaker: input.speaker || null,
-          order_index: nextOrderIndex,
-        })
+        .insert(insertData)
         .select()
         .single()
 
@@ -113,6 +119,8 @@ export class CardsService {
       if (input.script !== undefined) updateData.script = input.script
       if (input.imageUrl !== undefined) updateData.image_url = input.imageUrl
       if (input.imagePrompt !== undefined) updateData.image_prompt = input.imagePrompt
+      if (input.imageDescription !== undefined) updateData.image_description = input.imageDescription
+      if (input.audioUrl !== undefined) updateData.audio_url = input.audioUrl
       if (input.message !== undefined) updateData.message = input.message
       if (input.speaker !== undefined) updateData.speaker = input.speaker
       if ((input as any).speakerType !== undefined) updateData.speaker_type = (input as any).speakerType

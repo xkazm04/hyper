@@ -15,11 +15,10 @@ import type {
 
 interface UseAICompanionOptions {
   enabled?: boolean
-  autoSuggestDebounceMs?: number
 }
 
 export function useAICompanion(options: UseAICompanionOptions = {}) {
-  const { enabled = true, autoSuggestDebounceMs = 3000 } = options
+  const { enabled = true } = options
 
   const {
     storyStack,
@@ -31,10 +30,10 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     addCard,
     addChoice,
     updateCard: updateCardContext,
+    setChoices,
   } = useEditor()
 
   const { success, error: showError } = useToast()
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const [state, setState] = useState<AICompanionState>({
     mode: 'suggest',
@@ -213,67 +212,49 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     [buildStoryContext, currentCardId, showError]
   )
 
-  // Generate story structure via architect
+  // Generate story structure via architect - tree-based generation with DB persistence
   const generateStoryStructure = useCallback(
-    async (description: string, cardCount: number) => {
-      if (!description.trim()) {
-        showError('Please provide a story description')
+    async (levels: number, choicesPerCard: number) => {
+      if (!storyStack || !currentCard) {
+        showError('Please select a card to branch from')
         return
       }
 
       setState((prev) => ({ ...prev, isGenerating: true, error: null }))
 
       try {
+        // Build story context for LLM
+        const context = buildStoryContext()
+
         const response = await fetch('/api/ai/story-companion', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'architect-story',
-            description,
-            cardCount,
-            currentCards: storyCards.map((c) => ({ id: c.id, title: c.title })),
+            action: 'architect-tree',
+            storyContext: context,
+            sourceCardId: currentCard.id,
+            levels,
+            choicesPerCard,
+            storyStackId: storyStack.id,
           }),
         })
 
         if (!response.ok) {
           const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to generate story')
+          throw new Error(errorData.error || 'Failed to generate story tree')
         }
 
         const data = await response.json()
+
         if (data.success && data.cards && data.choices) {
-          // Add generated cards to editor
-          const now = new Date().toISOString()
-          data.cards.forEach((card: any, index: number) => {
-            addCard({
-              id: card.id || uuidv4(),
-              storyStackId: storyStack?.id || '',
-              title: card.title || 'Untitled',
-              content: card.content || '',
-              script: '',
-              imageUrl: null,
-              imagePrompt: null,
-              imageDescription: null,
-              message: null,
-              speaker: null,
-              speakerType: null,
-              orderIndex: storyCards.length + index,
-              version: 1,
-              createdAt: now,
-              updatedAt: now,
-            })
+          // Cards and choices are already saved to DB by the API
+          // Add them to local state
+          data.cards.forEach((card: any) => {
+            addCard(card)
           })
 
-          data.choices.forEach((choice: any, index: number) => {
-            addChoice({
-              id: choice.id || uuidv4(),
-              storyCardId: choice.storyCardId,
-              targetCardId: choice.targetCardId,
-              label: choice.label,
-              orderIndex: index,
-              createdAt: now,
-              updatedAt: now,
-            })
+          data.choices.forEach((choice: any) => {
+            addChoice(choice)
           })
 
           success(`Created ${data.cards.length} scenes and ${data.choices.length} connections`)
@@ -282,12 +263,12 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
           throw new Error(data.error || 'Generation failed')
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to generate story'
+        const message = err instanceof Error ? err.message : 'Failed to generate story tree'
         setState((prev) => ({ ...prev, error: message, isGenerating: false }))
         showError(message)
       }
     },
-    [storyStack, storyCards, addCard, addChoice, success, showError]
+    [storyStack, currentCard, buildStoryContext, addCard, addChoice, success, showError]
   )
 
   // Apply selected content variant to current card (and create choices if present)
@@ -339,6 +320,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
               imageUrl: null,
               imagePrompt: null,
               imageDescription: null,
+              audioUrl: null,
               message: null,
               speaker: null,
               speakerType: null,
@@ -379,63 +361,77 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     [currentCard, storyStack, storyCards, choices, updateCardContext, addCard, addChoice, success, showError]
   )
 
-  // Accept a next step suggestion - create new card and choice
+  // Accept a next step suggestion - create new card and choice, persist to database
   const acceptNextStep = useCallback(
     async (suggestion: NextStepSuggestion) => {
       if (!storyStack) return
 
-      const now = new Date().toISOString()
-      const newCardId = uuidv4()
+      setState((prev) => ({ ...prev, isGenerating: true }))
 
-      // Create the new card
-      addCard({
-        id: newCardId,
-        storyStackId: storyStack.id,
-        title: suggestion.title,
-        content: suggestion.content,
-        script: '',
-        imageUrl: null,
-        imagePrompt: suggestion.imagePrompt || null,
-        imageDescription: null,
-        message: null,
-        speaker: null,
-        speakerType: null,
-        orderIndex: storyCards.length,
-        version: 1,
-        createdAt: now,
-        updatedAt: now,
-      })
-
-      // Create choice linking to the new card
-      if (suggestion.sourceCardId) {
-        addChoice({
-          id: uuidv4(),
-          storyCardId: suggestion.sourceCardId,
-          targetCardId: newCardId,
-          label: suggestion.choiceLabel,
-          orderIndex: choices.filter((c) => c.storyCardId === suggestion.sourceCardId).length,
-          createdAt: now,
-          updatedAt: now,
+      try {
+        // 1. Create the new card in database first
+        const cardResponse = await fetch(`/api/stories/${storyStack.id}/cards`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: suggestion.title,
+            content: suggestion.content,
+            imagePrompt: suggestion.imagePrompt || null,
+            orderIndex: storyCards.length,
+          }),
         })
+
+        if (!cardResponse.ok) {
+          const errorData = await cardResponse.json()
+          throw new Error(errorData.error || 'Failed to create card')
+        }
+
+        const { storyCard: savedCard } = await cardResponse.json()
+
+        // 2. Add to local state with the database-returned card
+        addCard(savedCard)
+
+        // 3. Create choice linking to the new card (if we have a source)
+        if (suggestion.sourceCardId) {
+          const choiceResponse = await fetch(
+            `/api/stories/${storyStack.id}/cards/${suggestion.sourceCardId}/choices`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                label: suggestion.choiceLabel,
+                targetCardId: savedCard.id,
+                orderIndex: choices.filter((c) => c.storyCardId === suggestion.sourceCardId).length,
+              }),
+            }
+          )
+
+          if (!choiceResponse.ok) {
+            const errorData = await choiceResponse.json()
+            throw new Error(errorData.error || 'Failed to create choice')
+          }
+
+          const { choice: savedChoice } = await choiceResponse.json()
+
+          // 4. Add choice to local state - this updates the Choices section immediately
+          addChoice(savedChoice)
+        }
+
+        // 5. Remove from suggestions
+        setState((prev) => ({
+          ...prev,
+          nextStepSuggestions: prev.nextStepSuggestions.filter((s) => s.id !== suggestion.id),
+          isGenerating: false,
+        }))
+
+        success('Scene added to your story')
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to accept suggestion'
+        setState((prev) => ({ ...prev, error: message, isGenerating: false }))
+        showError(message)
       }
-
-      // Remove from suggestions
-      setState((prev) => ({
-        ...prev,
-        nextStepSuggestions: prev.nextStepSuggestions.filter((s) => s.id !== suggestion.id),
-      }))
-
-      success('Scene added to your story')
-
-      // Trigger new suggestions after a delay
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
-      }
-      debounceTimerRef.current = setTimeout(() => {
-        generateNextSteps(newCardId)
-      }, autoSuggestDebounceMs)
     },
-    [storyStack, storyCards, choices, addCard, addChoice, success, generateNextSteps, autoSuggestDebounceMs]
+    [storyStack, storyCards, choices, addCard, addChoice, success, showError]
   )
 
   // Decline a suggestion
@@ -463,15 +459,6 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
   // Clear error
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }))
-  }, [])
-
-  // Clear timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
-      }
-    }
   }, [])
 
   return {

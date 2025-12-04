@@ -1,15 +1,9 @@
 /**
  * AI-Powered Character Prompt Composer
- * Uses Groq to intelligently compose character prompts with story art style integration
- * 
- * Requirements: FR-3.2, NFR-2
  */
 
-import {
-  CharacterDimension,
-  CharacterPromptOption,
-} from './promptVariables';
-import { composeCharacterPrompt } from './promptBuilder';
+import type { CharacterDimension, CharacterPromptOption } from '@/app/prompts/character'
+import { composeCharacterPrompt } from './promptBuilder'
 
 /**
  * Input for AI prompt composition
@@ -42,7 +36,7 @@ interface ComposePromptResponse {
 }
 
 /**
- * Compose a character prompt using AI (Groq) to intelligently combine
+ * Compose a character prompt using AI to intelligently combine
  * character selections with story art style.
  * 
  * Falls back to simple composition if the API call fails.

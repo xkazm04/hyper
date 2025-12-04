@@ -10,14 +10,16 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Cache story data for 5 minutes
-            staleTime: 5 * 60 * 1000,
-            // Keep in cache for 30 minutes (longer for offline support)
-            gcTime: 30 * 60 * 1000,
+            // Cache story data for 1 minute (reduced from 5 min for fresher data)
+            staleTime: 60 * 1000,
+            // Keep in cache for 10 minutes (reduced from 30 min)
+            gcTime: 10 * 60 * 1000,
             // Retry failed requests 3 times
             retry: 3,
             // Refetch on window focus for fresh data
             refetchOnWindowFocus: true,
+            // Always refetch when component mounts
+            refetchOnMount: 'always',
             // Refetch when reconnecting
             refetchOnReconnect: true,
             // Network mode: offline-first

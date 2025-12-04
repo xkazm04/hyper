@@ -103,7 +103,7 @@ export function NodeSearchBar({
           onKeyDown={onKeyDown}
           placeholder="Search nodes... (Ctrl+F)"
           className={cn(
-            'flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground',
+            'flex-1 bg-transparent text-sm outline-none focus:outline-none focus:ring-0 border-none placeholder:text-muted-foreground',
             isHalloween ? 'text-orange-100' : 'text-foreground'
           )}
           data-testid="node-search-input"

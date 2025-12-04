@@ -1,18 +1,20 @@
 'use client'
 
-import { ReactNode, useState, useCallback } from 'react'
-import { cn } from '@/lib/utils'
+import { ReactNode, useState, useCallback, useRef } from 'react'
 import { FileText, Users, Palette } from 'lucide-react'
-import { ArtStyleEditor } from './sub_Story/components/ArtStyleEditor'
-import { HistoryPanel } from '../undo-redo'
+import { StorySettings } from './sub_Story'
+import { TabSwitcher, TabItem } from '@/components/ui/TabSwitcher'
 
 export type EditorTab = 'story' | 'cards' | 'characters'
 
+// Callback type for switching to graph view inside the card editor
+export type SwitchToGraphFn = () => void
+
 interface StoryEditorLayoutProps {
   toolbar: ReactNode
-  cardList: ReactNode
+  cardList: ReactNode | ((props: { onOpenStoryGraph: () => void }) => ReactNode)
   characterList: ReactNode | ((props: { onSwitchToCharacters: () => void }) => ReactNode)
-  cardEditor: ReactNode
+  cardEditor: ReactNode | ((props: { registerSwitchToGraph: (fn: SwitchToGraphFn) => void }) => ReactNode)
   characterEditor: ReactNode
   cardPreview?: ReactNode
 }
@@ -26,15 +28,42 @@ export default function StoryEditorLayout({
 }: StoryEditorLayoutProps) {
   const [activeEditorTab, setActiveEditorTab] = useState<EditorTab>('cards')
 
+  // Store reference to the cardEditor's switchToGraph function
+  const switchToGraphRef = useRef<SwitchToGraphFn | null>(null)
+
   const switchToCharactersTab = useCallback(() => {
     setActiveEditorTab('characters')
   }, [])
 
-  const tabs: { id: EditorTab; label: string; icon: React.ReactNode }[] = [
+  // Called by cardEditor to register its switchToGraph function
+  const registerSwitchToGraph = useCallback((fn: SwitchToGraphFn) => {
+    switchToGraphRef.current = fn
+  }, [])
+
+  // Called by cardList when user clicks "Open Story Graph"
+  const handleOpenStoryGraph = useCallback(() => {
+    // First switch to cards tab if not there
+    setActiveEditorTab('cards')
+    // Then trigger the graph view switch inside cardEditor
+    // Use setTimeout to ensure tab switch completes first
+    setTimeout(() => {
+      switchToGraphRef.current?.()
+    }, 0)
+  }, [])
+
+  const tabs: TabItem<EditorTab>[] = [
     { id: 'story', label: 'Story', icon: <Palette className="w-4 h-4" /> },
     { id: 'cards', label: 'Cards', icon: <FileText className="w-4 h-4" /> },
     { id: 'characters', label: 'Characters', icon: <Users className="w-4 h-4" /> },
   ]
+
+  // Render card list - supports both ReactNode and render prop patterns
+  const renderCardList = () => {
+    if (typeof cardList === 'function') {
+      return cardList({ onOpenStoryGraph: handleOpenStoryGraph })
+    }
+    return cardList
+  }
 
   // Render character list - supports both ReactNode and render prop patterns
   const renderCharacterList = () => {
@@ -42,6 +71,14 @@ export default function StoryEditorLayout({
       return characterList({ onSwitchToCharacters: switchToCharactersTab })
     }
     return characterList
+  }
+
+  // Render card editor - supports both ReactNode and render prop patterns
+  const renderCardEditor = () => {
+    if (typeof cardEditor === 'function') {
+      return cardEditor({ registerSwitchToGraph })
+    }
+    return cardEditor
   }
 
   return (
@@ -52,10 +89,10 @@ export default function StoryEditorLayout({
       {/* Main Editor Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Cards, Characters, and History */}
-        <div className="shrink-0 w-64 hidden lg:flex lg:flex-col border-r-2 border-border">
+        <div className="shrink-0 w-[20%] hidden lg:flex lg:flex-col border-r-2 border-border">
           {/* Cards List - Top */}
-          <div className="flex-1 border-b border-border overflow-hidden min-h-0">
-            {cardList}
+          <div className="flex-2 border-b border-border overflow-hidden min-h-0">
+            {renderCardList()}
           </div>
 
           {/* Characters List - Middle */}
@@ -64,40 +101,27 @@ export default function StoryEditorLayout({
           </div>
 
           {/* History Panel - Bottom */}
-          <div className="shrink-0 max-h-80 overflow-hidden">
+          {/* <div className="shrink-0 max-h-80 overflow-hidden">
             <HistoryPanel
               collapsible
               defaultCollapsed={false}
               maxVisibleEntries={15}
               className="rounded-none border-0 shadow-none"
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Main Editor - Center Panel with tabs for Story/Cards/Characters */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Tab Switcher - Story / Cards / Characters */}
-          <div className="shrink-0 border-b-2 border-border bg-card">
-            <div className="flex">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveEditorTab(tab.id)}
-                  className={cn(
-                    'relative flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 -mb-[2px]',
-                    activeEditorTab === tab.id
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-transparent text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50'
-                  )}
-                  data-testid={`${tab.id}-tab-btn`}
-                >
-                  <span className="flex items-center gap-2">
-                    {tab.icon}
-                    {tab.label}
-                  </span>
-                </button>
-              ))}
-            </div>
+          <div className="shrink-0">
+            <TabSwitcher
+              tabs={tabs}
+              activeTab={activeEditorTab}
+              onTabChange={setActiveEditorTab}
+              variant="default"
+              size="md"
+            />
           </div>
 
           {/* Tab Content */}
@@ -105,11 +129,11 @@ export default function StoryEditorLayout({
             {activeEditorTab === 'story' && (
               <div className="h-full overflow-y-auto p-4 sm:p-6">
                 <div className="max-w-2xl mx-auto">
-                  <ArtStyleEditor />
+                  <StorySettings />
                 </div>
               </div>
             )}
-            {activeEditorTab === 'cards' && cardEditor}
+            {activeEditorTab === 'cards' && renderCardEditor()}
             {activeEditorTab === 'characters' && characterEditor}
           </div>
         </div>

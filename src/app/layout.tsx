@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 import { ToasterProvider } from "@/components/ui/ToasterProvider";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "next-themes";
 import { PerformanceProvider } from "@/contexts/PerformanceContext";
 import { ThemeLayerProvider, HalloweenOverlay } from "@/app/features/theme-layer";
 import { QueryProvider } from "@/lib/providers/QueryProvider";
@@ -26,7 +26,13 @@ export default function RootLayout({
       <body className={inter.className}>
         <ServiceWorkerRegistration />
         <QueryProvider>
-          <ThemeProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            themes={["light", "halloween"]}
+            enableSystem={false}
+            storageKey="theme-preference"
+          >
             <PerformanceProvider>
               <ThemeLayerProvider>
                   <AuthProvider>

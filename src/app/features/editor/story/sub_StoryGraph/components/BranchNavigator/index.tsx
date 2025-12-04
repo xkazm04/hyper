@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 import { useEditor } from '@/contexts/EditorContext'
 import { useBranchPath, PathNode } from '../../hooks/useBranchPath'
 import { BranchSelector } from './BranchSelector'

@@ -1,48 +1,21 @@
 /**
- * Prompt System Index
- * Central export point for all prompt definitions
+ * Shared Prompts Directory
+ *
+ * Central location for all AI prompt templates, system prompts, and prompt utilities.
+ * This module organizes prompts by domain for maintainability and reusability.
  */
 
-// Core types
-export {
-  type PromptOption,
-  type PromptColumn,
-  type PromptDimension,
-  type ArtStyle,
-  type PromptConfiguration,
-  type CharacterArchetype,
-  type CharacterPose,
-  type CharacterExpression,
-  MAX_PROMPT_LENGTH,
-  LLM_ENRICHMENT_TEMPLATE,
-} from './types';
+// Core types used across all prompt modules
+export * from './types'
 
-// Art styles (used across all sections)
-export {
-  ART_STYLES,
-  getArtStyleById,
-  getDefaultArtStyle,
-  LLM_ARTSTYLE_GUIDANCE,
-} from './artstyles';
+// Art styles configuration
+export * from './artstyles'
 
-// Card prompt data
-export {
-  PROMPT_COLUMNS,
-  SETTING_OPTIONS,
-  MOOD_OPTIONS,
-  STYLE_OPTIONS,
-  dimensionOptions,
-  getCompleteLLMInstructions,
-  type CardDimension,
-} from './cards';
+// Card/Scene prompts (settings, moods)
+export * from './cards'
 
-// Character prompt data
-export {
-  CHARACTER_PROMPT_COLUMNS,
-  ARCHETYPE_OPTIONS,
-  POSE_OPTIONS,
-  EXPRESSION_OPTIONS,
-  AVATAR_STYLES,
-  characterDimensionOptions,
-  type CharacterDimension,
-} from './characters';
+// Character generation prompts (archetypes, poses, expressions, system prompts)
+export * from './character'
+
+// Scene description prompts (visual description generation from narrative)
+export * from './scene'

@@ -8,7 +8,7 @@
  */
 
 import { StoryCard } from '@/lib/types'
-import OutlineNode from '../OutlineNode'
+import OutlineNode from './OutlineNode'
 
 interface OutlineItemProps {
   card: StoryCard
@@ -26,6 +26,7 @@ interface OutlineItemProps {
   onDragEnd: () => void
   onDrop: (e: React.DragEvent, dropIndex: number) => void
   isCommandHighlighted?: boolean
+  onDeleteCard?: (cardId: string) => void
 }
 
 export function OutlineItem({
@@ -44,6 +45,7 @@ export function OutlineItem({
   onDragEnd,
   onDrop,
   isCommandHighlighted = false,
+  onDeleteCard,
 }: OutlineItemProps) {
   return (
     <OutlineNode
@@ -62,6 +64,7 @@ export function OutlineItem({
       isDragOver={dragOverIndex === index && draggedIndex !== index}
       tabIndex={focusedIndex === index ? 0 : -1}
       isCommandHighlighted={isCommandHighlighted}
+      onDeleteCard={onDeleteCard}
     />
   )
 }

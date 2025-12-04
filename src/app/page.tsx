@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 
 export default function Home() {
   const [_user, setUser] = useState<unknown>(null)

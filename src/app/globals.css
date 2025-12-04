@@ -27,25 +27,30 @@ body {
   color: hsl(var(--foreground));
 }
 
-/* 
+/*
  * Theme transition styles
- * Optimized for performance using GPU-accelerated properties
+ * Performance-optimized: only key elements get transitions
+ * next-themes handles class application on <html> element
  */
-html.theme-transitioning,
-html.theme-transitioning *,
-html.theme-transitioning *::before,
-html.theme-transitioning *::after {
-  transition: background-color 200ms ease-in-out,
-              color 200ms ease-in-out,
-              border-color 200ms ease-in-out !important;
-  transition-delay: 0ms !important;
-  will-change: background-color, color, border-color;
+
+/* Targeted transitions for key theme-aware elements */
+body {
+  transition: background-color 200ms ease-in-out;
 }
 
-html:not(.theme-transitioning) * {
-  will-change: auto;
+/* Card and surface transitions */
+.bg-card,
+.bg-background,
+.bg-muted {
+  transition: background-color 200ms ease-in-out;
 }
 
+/* Border transitions for key interactive elements */
+.border-border {
+  transition: border-color 200ms ease-in-out;
+}
+
+/* Disable transitions when explicitly requested */
 html.no-transitions,
 html.no-transitions *,
 html.no-transitions *::before,
@@ -54,10 +59,11 @@ html.no-transitions *::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.theme-transitioning,
-  html.theme-transitioning *,
-  html.theme-transitioning *::before,
-  html.theme-transitioning *::after {
+  body,
+  .bg-card,
+  .bg-background,
+  .bg-muted,
+  .border-border {
     transition: none !important;
   }
 }

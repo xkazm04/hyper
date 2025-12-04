@@ -35,15 +35,24 @@ export interface NextStepSuggestion {
 
 export interface StoryArchitectPlan {
   cards: Array<{
+    id: string
     title: string
     content: string
     type: 'story' | 'ending'
+    level: number  // Which level in the tree (0 = root/current card)
   }>
   connections: Array<{
-    sourceCardIndex: number
-    targetCardIndex: number
+    sourceCardId: string
+    targetCardId: string
     label: string
   }>
+}
+
+// Configuration for Story Architect
+export interface StoryArchitectConfig {
+  levels: number  // 1-5 levels deep to generate
+  choicesPerCard: number  // 1-2 choices per card
+  startFromCurrentCard: boolean  // Branch from current card or create new root
 }
 
 export interface AICompanionState {

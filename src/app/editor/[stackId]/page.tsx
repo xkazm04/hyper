@@ -229,14 +229,21 @@ function EditorContent({ stackId }: { stackId: string }) {
             onPublish={handlePublish}
           />
         }
-        cardList={<CardList onAddCard={handleAddCard} />}
+        cardList={({ onOpenStoryGraph }) => (
+          <CardList
+            onAddCard={handleAddCard}
+            onOpenStoryGraph={onOpenStoryGraph}
+          />
+        )}
         characterList={({ onSwitchToCharacters }) => (
           <CharacterList
             onAddCharacter={handleAddCharacter}
             onSwitchToCharacters={onSwitchToCharacters}
           />
         )}
-        cardEditor={<StoryCardEditor />}
+        cardEditor={({ registerSwitchToGraph }) => (
+          <StoryCardEditor registerSwitchToGraph={registerSwitchToGraph} />
+        )}
         characterEditor={<CharacterEditor />}
         cardPreview={<CardPreview />}
       />

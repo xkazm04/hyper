@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState, memo } from 'react'
+import { useCallback, useEffect, useState, useMemo, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 import { useEditor } from '@/contexts/EditorContext'
 import { Button } from '@/components/ui/button'
-import { Pencil, Trash2, X, ImageIcon, Type, FileText, GitBranch, Settings } from 'lucide-react'
+import { Trash2, X, ImageIcon, Type, FileText, GitBranch } from 'lucide-react'
 import { LazyNodeImage } from './LazyNodeImage'
 
 export interface NodePreviewPanelProps {
@@ -15,9 +15,11 @@ export interface NodePreviewPanelProps {
   nodePosition: { x: number; y: number } | null
   /** @deprecated No longer used - kept for API compatibility */
   containerRect?: DOMRect | null
-  onEdit: (cardId: string) => void
+  /** @deprecated No longer used - kept for API compatibility */
+  onEdit?: (cardId: string) => void
   onDelete: (cardId: string) => void
   onClose: () => void
+  /** @deprecated No longer used - kept for API compatibility */
   onGoToSetup?: (cardId: string) => void
 }
 
@@ -28,17 +30,15 @@ export interface NodePreviewPanelProps {
  * - Title
  * - Image thumbnail
  * - Content snippet
- * - Quick edit and delete buttons
+ * - Delete button
  *
  * Rendered via React portal to avoid clipping issues.
  */
 export const NodePreviewPanel = memo(function NodePreviewPanel({
   nodeId,
   nodePosition,
-  onEdit,
   onDelete,
   onClose,
-  onGoToSetup,
 }: NodePreviewPanelProps) {
   const { theme } = useTheme()
   const { storyCards, choices } = useEditor()
@@ -52,22 +52,18 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
   // Get choice count for this card
   const cardChoices = choices.filter(c => c.storyCardId === nodeId)
 
+  // Check if other cards have choices pointing to this card (predecessors)
+  // If so, deletion should be prevented to maintain graph integrity
+  const predecessorCount = useMemo(() => {
+    return choices.filter(c => c.targetCardId === nodeId).length
+  }, [choices, nodeId])
+
+  const canDelete = predecessorCount === 0
+
   // Create portal container on mount
   useEffect(() => {
     setPortalContainer(document.body)
   }, [])
-
-  const handleEdit = useCallback(() => {
-    onEdit(nodeId)
-    onClose()
-  }, [nodeId, onEdit, onClose])
-
-  const handleGoToSetup = useCallback(() => {
-    if (onGoToSetup) {
-      onGoToSetup(nodeId)
-      onClose()
-    }
-  }, [nodeId, onGoToSetup, onClose])
 
   const handleDelete = useCallback(async () => {
     if (isDeleting) return
@@ -98,7 +94,7 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
   // Clamp to viewport bounds
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
-  const panelHeight = 320 // Approximate height
+  const panelHeight = 280 // Approximate height (reduced since we removed buttons)
 
   let finalX = screenX
   let finalY = screenY
@@ -131,16 +127,18 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
   const panelContent = (
     <div
       className={cn(
-        'fixed z-[1000] w-[280px] rounded-xl border-2 shadow-lg overflow-hidden',
+        'fixed w-[280px] rounded-xl border-2 shadow-2xl overflow-hidden',
         'animate-in fade-in-0 zoom-in-95 duration-150',
         isHalloween
-          ? 'bg-card/95 border-orange-500/30 backdrop-blur-sm'
-          : 'bg-card border-border backdrop-blur-sm'
+          ? 'bg-card border-orange-500/30 backdrop-blur-md'
+          : 'bg-card border-border backdrop-blur-md'
       )}
       style={{
         left: finalX,
         top: finalY,
         pointerEvents: 'auto',
+        zIndex: 99999, // Extremely high z-index to ensure always on top
+        isolation: 'isolate', // Create new stacking context
       }}
       data-testid="node-preview-panel"
     >
@@ -226,55 +224,25 @@ export const NodePreviewPanel = memo(function NodePreviewPanel({
           />
         </div>
 
-        {/* Action buttons - row 1: Edit & Setup */}
-        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+        {/* Delete button */}
+        <div className="pt-2 border-t border-border/50">
           <Button
             size="sm"
-            variant="outline"
+            variant="ghost"
             className={cn(
-              'flex-1 h-8',
-              isHalloween && 'border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50'
+              'w-full h-8 justify-start',
+              canDelete
+                ? 'text-red-500 hover:text-red-600 hover:bg-red-500/10'
+                : 'text-muted-foreground/50 line-through cursor-not-allowed hover:bg-transparent'
             )}
-            onClick={handleEdit}
-            data-testid="node-preview-edit-btn"
-          >
-            <Pencil className="w-3.5 h-3.5 mr-1.5" />
-            Edit
-          </Button>
-          {onGoToSetup && (
-            <Button
-              size="sm"
-              variant="outline"
-              className={cn(
-                'flex-1 h-8',
-                isHalloween && 'border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50'
-              )}
-              onClick={handleGoToSetup}
-              data-testid="node-preview-setup-btn"
-            >
-              <Settings className="w-3.5 h-3.5 mr-1.5" />
-              Setup
-            </Button>
-          )}
-        </div>
-
-        {/* Action buttons - row 2: Delete */}
-        <div className="flex items-center pt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className={cn(
-              'flex-1 h-8',
-              isHalloween
-                ? 'border-red-500/30 hover:bg-red-500/20 hover:border-red-500/50 text-red-400'
-                : 'border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 text-destructive'
-            )}
-            onClick={handleDelete}
-            disabled={isDeleting}
+            onClick={canDelete ? handleDelete : undefined}
+            disabled={isDeleting || !canDelete}
             data-testid="node-preview-delete-btn"
           >
-            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            <Trash2 className={cn('w-3.5 h-3.5 mr-1.5', !canDelete && 'opacity-50')} />
+            <span className={cn(!canDelete && 'opacity-50')}>
+              {isDeleting ? 'Deleting...' : canDelete ? 'Delete Card' : `Delete Card (${predecessorCount} link${predecessorCount > 1 ? 's' : ''})`}
+            </span>
           </Button>
         </div>
       </div>

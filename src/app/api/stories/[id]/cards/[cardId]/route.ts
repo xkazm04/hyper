@@ -141,7 +141,7 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json()
-    const { title, content, script, imageUrl, imagePrompt, message, speaker, speakerType, orderIndex, version } = body
+    const { title, content, script, imageUrl, imagePrompt, imageDescription, audioUrl, message, speaker, speakerType, orderIndex, version } = body
 
     // Update story card with version for optimistic concurrency control
     const storyCard = await storyService.updateStoryCard(cardId, {
@@ -150,6 +150,8 @@ export async function PATCH(
       script,
       imageUrl,
       imagePrompt,
+      imageDescription,
+      audioUrl,
       message,
       speaker,
       speakerType,

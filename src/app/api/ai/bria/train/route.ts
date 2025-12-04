@@ -118,9 +118,11 @@ export async function POST(request: NextRequest) {
       })
       console.log(`[Bria] Training started for character ${characterId}`)
     }).catch(async (error) => {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown training error'
       console.error(`[Bria] Training failed for character ${characterId}:`, error)
       await storyService.updateCharacter(characterId, {
         briaModelStatus: 'failed',
+        briaErrorMessage: errorMessage,
       })
     })
 

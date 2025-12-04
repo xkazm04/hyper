@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useAutoSave } from '../../lib/useAutoSave'
-import { updateCard, fetchCard, VersionConflictError } from '../../lib/cardApi'
+import { useAutoSave } from '../sub_StoryCardEditor/lib/useAutoSave'
+import { updateCard, fetchCard, VersionConflictError } from '../sub_StoryCardEditor/lib/cardApi'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
 import { useUndoRedoContext } from '@/app/features/editor/undo-redo'

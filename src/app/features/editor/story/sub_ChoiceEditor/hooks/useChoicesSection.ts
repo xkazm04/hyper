@@ -32,7 +32,7 @@ export interface UseChoicesSectionProps {
 export function useChoicesSection({
   cardId, storyStackId, availableCards, currentCard,
 }: UseChoicesSectionProps) {
-  const { addChoice, updateChoice: updateChoiceContext, deleteChoice: deleteChoiceContext } = useEditor()
+  const { addChoice, updateChoice: updateChoiceContext, deleteChoice: deleteChoiceContext, choices: contextChoices } = useEditor()
   const { success, error: showError } = useToast()
   const { recordAction } = useUndoRedoContext()
 
@@ -46,6 +46,18 @@ export function useChoicesSection({
   const [hasPredecessors, setHasPredecessors] = useState(false)
   const [suggestedChoices, setSuggestedChoices] = useState<GeneratedChoice[]>([])
 
+  // Sync with EditorContext choices when they change externally (e.g., Story Architect)
+  // This ensures the local state reflects choices added by other components
+  useEffect(() => {
+    const cardChoices = contextChoices.filter(c => c.storyCardId === cardId)
+    // Only update if there are new choices from context that we don't have locally
+    // Check by comparing IDs to avoid infinite loops
+    const localIds = new Set(choices.map(c => c.id))
+    const newFromContext = cardChoices.filter(c => !localIds.has(c.id))
+    if (newFromContext.length > 0) {
+      setChoices(cardChoices)
+    }
+  }, [contextChoices, cardId, choices])
 
   useEffect(() => {
     const loadChoices = async () => {
@@ -205,20 +217,26 @@ export function useChoicesSection({
   }, [storyStackId, cardId, updateChoiceContext, showError])
 
   const handleDeleteChoice = useCallback(async (choiceId: string) => {
-    if (!confirm('Delete this choice?')) return
+    // Immediate deletion without confirmation
     recordAction('DELETE_CHOICE', currentCard ? { id: currentCard.id, title: currentCard.title, imageUrl: currentCard.imageUrl } : undefined)
+
+    // Optimistically remove from UI first
+    const previousChoices = choices
+    setChoices(prev => prev.filter(c => c.id !== choiceId))
+    deleteChoiceContext(choiceId)
+
     setIsSaving(true)
     try {
       await deleteChoiceApi(storyStackId, cardId, choiceId)
-      setChoices(prev => prev.filter(c => c.id !== choiceId))
-      deleteChoiceContext(choiceId)
       success('Choice deleted')
     } catch {
+      // Revert optimistic update on error
+      setChoices(previousChoices)
       showError('Failed to delete choice')
     } finally {
       setIsSaving(false)
     }
-  }, [storyStackId, cardId, currentCard, recordAction, deleteChoiceContext, success, showError])
+  }, [storyStackId, cardId, currentCard, choices, recordAction, deleteChoiceContext, success, showError])
 
   const getTargetCardTitle = useCallback((targetCardId: string) => {
     const card = availableCards.find(c => c.id === targetCardId)

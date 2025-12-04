@@ -4,7 +4,7 @@ import { memo, useState, useCallback } from 'react'
 import { Panel } from 'reactflow'
 import { Link2, ArrowRight, Sparkles, X, CheckCircle2, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 import { ParentSuggestion } from '../hooks/useOrphanAttachment'
 import {
   Tooltip,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { ThemeRipple, useThemeRipple, RippleDirection } from './ThemeRipple'
@@ -14,11 +14,27 @@ import { ThemeRipple, useThemeRipple, RippleDirection } from './ThemeRipple'
  * - Accessible with keyboard navigation and screen reader support
  * - Minimum 44x44px touch target
  * - Circular ripple animation on theme change
+ * - Hydration-safe with mounted state check
  */
 export function ThemeToggle() {
   const { theme, toggleTheme, availableThemes } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   const { rippleProps, triggerRipple } = useThemeRipple()
+
+  // Hydration safety: wait for client-side mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Clear announcement after it's been read
+  // NOTE: This must be before any conditional returns to follow Rules of Hooks
+  useEffect(() => {
+    if (announcement) {
+      const timer = setTimeout(() => setAnnouncement(''), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [announcement])
 
   // Get current and next theme for accessibility labels
   const currentThemeIndex = availableThemes.findIndex(t => t.name === theme)
@@ -39,13 +55,28 @@ export function ThemeToggle() {
     setAnnouncement(`Switched to ${nextTheme.label} theme`)
   }
 
-  // Clear announcement after it's been read
-  useEffect(() => {
-    if (announcement) {
-      const timer = setTimeout(() => setAnnouncement(''), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [announcement])
+  // Prevent hydration mismatch by showing placeholder during SSR
+  if (!mounted) {
+    return (
+      <button
+        className={cn(
+          'relative inline-flex items-center justify-center',
+          'min-w-[44px] min-h-[44px] w-11 h-11',
+          'rounded-md',
+          'border-2 border-border',
+          'shadow-[2px_2px_0px_0px_hsl(var(--border))]',
+          'bg-background text-foreground'
+        )}
+        disabled
+        aria-label="Loading theme toggle"
+        type="button"
+      >
+        <span className="text-2xl leading-none select-none opacity-50" aria-hidden="true">
+          {availableThemes[0]?.icon ?? '☀️'}
+        </span>
+      </button>
+    )
+  }
 
   return (
     <>

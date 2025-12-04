@@ -107,7 +107,7 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json()
-    const { name, description, firstCardId } = body
+    const { name, description, firstCardId, cover_image_url } = body
 
     // Validate input
     if (name !== undefined && (typeof name !== 'string' || name.trim().length < 3)) {
@@ -122,6 +122,7 @@ export async function PATCH(
       name: name?.trim(),
       description: description?.trim(),
       firstCardId,
+      coverImageUrl: cover_image_url,
     })
 
     return NextResponse.json({

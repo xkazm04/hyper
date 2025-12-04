@@ -62,7 +62,7 @@ export function Modal({
             "w-full",
             sizeVariants[size],
             // Solid background using theme variables
-            "bg-card text-card-foreground",
+            "text-card-foreground",
             // Border and shadow
             "border-4 border-border",
             "shadow-[8px_8px_0px_0px_hsl(var(--border))]",
@@ -79,6 +79,7 @@ export function Modal({
             "focus:outline-none",
             className
           )}
+          style={{ backgroundColor: 'hsl(var(--card))' }}
           onClick={(e) => e.stopPropagation()}
         >
           {children}

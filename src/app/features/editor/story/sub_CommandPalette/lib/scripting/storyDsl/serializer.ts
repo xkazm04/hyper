@@ -262,6 +262,7 @@ export function serializeCardsToDsl(
     customArtStylePrompt: null,
     artStyleSource: 'preset',
     extractedStyleImageUrl: null,
+    coverImageUrl: null,
     previewTheme: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

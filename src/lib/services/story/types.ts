@@ -79,6 +79,7 @@ export function mapStoryStack(data: any): StoryStack {
     customArtStylePrompt: data.custom_art_style_prompt || null,
     artStyleSource: data.art_style_source || 'preset',
     extractedStyleImageUrl: data.extracted_style_image_url || null,
+    coverImageUrl: data.cover_image_url || null,
     previewTheme: data.preview_theme || null,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
@@ -99,6 +100,7 @@ export function mapStoryCard(data: any): StoryCard {
     imageUrl: data.image_url,
     imagePrompt: data.image_prompt,
     imageDescription: data.image_description || null,
+    audioUrl: data.audio_url || null,
     message: data.message || null,
     speaker: data.speaker || null,
     speakerType: data.speaker_type || null,
@@ -150,6 +152,7 @@ export function mapCharacter(data: any): Character {
     briaCaptionPrefix: data.bria_caption_prefix || null,
     briaTrainingStartedAt: data.bria_training_started_at || null,
     briaTrainingCompletedAt: data.bria_training_completed_at || null,
+    briaErrorMessage: data.bria_error_message || null,
   }
 }
 

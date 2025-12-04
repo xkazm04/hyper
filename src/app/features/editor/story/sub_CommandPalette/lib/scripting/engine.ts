@@ -456,9 +456,12 @@ async function handleCardDelete(
     throw new Error('No card selected')
   }
 
-  const confirmed = await context.services.confirm('Are you sure you want to delete this card?')
-  if (!confirmed) {
-    throw new Error('Deletion cancelled')
+  // Check if other cards have choices pointing to this card (predecessors)
+  // If so, deletion should be prevented to maintain graph integrity
+  const choices = context.editor.choices as Array<{ targetCardId: string }>
+  const predecessorCount = choices.filter(c => c.targetCardId === cardId).length
+  if (predecessorCount > 0) {
+    throw new Error(`Cannot delete: ${predecessorCount} card${predecessorCount > 1 ? 's' : ''} link to this card. Remove links first.`)
   }
 
   context.services.notify('Card deleted', 'success')

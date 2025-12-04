@@ -4,6 +4,7 @@ import { OutlineSidebar } from './sub_OutlineSidebar'
 
 interface CardListProps {
   onAddCard: () => void
+  onOpenStoryGraph?: () => void
 }
 
 /**
@@ -11,10 +12,11 @@ interface CardListProps {
  * This maintains backward compatibility with existing usages while
  * providing the enhanced hierarchical outline functionality.
  */
-export default function CardList({ onAddCard }: CardListProps) {
+export default function CardList({ onAddCard, onOpenStoryGraph }: CardListProps) {
   return (
     <OutlineSidebar
       onAddCard={onAddCard}
+      onOpenStoryGraph={onOpenStoryGraph}
     />
   )
 }

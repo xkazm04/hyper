@@ -15,7 +15,7 @@ interface PlayerContentProps {
  * PlayerContent - Main story card content with image, title, text, and choices
  *
  * Uses the shared CardDisplay component with 'player' variant
- * for the full-size player layout.
+ * for the full-size player layout. Audio autoplay is enabled by default.
  */
 export const PlayerContent = forwardRef<HTMLDivElement, PlayerContentProps>(
   function PlayerContent(
@@ -30,6 +30,7 @@ export const PlayerContent = forwardRef<HTMLDivElement, PlayerContentProps>(
         selectedChoiceIndex={selectedChoiceIndex}
         onChoiceClick={onChoiceClick}
         variant="player"
+        autoplayAudio={true}
         theme={{
           shadowStyle: 'soft',
           choiceBg: 'hsl(var(--card-choice-bg, var(--primary)))',

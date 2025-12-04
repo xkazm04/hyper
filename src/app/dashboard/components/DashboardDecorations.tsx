@@ -1,6 +1,6 @@
 'use client'
 
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 import Image from 'next/image'
 
 /**

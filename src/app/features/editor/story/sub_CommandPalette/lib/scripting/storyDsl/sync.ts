@@ -43,6 +43,7 @@ function createCardFromDsl(
     imageUrl: null,
     imagePrompt: dslCard.imagePrompt || null,
     imageDescription: dslCard.imageDescription || null,
+    audioUrl: null,
     message: dslCard.message || null,
     speaker: dslCard.speaker || null,
     speakerType: dslCard.speakerType || null,

@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
         status: character.briaModelStatus || 'none',
         modelId: null,
         captionPrefix: character.briaCaptionPrefix,
+        errorMessage: character.briaErrorMessage,
       })
     }
 
@@ -67,6 +68,7 @@ export async function GET(request: NextRequest) {
         modelId: character.briaModelId,
         captionPrefix: character.briaCaptionPrefix,
         completedAt: character.briaTrainingCompletedAt,
+        errorMessage: character.briaErrorMessage,
       })
     }
 

@@ -200,16 +200,16 @@ export function useGraphNodes({
       return
     }
 
-    // Compute minimal diff
-    const { toAdd, toUpdate, toRemove, unchanged } = computeNodeDiff(nodes, allNewNodes)
-
-    // Skip update if nothing changed
-    if (toAdd.length === 0 && toUpdate.length === 0 && toRemove.length === 0) {
-      return
-    }
-
-    // Apply minimal update using setNodes callback for efficiency
+    // Apply update using setNodes callback - diff is computed inside to avoid dependency on nodes
     setNodes(currentNodes => {
+      // Compute minimal diff inside callback to avoid stale closure
+      const { toAdd, toUpdate, toRemove, unchanged } = computeNodeDiff(currentNodes, allNewNodes)
+
+      // Skip update if nothing changed - return same reference
+      if (toAdd.length === 0 && toUpdate.length === 0 && toRemove.length === 0) {
+        return currentNodes
+      }
+
       // Create a map of current nodes for quick lookup
       const nodeMap = new Map(currentNodes.map(n => [n.id, n]))
 
@@ -241,20 +241,11 @@ export function useGraphNodes({
         }
       }
 
-      // Update unchanged nodes (preserve their positions from current state)
-      for (const node of unchanged) {
-        const existing = nodeMap.get(node.id)
-        if (existing) {
-          // Keep existing node reference if data hasn't changed
-          // This preserves user-dragged positions
-        }
-      }
-
       return Array.from(nodeMap.values())
     })
 
     prevNodeIdsRef.current = newNodeIds
-  }, [storyNodesWithPath, suggestionNodes, setNodes, nodes])
+  }, [storyNodesWithPath, suggestionNodes, setNodes])
 
   // Memoize suggestion edges
   const suggestionEdges = useMemo((): Edge[] => {
@@ -302,16 +293,16 @@ export function useGraphNodes({
     const allNewEdges = [...storyEdgesWithPath, ...suggestionEdges]
     const newEdgeIds = new Set(allNewEdges.map(e => e.id))
 
-    // Compute minimal diff for edges
-    const { toAdd, toUpdate, toRemove } = computeEdgeDiff(edges, allNewEdges)
-
-    // Skip update if nothing changed
-    if (toAdd.length === 0 && toUpdate.length === 0 && toRemove.length === 0) {
-      return
-    }
-
-    // Apply minimal update
+    // Apply update using setEdges callback - diff is computed inside to avoid dependency on edges
     setEdges(currentEdges => {
+      // Compute minimal diff inside callback to avoid stale closure
+      const { toAdd, toUpdate, toRemove } = computeEdgeDiff(currentEdges, allNewEdges)
+
+      // Skip update if nothing changed - return same reference
+      if (toAdd.length === 0 && toUpdate.length === 0 && toRemove.length === 0) {
+        return currentEdges
+      }
+
       const edgeMap = new Map(currentEdges.map(e => [e.id, e]))
 
       // Remove edges
@@ -333,7 +324,7 @@ export function useGraphNodes({
     })
 
     prevEdgeIdsRef.current = newEdgeIds
-  }, [storyEdgesWithPath, suggestionEdges, setEdges, edges])
+  }, [storyEdgesWithPath, suggestionEdges, setEdges])
 
   const nodeColor = useCallback((node: Node<StoryNodeData | SuggestedCardNodeData>, isHalloween: boolean) => {
     if (node.type === 'suggestedNode') return 'hsl(270, 70%, 60%)'

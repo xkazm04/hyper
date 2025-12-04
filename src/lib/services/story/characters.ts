@@ -111,6 +111,7 @@ export class CharactersService {
       if (input.briaCaptionPrefix !== undefined) updateData.bria_caption_prefix = input.briaCaptionPrefix
       if (input.briaTrainingStartedAt !== undefined) updateData.bria_training_started_at = input.briaTrainingStartedAt
       if (input.briaTrainingCompletedAt !== undefined) updateData.bria_training_completed_at = input.briaTrainingCompletedAt
+      if (input.briaErrorMessage !== undefined) updateData.bria_error_message = input.briaErrorMessage
 
       updateData.updated_at = new Date().toISOString()
 

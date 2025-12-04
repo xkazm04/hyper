@@ -18,8 +18,6 @@ import {
   Network,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAICompanion } from './useAICompanion'
 import type { AICompanionMode, ContentVariant, NextStepSuggestion } from './types'
@@ -70,12 +68,11 @@ export function AICompanion({ className, defaultExpanded = false }: AICompanionP
   const { mode, isGenerating, error, contentVariants, nextStepSuggestions } = state
 
   // Architect form state
-  const [architectDescription, setArchitectDescription] = useState('')
-  const [architectCardCount, setArchitectCardCount] = useState(5)
+  const [architectLevels, setArchitectLevels] = useState(2)
+  const [architectChoicesPerCard, setArchitectChoicesPerCard] = useState(2)
 
   const handleArchitectGenerate = () => {
-    generateStoryStructure(architectDescription, architectCardCount)
-    setArchitectDescription('')
+    generateStoryStructure(architectLevels, architectChoicesPerCard)
   }
 
   const ModeIcon = modeConfig[mode].icon
@@ -190,11 +187,12 @@ export function AICompanion({ className, defaultExpanded = false }: AICompanionP
             {/* === ARCHITECT MODE === */}
             {mode === 'architect' && (
               <ArchitectModeContent
-                description={architectDescription}
-                cardCount={architectCardCount}
+                levels={architectLevels}
+                choicesPerCard={architectChoicesPerCard}
                 isGenerating={isGenerating}
-                onDescriptionChange={setArchitectDescription}
-                onCardCountChange={setArchitectCardCount}
+                hasCurrentCard={hasCurrentCard}
+                onLevelsChange={setArchitectLevels}
+                onChoicesPerCardChange={setArchitectChoicesPerCard}
                 onGenerate={handleArchitectGenerate}
               />
             )}
@@ -461,63 +459,125 @@ function GenerateModeContent({
 }
 
 interface ArchitectModeContentProps {
-  description: string
-  cardCount: number
+  levels: number
+  choicesPerCard: number
   isGenerating: boolean
-  onDescriptionChange: (value: string) => void
-  onCardCountChange: (value: number) => void
+  hasCurrentCard: boolean
+  onLevelsChange: (value: number) => void
+  onChoicesPerCardChange: (value: number) => void
   onGenerate: () => void
 }
 
 function ArchitectModeContent({
-  description,
-  cardCount,
+  levels,
+  choicesPerCard,
   isGenerating,
-  onDescriptionChange,
-  onCardCountChange,
+  hasCurrentCard,
+  onLevelsChange,
+  onChoicesPerCardChange,
   onGenerate,
 }: ArchitectModeContentProps) {
+  // Calculate total cards: sum of choicesPerCard^level for each level
+  const calculateTotalCards = () => {
+    let total = 0
+    for (let i = 1; i <= levels; i++) {
+      total += Math.pow(choicesPerCard, i)
+    }
+    return total
+  }
+
+  const totalCards = calculateTotalCards()
+
+  if (!hasCurrentCard) {
+    return (
+      <div className="text-center py-4">
+        <Network className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+        <p className="text-xs text-muted-foreground">Select a card to branch from</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-muted-foreground">Story Idea / Direction</Label>
-        <Textarea
-          placeholder="Describe the plot twist, new location, or character arc..."
-          className="h-20 text-xs bg-background border-input placeholder:text-muted-foreground/50 resize-none"
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          disabled={isGenerating}
-        />
+      <p className="text-xs text-muted-foreground">
+        Generate a branching tree from the current card.
+      </p>
+
+      <div className="space-y-3">
+        {/* Levels selector */}
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold text-muted-foreground">Levels deep:</Label>
+          <div className="flex items-center gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => onLevelsChange(n)}
+                disabled={isGenerating}
+                className={cn(
+                  'relative w-7 h-7 rounded-full text-xs font-bold transition-all duration-200 ease-out',
+                  'border-2 flex items-center justify-center',
+                  levels === n
+                    ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-md shadow-primary/30'
+                    : 'bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-primary/50 hover:scale-105',
+                  isGenerating && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                {n}
+                {levels === n && (
+                  <span className="absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-20" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Choices per card selector */}
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold text-muted-foreground">Choices per scene:</Label>
+          <div className="flex items-center gap-1.5">
+            {[1, 2].map((n) => (
+              <button
+                key={n}
+                onClick={() => onChoicesPerCardChange(n)}
+                disabled={isGenerating}
+                className={cn(
+                  'relative w-7 h-7 rounded-full text-xs font-bold transition-all duration-200 ease-out',
+                  'border-2 flex items-center justify-center',
+                  choicesPerCard === n
+                    ? 'bg-primary text-primary-foreground border-primary scale-110 shadow-md shadow-primary/30'
+                    : 'bg-transparent border-border text-muted-foreground hover:text-foreground hover:border-primary/50 hover:scale-105',
+                  isGenerating && 'opacity-50 cursor-not-allowed'
+                )}
+              >
+                {n}
+                {choicesPerCard === n && (
+                  <span className="absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-20" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs font-semibold text-muted-foreground">Scenes to Generate</Label>
-        <Input
-          type="number"
-          min={1}
-          max={20}
-          value={cardCount}
-          onChange={(e) => onCardCountChange(parseInt(e.target.value) || 5)}
-          className="h-8 text-xs bg-background border-input"
-          disabled={isGenerating}
-        />
+      <div className="text-center text-xs text-muted-foreground py-2 border-t border-border/50">
+        Will generate <span className="font-semibold text-foreground">{totalCards}</span> new scenes
       </div>
 
       <Button
         onClick={onGenerate}
-        disabled={isGenerating || !description.trim()}
+        disabled={isGenerating}
         className="w-full"
         size="sm"
       >
         {isGenerating ? (
           <>
             <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-            Generating...
+            Generating Tree...
           </>
         ) : (
           <>
-            <Wand2 className="w-3.5 h-3.5 mr-2" />
-            Generate Scenes
+            <Network className="w-3.5 h-3.5 mr-2" />
+            Generate Tree
           </>
         )}
       </Button>

@@ -12,18 +12,24 @@ import {
   RefreshCw,
   Upload,
   FileText,
-  X
+  X,
+  Pencil,
+  BookOpen
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { useEditor } from '@/contexts/EditorContext'
-import { getEffectiveArtStylePrompt } from '../../../sub_Story/lib/artStyleService'
+import { getEffectiveArtStylePrompt } from '../sub_Story/lib/artStyleService'
 import { MOOD_OPTIONS, type PromptOption } from '@/app/prompts'
 import { deleteGenerations } from '@/lib/services/sketchCleanup'
 import { ImageAdjustmentPanel } from './ImageAdjustmentPanel'
 import { ImageInsertPanel } from './ImageInsertPanel'
-import { ImageDescriptionPanel } from './ImageDescriptionPanel'
+
+// Character limits for user input
+const MAX_PROMPT_LENGTH = 1500
+const MIN_PROMPT_LENGTH = 100
 
 // Fixed sizing for widescreen scenes: 1184x672
 const SCENE_WIDTH = 1184
@@ -45,10 +51,6 @@ interface SceneSketchPanelProps {
   imageUrl: string | null
   /** Current saved image prompt */
   imagePrompt: string | null
-  /** Image description for generation (separate from story content) */
-  imageDescription: string
-  /** Callback when image description changes */
-  onImageDescriptionChange: (description: string) => void
   /** Callback when image is selected */
   onImageSelect: (imageUrl: string, prompt: string) => void
   /** Callback when image is removed */
@@ -57,13 +59,16 @@ interface SceneSketchPanelProps {
   isSaving: boolean
 }
 
+type SketchMode = 'custom' | 'narrative'
+
 /**
  * SceneSketchPanel - Compact image generation panel
  *
+ * Two modes for sketching scenes:
+ * 1. Custom Prompt - User enters their own description (100-1500 chars)
+ * 2. From Narrative - Auto-generates description from story content and sketches directly
+ *
  * Features:
- * - Separate Image Description from Story Content
- * - Extract scene description from uploaded images into Image Description
- * - Generate image prompts from Image Description using LLM
  * - Art style from story stack (extracted/preset)
  * - Optional mood enhancement
  * - Phoenix 1.0 model always
@@ -73,8 +78,6 @@ export function SceneSketchPanel({
   storyContent,
   imageUrl,
   imagePrompt,
-  imageDescription,
-  onImageDescriptionChange,
   onImageSelect,
   onRemoveImage,
   isSaving,
@@ -83,6 +86,8 @@ export function SceneSketchPanel({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // State
+  const [sketchMode, setSketchMode] = useState<SketchMode>('custom')
+  const [customPrompt, setCustomPrompt] = useState('')
   const [selectedMood, setSelectedMood] = useState<PromptOption | null>(null)
   const [moodExpanded, setMoodExpanded] = useState(false)
   const [extractorExpanded, setExtractorExpanded] = useState(false)
@@ -100,12 +105,18 @@ export function SceneSketchPanel({
     return getEffectiveArtStylePrompt(storyStack)
   }, [storyStack])
 
-  // Check if we have valid image description for generation
-  const hasValidImageDescription = (imageDescription?.trim()?.length || 0) > 20
+  // Validation for custom prompt mode
+  const customPromptLength = customPrompt.trim().length
+  const isCustomPromptValid = customPromptLength >= MIN_PROMPT_LENGTH && customPromptLength <= MAX_PROMPT_LENGTH
+  const isCustomPromptTooShort = customPromptLength > 0 && customPromptLength < MIN_PROMPT_LENGTH
+  const isCustomPromptTooLong = customPromptLength > MAX_PROMPT_LENGTH
+
+  // Validation for narrative mode - needs story content
+  const hasStoryContent = (storyContent?.trim()?.length || 0) > 20
 
   /**
    * Handle file selection for content extraction
-   * Extracts scene description and populates Image Description (not Story Content)
+   * Extracts scene description and populates custom prompt
    */
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -144,9 +155,11 @@ export function SceneSketchPanel({
 
         const data = await response.json()
 
-        // Populate Image Description (not Story Content)
+        // Populate custom prompt with extracted description (truncate to max length)
         if (data.breakdown) {
-          onImageDescriptionChange(data.breakdown)
+          const truncated = data.breakdown.slice(0, MAX_PROMPT_LENGTH)
+          setCustomPrompt(truncated)
+          setSketchMode('custom')
         }
 
         setIsExtracting(false)
@@ -161,7 +174,7 @@ export function SceneSketchPanel({
 
   /**
    * Handle extracting from current scene image
-   * Populates Image Description (not Story Content)
+   * Populates custom prompt
    */
   const handleExtractFromCurrent = async () => {
     if (!imageUrl) return
@@ -184,9 +197,11 @@ export function SceneSketchPanel({
 
       const data = await response.json()
 
-      // Populate Image Description (not Story Content)
+      // Populate custom prompt with extracted description (truncate to max length)
       if (data.breakdown) {
-        onImageDescriptionChange(data.breakdown)
+        const truncated = data.breakdown.slice(0, MAX_PROMPT_LENGTH)
+        setCustomPrompt(truncated)
+        setSketchMode('custom')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to extract scene description')
@@ -219,10 +234,10 @@ export function SceneSketchPanel({
   }
 
   /**
-   * Generate image prompt from Image Description, then generate sketches
+   * Generate sketches from custom prompt (user input mode)
    */
-  const handleGenerateSketches = useCallback(async () => {
-    if (!imageDescription?.trim()) return
+  const handleSketchFromCustomPrompt = useCallback(async () => {
+    if (!isCustomPromptValid) return
 
     setIsGenerating(true)
     setError(null)
@@ -230,12 +245,12 @@ export function SceneSketchPanel({
     setSelectedSketchIndex(null)
 
     try {
-      // Step 1: Generate image prompt from Image Description (not Story Content)
+      // Step 1: Generate image prompt from custom description
       const promptResponse = await fetch('/api/ai/scene-prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contentDescription: imageDescription,
+          contentDescription: customPrompt.trim(),
           artStylePrompt: artStylePrompt || undefined,
           moodPrompt: selectedMood?.prompt || undefined
         })
@@ -314,7 +329,134 @@ export function SceneSketchPanel({
     } finally {
       setIsGenerating(false)
     }
-  }, [imageDescription, artStylePrompt, selectedMood])
+  }, [customPrompt, isCustomPromptValid, artStylePrompt, selectedMood])
+
+  /**
+   * Generate sketches directly from story narrative
+   * Creates image description in background with LLM, then sketches immediately
+   */
+  const handleSketchFromNarrative = useCallback(async () => {
+    if (!hasStoryContent) return
+
+    setIsGenerating(true)
+    setError(null)
+    setSketches([])
+    setSelectedSketchIndex(null)
+
+    try {
+      // Step 1: Generate image description from story content (max 1500 chars)
+      const descriptionResponse = await fetch('/api/ai/image-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storyContent,
+          artStylePrompt: artStylePrompt || undefined,
+          maxLength: MAX_PROMPT_LENGTH,
+        }),
+      })
+
+      if (!descriptionResponse.ok) {
+        const errorData = await descriptionResponse.json()
+        throw new Error(errorData.error || 'Failed to generate image description')
+      }
+
+      const descriptionData = await descriptionResponse.json()
+      let imageDescription = descriptionData.description || ''
+
+      // Truncate if still over limit
+      if (imageDescription.length > MAX_PROMPT_LENGTH) {
+        imageDescription = imageDescription.slice(0, MAX_PROMPT_LENGTH)
+      }
+
+      if (!imageDescription) {
+        throw new Error('No image description generated from narrative')
+      }
+
+      // Step 2: Generate image prompt from description
+      const promptResponse = await fetch('/api/ai/scene-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentDescription: imageDescription,
+          artStylePrompt: artStylePrompt || undefined,
+          moodPrompt: selectedMood?.prompt || undefined
+        })
+      })
+
+      if (!promptResponse.ok) {
+        const errorData = await promptResponse.json()
+        throw new Error(errorData.error || 'Failed to generate image prompt')
+      }
+
+      const promptData = await promptResponse.json()
+      const imagePromptText = promptData.prompt
+
+      if (!imagePromptText) {
+        throw new Error('No image prompt generated')
+      }
+
+      // Step 3: Generate variations of the image prompt
+      const variationResponse = await fetch('/api/ai/prompt-variations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: imagePromptText, count: 3 })
+      })
+
+      if (!variationResponse.ok) {
+        const errorData = await variationResponse.json()
+        throw new Error(errorData.error || 'Failed to generate prompt variations')
+      }
+
+      const variationData = await variationResponse.json()
+      const variations = variationData.variations || [{ variation: imagePromptText }]
+
+      // Step 4: Generate images with Phoenix 1.0 at widescreen size
+      const sketchPromises = variations.slice(0, 3).map(async (variation: { variation: string }, index: number) => {
+        const response = await fetch('/api/ai/generate-images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: variation.variation,
+            numImages: 1,
+            width: SCENE_WIDTH,
+            height: SCENE_HEIGHT,
+            provider: 'leonardo',
+            model: 'phoenix_1.0'
+          })
+        })
+
+        if (!response.ok) {
+          console.error(`Failed to generate sketch ${index + 1}`)
+          return null
+        }
+
+        const data = await response.json()
+        const image = data.images?.[0]
+        return image ? {
+          ...image,
+          prompt: variation.variation,
+          generationId: data.generationId,
+          imageId: image.id
+        } as GeneratedImage : null
+      })
+
+      const results = await Promise.all(sketchPromises)
+      const validSketches = results.filter((s): s is GeneratedImage => s !== null)
+
+      if (validSketches.length === 0) {
+        throw new Error('Failed to generate any sketches')
+      }
+
+      setSketches(validSketches)
+      const ids = validSketches.map(s => s.generationId).filter((id): id is string => !!id)
+      setGenerationIds(ids)
+    } catch (err) {
+      console.error('Error generating sketches from narrative:', err)
+      setError(err instanceof Error ? err.message : 'Failed to generate sketches')
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [storyContent, hasStoryContent, artStylePrompt, selectedMood])
 
   // Select and use a sketch
   const handleUseSketch = useCallback(() => {
@@ -402,119 +544,206 @@ export function SceneSketchPanel({
       {/* Sketch Generation Section */}
       {sketches.length === 0 && (
         <div className="space-y-3">
-          {/* Content Extractor Section */}
-          <div className="space-y-2">
+          {/* Mode Selector - Two buttons side by side */}
+          <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => setExtractorExpanded(!extractorExpanded)}
-              className="flex items-center justify-between w-full text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setSketchMode('custom')}
               disabled={isGenerating || isExtracting}
-            >
-              <span className="flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" />
-                <span>Extract from Image</span>
-              </span>
-              {extractorExpanded ? (
-                <ChevronUp className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
+              className={cn(
+                'flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all',
+                sketchMode === 'custom'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border'
               )}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Custom Prompt
             </button>
+            <button
+              onClick={() => setSketchMode('narrative')}
+              disabled={isGenerating || isExtracting}
+              className={cn(
+                'flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all',
+                sketchMode === 'narrative'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted/50 text-muted-foreground hover:bg-muted border border-border'
+              )}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              From Narrative
+            </button>
+          </div>
 
-            {extractorExpanded && (
-              <div className="space-y-2 p-2 bg-muted/50 rounded-lg border border-border">
-                {!uploadedImageUrl ? (
-                  <>
-                    <div
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      className={cn(
-                        'border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer',
-                        'hover:border-primary/50 hover:bg-primary/5',
-                        isExtracting && 'opacity-50 cursor-not-allowed'
-                      )}
-                      onClick={() => !isExtracting && fileInputRef.current?.click()}
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        disabled={isExtracting}
-                      />
-                      <div className="flex flex-col items-center gap-1.5">
-                        {isExtracting ? (
-                          <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
-                        ) : (
-                          <Upload className="w-5 h-5 text-muted-foreground" />
-                        )}
-                        <p className="text-[10px] text-muted-foreground">
-                          {isExtracting ? 'Extracting...' : 'Drop image or click to upload'}
-                        </p>
-                      </div>
-                    </div>
+          {/* Custom Prompt Mode */}
+          {sketchMode === 'custom' && (
+            <div className="space-y-3">
+              {/* Content Extractor Section */}
+              <div className="space-y-2">
+                <button
+                  onClick={() => setExtractorExpanded(!extractorExpanded)}
+                  className="flex items-center justify-between w-full text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  disabled={isGenerating || isExtracting}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Extract from Image</span>
+                  </span>
+                  {extractorExpanded ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </button>
 
-                    {/* Extract from current image */}
-                    {imageUrl && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleExtractFromCurrent}
-                        disabled={isExtracting}
-                        className="w-full h-7 text-[10px]"
-                      >
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Extract from Current Scene
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="relative rounded-lg border border-border overflow-hidden">
-                      <img
-                        src={uploadedImageUrl}
-                        alt="Source for extraction"
-                        className="w-full h-20 object-cover"
-                      />
-                      <button
-                        onClick={handleClearExtraction}
-                        className="absolute top-1 right-1 p-0.5 rounded-full bg-background/80 hover:bg-background"
-                        disabled={isExtracting}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                      {isExtracting && (
-                        <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                {extractorExpanded && (
+                  <div className="space-y-2 p-2 bg-muted/50 rounded-lg border border-border">
+                    {!uploadedImageUrl ? (
+                      <>
+                        <div
+                          onDrop={handleDrop}
+                          onDragOver={handleDragOver}
+                          className={cn(
+                            'border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer',
+                            'hover:border-primary/50 hover:bg-primary/5',
+                            isExtracting && 'opacity-50 cursor-not-allowed'
+                          )}
+                          onClick={() => !isExtracting && fileInputRef.current?.click()}
+                        >
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            disabled={isExtracting}
+                          />
+                          <div className="flex flex-col items-center gap-1.5">
+                            {isExtracting ? (
+                              <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                            ) : (
+                              <Upload className="w-5 h-5 text-muted-foreground" />
+                            )}
+                            <p className="text-[10px] text-muted-foreground">
+                              {isExtracting ? 'Extracting...' : 'Drop image or click to upload'}
+                            </p>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    {!isExtracting && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleClearExtraction}
-                        className="w-full h-6 text-[10px]"
-                      >
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        Try Another Image
-                      </Button>
+
+                        {/* Extract from current image */}
+                        {imageUrl && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleExtractFromCurrent}
+                            disabled={isExtracting}
+                            className="w-full h-7 text-[10px]"
+                          >
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            Extract from Current Scene
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="relative rounded-lg border border-border overflow-hidden">
+                          <img
+                            src={uploadedImageUrl}
+                            alt="Source for extraction"
+                            className="w-full h-20 object-cover"
+                          />
+                          <button
+                            onClick={handleClearExtraction}
+                            className="absolute top-1 right-1 p-0.5 rounded-full bg-background/80 hover:bg-background"
+                            disabled={isExtracting}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          {isExtracting && (
+                            <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                        {!isExtracting && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleClearExtraction}
+                            className="w-full h-6 text-[10px]"
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Try Another Image
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {/* Image Description Panel - Separate from Story Content */}
-          <ImageDescriptionPanel
-            description={imageDescription}
-            onDescriptionChange={onImageDescriptionChange}
-            storyContent={storyContent}
-            artStylePrompt={artStylePrompt}
-            disabled={isGenerating || isSaving}
-            isExtracting={isExtracting}
-          />
+              {/* Custom Prompt Input */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Scene Description
+                  </Label>
+                  <span className={cn(
+                    'text-[10px]',
+                    isCustomPromptTooLong ? 'text-destructive' :
+                    isCustomPromptTooShort ? 'text-amber-500' : 'text-muted-foreground'
+                  )}>
+                    {customPromptLength}/{MAX_PROMPT_LENGTH}
+                  </span>
+                </div>
+                <Textarea
+                  value={customPrompt}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    if (value.length <= MAX_PROMPT_LENGTH) {
+                      setCustomPrompt(value)
+                    }
+                  }}
+                  placeholder="Describe the visual scene you want to generate (100-1500 characters)..."
+                  disabled={isGenerating || isSaving || isExtracting}
+                  className={cn(
+                    'min-h-[100px] text-xs resize-none',
+                    isExtracting && 'opacity-50',
+                    isCustomPromptTooLong && 'border-destructive',
+                    isCustomPromptTooShort && 'border-amber-500'
+                  )}
+                />
+                {isCustomPromptTooShort && (
+                  <p className="text-[10px] text-amber-500">
+                    Minimum {MIN_PROMPT_LENGTH} characters required ({MIN_PROMPT_LENGTH - customPromptLength} more needed)
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Narrative Mode */}
+          {sketchMode === 'narrative' && (
+            <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <BookOpen className="w-4 h-4" />
+                <span className="font-medium">Auto-generate from story</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                This mode automatically creates an image description from your story content and sketches the scene directly.
+                No manual input needed.
+              </p>
+              {!hasStoryContent && (
+                <p className="text-[10px] text-amber-500">
+                  Add story content to use this mode
+                </p>
+              )}
+              {hasStoryContent && (
+                <p className="text-[10px] text-green-600">
+                  ✓ Story content ready ({storyContent.trim().length} chars)
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Mood Selector (Optional) */}
           <div className="space-y-2">
@@ -571,28 +800,35 @@ export function SceneSketchPanel({
             </div>
           )}
 
-          {/* Generate Button */}
+          {/* Single Sketch Button - behavior depends on selected mode */}
           <Button
-            onClick={handleGenerateSketches}
-            disabled={isGenerating || !hasValidImageDescription || isSaving || isExtracting}
+            onClick={sketchMode === 'custom' ? handleSketchFromCustomPrompt : handleSketchFromNarrative}
+            disabled={
+              isGenerating ||
+              isSaving ||
+              isExtracting ||
+              (sketchMode === 'custom' && !isCustomPromptValid) ||
+              (sketchMode === 'narrative' && !hasStoryContent)
+            }
             className="w-full h-9 text-xs border-2"
           >
             {isGenerating ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                Generating Sketches...
+                Sketching...
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                Sketch Scene
+                Sketch Image
               </>
             )}
           </Button>
 
-          {!hasValidImageDescription && (
+          {/* Helpful hints based on mode */}
+          {sketchMode === 'custom' && !isCustomPromptValid && customPromptLength === 0 && (
             <p className="text-[10px] text-muted-foreground text-center">
-              Add image description to generate scene images - extract from image or generate from story content
+              Describe your scene or extract from an image above
             </p>
           )}
         </div>

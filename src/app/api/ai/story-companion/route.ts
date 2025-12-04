@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getLLMCompletion } from '@/lib/services/llmClient'
 import { getAICompletion } from '@/lib/services/anthropic'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { StoryService } from '@/lib/services/story'
 import { v4 as uuidv4 } from 'uuid'
 
 /**
@@ -10,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid'
  * Actions:
  * - generate-variants: Generate 3 content variations for a card
  * - suggest-next-steps: Suggest what happens next in the story
- * - architect-story: Generate full story structure
+ * - architect-tree: Generate story tree with levels and choices, persist to DB
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,8 +24,8 @@ export async function POST(request: NextRequest) {
         return handleGenerateVariants(body)
       case 'suggest-next-steps':
         return handleSuggestNextSteps(body)
-      case 'architect-story':
-        return handleArchitectStory(body)
+      case 'architect-tree':
+        return handleArchitectTree(body)
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
@@ -225,87 +227,206 @@ Respond with JSON in this exact format:
 }
 
 /**
- * Generate full story structure (architect mode)
+ * Generate story tree with levels and choices per card, persist to database
+ *
+ * This generates a tree structure:
+ * - Level 0: Source card (already exists)
+ * - Level 1: choicesPerCard cards branching from source
+ * - Level 2: choicesPerCard cards branching from each Level 1 card
+ * - etc.
+ *
+ * Total new cards = sum of choicesPerCard^level for level 1 to levels
  */
-async function handleArchitectStory(body: any) {
-  const { description, cardCount, currentCards } = body
+async function handleArchitectTree(body: any) {
+  const { storyContext, sourceCardId, levels, choicesPerCard, storyStackId } = body
 
-  if (!description?.trim()) {
-    return NextResponse.json({ error: 'Description is required' }, { status: 400 })
+  if (!sourceCardId || !storyStackId) {
+    return NextResponse.json({ error: 'Source card and story stack ID are required' }, { status: 400 })
   }
 
-  const systemPrompt = `You are an expert interactive fiction writer and game designer.
-Your task is to generate a JSON structure for a story game based on the user's description.
+  if (!levels || levels < 1 || levels > 5) {
+    return NextResponse.json({ error: 'Levels must be between 1 and 5' }, { status: 400 })
+  }
 
-Output MUST be a valid JSON object with the following structure:
-{
-  "cards": [
-    {
-      "title": "Card Title",
-      "content": "Story content for this card...",
-      "type": "story" | "ending"
+  if (!choicesPerCard || choicesPerCard < 1 || choicesPerCard > 2) {
+    return NextResponse.json({ error: 'Choices per card must be 1 or 2' }, { status: 400 })
+  }
+
+  // Calculate total cards needed
+  let totalCards = 0
+  for (let i = 1; i <= levels; i++) {
+    totalCards += Math.pow(choicesPerCard, i)
+  }
+
+  // Find source card
+  const sourceCard = storyContext?.allCards?.find((c: any) => c.id === sourceCardId)
+  if (!sourceCard) {
+    return NextResponse.json({ error: 'Source card not found in context' }, { status: 400 })
+  }
+
+  // Build context prompt
+  let contextPrompt = buildStoryContextPrompt(storyContext)
+
+  // Build an example structure to help LLM understand the exact format
+  const exampleCards = []
+  const exampleConnections = []
+  let cardIndex = 1
+
+  // Generate example structure for first few cards
+  for (let level = 1; level <= Math.min(levels, 2); level++) {
+    const cardsAtLevel = Math.pow(choicesPerCard, level)
+    for (let i = 0; i < Math.min(cardsAtLevel, 2); i++) {
+      exampleCards.push({
+        tempId: `card_${cardIndex}`,
+        title: `Scene ${cardIndex} Title`,
+        content: `Scene ${cardIndex} story content (2-3 paragraphs)...`,
+        level: level
+      })
+      cardIndex++
     }
-  ],
-  "connections": [
-    {
-      "sourceCardIndex": 0,
-      "targetCardIndex": 1,
-      "label": "Choice text leading to target"
-    }
-  ]
-}
+  }
 
-Rules:
-1. Generate exactly ${cardCount} new cards.
-2. Ensure the story flows logically.
-3. 'connections' define the choices. sourceCardIndex and targetCardIndex refer to the index in the generated 'cards' array.
-4. Create branching paths where appropriate.
-5. Include at least one ending card.
-6. Use second-person present tense ("You see...", "You decide...").
-7. Do NOT include markdown formatting. Just the raw JSON string.`
+  // Example connections
+  exampleConnections.push({ sourceTempId: 'source', targetTempId: 'card_1', label: 'First choice' })
+  if (choicesPerCard > 1) {
+    exampleConnections.push({ sourceTempId: 'source', targetTempId: 'card_2', label: 'Second choice' })
+  }
 
-  const userPrompt = `Description: ${description}
-Number of cards to generate: ${cardCount}
-${currentCards?.length > 0 ? `Existing cards in story: ${currentCards.map((c: any) => c.title).join(', ')}` : ''}`
+  const systemPrompt = `You are an interactive fiction writer. Generate a story tree as a COMPLETE, VALID JSON object.
 
+CRITICAL REQUIREMENTS:
+1. Output ONLY a valid JSON object - no markdown, no text before or after
+2. The JSON must be complete and properly closed with }}
+3. Keep content concise (1-2 short paragraphs per card) to fit within limits
+
+STRUCTURE:
+- Generate exactly ${totalCards} new cards across ${levels} level(s)
+- Each non-leaf card has exactly ${choicesPerCard} choice(s)
+- Level ${levels} cards are endings (no outgoing choices)
+
+JSON SCHEMA (follow exactly):
+${JSON.stringify({ cards: exampleCards.slice(0, 2), connections: exampleConnections }, null, 2)}
+
+Card tempIds: "card_1", "card_2", ... "card_${totalCards}"
+Source card tempId: "source" (existing card you branch from)
+
+Writing: Second-person present tense, engaging but brief.`
+
+  const userPrompt = `Story: "${storyContext?.storyName || 'Untitled'}"
+${storyContext?.storyDescription ? `Description: ${storyContext.storyDescription.substring(0, 200)}` : ''}
+
+SOURCE CARD to branch from:
+- Title: "${sourceCard.title}"
+- Content: ${sourceCard.content ? sourceCard.content.substring(0, 300) : '(empty)'}
+
+Generate ${totalCards} cards (${levels} levels, ${choicesPerCard} choices per non-leaf).
+Output the complete JSON object only:`
+
+  // Use higher token limit to prevent truncation
   const response = await getAICompletion({
     prompt: userPrompt,
     systemPrompt,
-    maxTokens: 4000,
+    maxTokens: 8000,
   })
 
-  // Clean up response if it contains markdown code blocks
+  // Parse the JSON response with robust cleaning
   let cleanJson = response.trim()
-  if (cleanJson.startsWith('```json')) {
-    cleanJson = cleanJson.replace(/^```json/, '').replace(/```$/, '')
-  } else if (cleanJson.startsWith('```')) {
-    cleanJson = cleanJson.replace(/^```/, '').replace(/```$/, '')
+
+  // Remove markdown code blocks if present
+  cleanJson = cleanJson.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '')
+
+  // Try to find JSON object boundaries
+  const jsonStart = cleanJson.indexOf('{')
+  const jsonEnd = cleanJson.lastIndexOf('}')
+
+  if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
+    console.error('Failed to find JSON boundaries in response:', cleanJson.substring(0, 500))
+    return NextResponse.json({ error: 'AI response did not contain valid JSON. Please try again.' }, { status: 500 })
   }
 
-  const parsed = JSON.parse(cleanJson)
+  cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1)
 
-  // Post-process to add UUIDs
-  const now = new Date().toISOString()
-  const newCards = parsed.cards.map((card: any) => ({
-    ...card,
-    id: uuidv4(),
-    createdAt: now,
-    updatedAt: now,
-  }))
+  let parsed
+  try {
+    parsed = JSON.parse(cleanJson)
+  } catch (e) {
+    console.error('Failed to parse AI response:', cleanJson.substring(0, 1000))
+    // Try to provide more helpful error
+    const errorMsg = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({
+      error: `AI returned malformed JSON (${errorMsg}). Try generating fewer levels or try again.`
+    }, { status: 500 })
+  }
 
-  const newChoices = parsed.connections.map((conn: any) => ({
-    id: uuidv4(),
-    storyCardId: newCards[conn.sourceCardIndex].id,
-    targetCardId: newCards[conn.targetCardIndex].id,
-    label: conn.label,
-    createdAt: now,
-    updatedAt: now,
-  }))
+  if (!parsed.cards || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
+    return NextResponse.json({ error: 'AI did not generate any cards' }, { status: 500 })
+  }
+
+  // Authenticate and get service
+  const supabase = await createServerSupabaseClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const storyService = new StoryService(supabase)
+
+  // Verify story ownership
+  const storyStack = await storyService.getStoryStack(storyStackId)
+  if (!storyStack || storyStack.ownerId !== user.id) {
+    return NextResponse.json({ error: 'Story not found or unauthorized' }, { status: 403 })
+  }
+
+  // Get current card count for orderIndex
+  const existingCards = await storyService.getStoryCards(storyStackId)
+  let orderIndex = existingCards.length
+
+  // Map tempId to real UUID
+  const idMap: Record<string, string> = {
+    'source': sourceCardId,
+  }
+
+  // Create cards in database
+  const savedCards: any[] = []
+  for (const card of parsed.cards) {
+    const newCard = await storyService.createStoryCard({
+      storyStackId,
+      title: card.title || 'Untitled Scene',
+      content: card.content || '',
+      orderIndex: orderIndex++,
+    })
+    idMap[card.tempId] = newCard.id
+    savedCards.push(newCard)
+  }
+
+  // Create choices in database
+  const savedChoices: any[] = []
+  for (const conn of parsed.connections || []) {
+    const sourceId = idMap[conn.sourceTempId]
+    const targetId = idMap[conn.targetTempId]
+
+    if (!sourceId || !targetId) {
+      console.warn('Skipping invalid connection:', conn)
+      continue
+    }
+
+    // Get current choice count for this source card
+    const existingChoices = await storyService.getChoices(sourceId)
+
+    const newChoice = await storyService.createChoice({
+      storyCardId: sourceId,
+      targetCardId: targetId,
+      label: conn.label || 'Continue',
+      orderIndex: existingChoices.length,
+    })
+    savedChoices.push(newChoice)
+  }
 
   return NextResponse.json({
     success: true,
-    cards: newCards,
-    choices: newChoices,
+    cards: savedCards,
+    choices: savedChoices,
   })
 }
 

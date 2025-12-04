@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useState, useMemo } from 'react'
 import { NodeProps } from 'reactflow'
 import { cn } from '@/lib/utils'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme } from '@/hooks/useTheme'
 import { GitBranch } from 'lucide-react'
 import { useEditor } from '@/contexts/EditorContext'
 import {
@@ -32,6 +32,7 @@ export interface StoryNodeData {
   hasContent: boolean
   hasTitle: boolean
   hasChoices: boolean
+  hasAudio: boolean
   choiceCount: number
   characters: string[]
   depth: number
@@ -79,6 +80,7 @@ function arePropsEqual(
     prev.hasContent === next.hasContent &&
     prev.hasTitle === next.hasTitle &&
     prev.hasChoices === next.hasChoices &&
+    prev.hasAudio === next.hasAudio &&
     prev.choiceCount === next.choiceCount &&
     prev.depth === next.depth &&
     prev.isCollapsed === next.isCollapsed &&
@@ -130,7 +132,7 @@ const StoryNode = memo(function StoryNode({ data, selected, id }: NodeProps<Stor
 
   const {
     label, isFirst, isOrphaned, isDeadEnd, isSelected, hasImage,
-    hasContent, hasTitle, hasChoices, choiceCount, characters, depth,
+    hasContent, hasTitle, hasChoices, hasAudio, choiceCount, characters, depth,
     isCollapsed = false, hiddenDescendantCount = 0, isOnPath = false,
     onOrphanAttach, nodeWidth, nodeHeight, isSearchHighlighted = false,
   } = data
@@ -301,6 +303,7 @@ const StoryNode = memo(function StoryNode({ data, selected, id }: NodeProps<Stor
           hasContent={hasContent}
           hasImage={hasImage}
           hasChoices={hasChoices}
+          hasAudio={hasAudio}
           characters={characters}
           depth={depth}
           choiceCount={choiceCount}

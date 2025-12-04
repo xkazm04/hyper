@@ -1,6 +1,6 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { Type, FileText, ImageIcon, GitBranch } from 'lucide-react'
+import { Type, FileText, ImageIcon, GitBranch, Volume2 } from 'lucide-react'
 import {
   TooltipContent,
 } from '@/components/ui/tooltip'
@@ -17,6 +17,7 @@ export interface NodeTooltipProps {
   hasContent: boolean
   hasImage: boolean
   hasChoices: boolean
+  hasAudio: boolean
   characters: string[]
   depth: number
   choiceCount: number
@@ -33,6 +34,7 @@ export function NodeTooltip({
   hasContent,
   hasImage,
   hasChoices,
+  hasAudio,
   characters,
   depth,
   choiceCount,
@@ -76,6 +78,7 @@ export function NodeTooltip({
           <CompletionItem done={hasTitle} label="Title" icon={Type} />
           <CompletionItem done={hasContent} label="Content" icon={FileText} />
           <CompletionItem done={hasImage} label="Image" icon={ImageIcon} />
+          <CompletionItem done={hasAudio} label="Audio" icon={Volume2} />
           <CompletionItem done={hasChoices} label="Choices" icon={GitBranch} />
         </div>
 

@@ -10,6 +10,7 @@ export enum LeonardoModel {
   FLUX_SPEED = 'flux_speed',
   FLUX_DEV = 'flux_dev',
   FLUX_2 = 'flux_2', // Uses API v2
+  LUCIDE_ORIGIN = 'lucide_origin', // For cover images
 }
 
 // Leonardo Presets
@@ -35,7 +36,16 @@ export const MODEL_IDS: Record<LeonardoModel, string> = {
   [LeonardoModel.FLUX_SPEED]: '1dd50843-d653-4516-a8e3-f0238ee453ff',
   [LeonardoModel.FLUX_DEV]: 'b2614463-296c-462a-9586-aafdb8f00e36',
   [LeonardoModel.FLUX_2]: 'flux-pro-2.0', // API v2 model name
+  [LeonardoModel.LUCIDE_ORIGIN]: '7b592283-e8a7-4c5a-9ba6-d18c31f258b9', // For cover images
 }
+
+// Default style UUIDs for specific models
+export const MODEL_DEFAULT_STYLES: Partial<Record<LeonardoModel, string>> = {
+  [LeonardoModel.LUCIDE_ORIGIN]: '111dc692-d470-4eec-b791-3475abac4c46', // Dynamic style
+}
+
+// Models that require alchemy to be disabled
+const ALCHEMY_DISABLED_MODELS = new Set([LeonardoModel.LUCIDE_ORIGIN])
 
 // Preset IDs mapping
 export const PRESET_IDS: Record<LeonardoPreset, string> = {
@@ -192,16 +202,33 @@ export class LeonardoService {
     )
 
     const modelId = this.resolveModelId(request.model)
-    const presetStyle = this.resolvePresetStyle(request.presetStyle)
+
+    // Check if this model requires alchemy to be disabled
+    const modelEnum = request.model
+      ? Object.entries(LeonardoModel).find(([, v]) => v === request.model)?.[1] as LeonardoModel | undefined
+      : undefined
+    const alchemyDisabled = modelEnum && ALCHEMY_DISABLED_MODELS.has(modelEnum)
+
+    // Get preset style - check for model-specific default first
+    let presetStyle = this.resolvePresetStyle(request.presetStyle)
+
+    // If no preset specified and model has a default style, use it
+    if (!request.presetStyle && modelEnum && MODEL_DEFAULT_STYLES[modelEnum]) {
+      presetStyle = MODEL_DEFAULT_STYLES[modelEnum]
+    }
 
     const payload: Record<string, unknown> = {
-      alchemy: true,
+      alchemy: !alchemyDisabled,
       height,
       width,
       modelId,
       prompt: request.prompt,
       num_images: Math.min(Math.max(request.numImages || 1, 1), 8),
-      contrast: 3.5,
+    }
+
+    // Only add contrast if alchemy is enabled
+    if (!alchemyDisabled) {
+      payload.contrast = 3.5
     }
 
     if (presetStyle) {

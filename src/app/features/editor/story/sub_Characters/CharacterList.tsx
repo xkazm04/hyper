@@ -57,7 +57,7 @@ export default function CharacterList({ onAddCharacter, onSwitchToCharacters }: 
           </div>
         ) : (
           <div className="space-y-1">
-            {characters
+            {[...characters]
               .sort((a, b) => a.orderIndex - b.orderIndex)
               .map((character, index) => (
                 <button

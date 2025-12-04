@@ -25,6 +25,7 @@ export interface Character {
   briaCaptionPrefix: string | null
   briaTrainingStartedAt: string | null
   briaTrainingCompletedAt: string | null
+  briaErrorMessage: string | null
 }
 
 // Character archetype options
@@ -77,4 +78,5 @@ export interface UpdateCharacterInput {
   briaCaptionPrefix?: string | null
   briaTrainingStartedAt?: string | null
   briaTrainingCompletedAt?: string | null
+  briaErrorMessage?: string | null
 }

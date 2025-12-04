@@ -9,19 +9,20 @@ export type { GraphStats }
 // Simplified props - AI Companion is now in the bottom panel (AICompanionBottomPanel)
 export interface GraphControlsProps {
   stats: GraphStats
+  isHalloween?: boolean
 }
 
 /**
- * GraphControls - The control panel for the story graph
- * Contains stats overview only
+ * GraphControls - Compact stats bar for the story graph
+ * Positioned at top-center, above the search bar
  *
  * Note: Performance toggle, export/import, and validation controls
  * have been consolidated into the GraphToolsSidebar component
  */
-export function GraphControls({ stats }: GraphControlsProps) {
+export function GraphControls({ stats, isHalloween = false }: GraphControlsProps) {
   return (
-    <Panel position="top-right" className="flex flex-col gap-3 items-end max-w-[280px]">
-      <StatsOverview stats={stats} />
+    <Panel position="top-center" className="flex flex-col items-center">
+      <StatsOverview stats={stats} isHalloween={isHalloween} />
     </Panel>
   )
 }

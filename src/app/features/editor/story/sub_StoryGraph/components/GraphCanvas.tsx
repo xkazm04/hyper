@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils'
 import { SuggestedCard } from '@/lib/types/ai-canvas'
 import { DefaultBackground, useGraphNodes } from './sub_GraphCanvas'
 import { useEditor } from '@/contexts/EditorContext'
-import { playDropChime, warmupAudio } from '../lib/dropChime'
 import { usePerformanceOptional } from '@/contexts/PerformanceContext'
 import { useClusterState } from '../hooks/useClusterState'
 import { throttleToFrame, viewportsEqual } from '../lib/viewportThrottle'
@@ -42,12 +41,12 @@ export interface GraphCanvasProps {
   pathNodeIds?: Set<string>
   pathEdgeIds?: Set<string>
   onOrphanAttachClick?: (nodeId: string) => void
-  onEditCard?: (cardId: string) => void
   onDeleteCard?: (cardId: string) => void
-  onGoToSetup?: (cardId: string) => void
   children?: React.ReactNode
   /** Enable cluster grouping by depth. Defaults to true */
   enableClusters?: boolean
+  /** Stats for the compact stats bar */
+  stats?: import('./sub_GraphControls').GraphStats
 }
 
 // Hover state for node preview
@@ -59,8 +58,8 @@ interface NodeHoverState {
 export function GraphCanvas({
   initialNodes, initialEdges, suggestions, hoveredSuggestionId, acceptSuggestion,
   declineSuggestion, setHoveredSuggestionId, onNodeClick, currentCardId, isHalloween,
-  pathNodeIds, pathEdgeIds, onOrphanAttachClick, onEditCard, onDeleteCard, onGoToSetup, children,
-  enableClusters = true,
+  pathNodeIds, pathEdgeIds, onOrphanAttachClick, onDeleteCard, children,
+  enableClusters = true, stats,
 }: GraphCanvasProps) {
   const graphContainerRef = useRef<HTMLDivElement>(null)
   const [particleEffects, setParticleEffects] = useState<Array<{ id: string; x: number; y: number }>>([])
@@ -141,13 +140,12 @@ export function GraphCanvas({
     setConfettiEffects(prev => prev.filter(c => c.id !== id))
   }, [])
 
-  // Handle node drag start - warm up audio
+  // Handle node drag start
   const handleNodeDragStart = useCallback(() => {
     isDraggingRef.current = true
-    warmupAudio()
   }, [])
 
-  // Handle node drag stop - trigger confetti and chime
+  // Handle node drag stop - trigger confetti
   const handleNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
     if (!isDraggingRef.current) return
     isDraggingRef.current = false
@@ -176,10 +174,7 @@ export function GraphCanvas({
         nodeWidth: rect.width,
       },
     ])
-
-    // Play chime sound
-    playDropChime({ isHalloween })
-  }, [isHalloween])
+  }, [])
 
   // Clear all hover timeouts
   const clearHoverTimeouts = useCallback(() => {
@@ -231,17 +226,6 @@ export function GraphCanvas({
     setHoverState({ nodeId: null, screenPosition: null })
   }, [clearHoverTimeouts])
 
-  // Handle edit action from preview panel
-  const handleEditFromPreview = useCallback((cardId: string) => {
-    if (onEditCard) {
-      onEditCard(cardId)
-    } else {
-      // Default: select the card for editing
-      setCurrentCardId(cardId)
-    }
-    closePreview()
-  }, [onEditCard, setCurrentCardId, closePreview])
-
   // Handle delete action from preview panel
   const handleDeleteFromPreview = useCallback(async (cardId: string) => {
     if (onDeleteCard) {
@@ -261,17 +245,6 @@ export function GraphCanvas({
     }
     closePreview()
   }, [onDeleteCard, storyStack, deleteCard, closePreview])
-
-  // Handle go to setup action from preview panel
-  const handleGoToSetupFromPreview = useCallback((cardId: string) => {
-    if (onGoToSetup) {
-      onGoToSetup(cardId)
-    } else {
-      // Default: select the card (same as edit for now)
-      setCurrentCardId(cardId)
-    }
-    closePreview()
-  }, [onGoToSetup, setCurrentCardId, closePreview])
 
   const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     onNodeClick(event, node)
@@ -356,11 +329,12 @@ export function GraphCanvas({
         <Background variant={BackgroundVariant.Dots} color="hsl(var(--muted-foreground))" gap={24} size={1} className="opacity-30" />
         <Controls className="bg-card! border-2! border-border! rounded-lg! shadow-lg! [&>button]:bg-card! [&>button]:border-border! [&>button]:text-foreground! [&>button:hover]:bg-muted!" showInteractive={false} data-testid="story-graph-controls" />
         <MiniMap nodeColor={getNodeColor} nodeStrokeWidth={3} maskColor="hsl(var(--background) / 0.8)" className="bg-card/95! border-2! border-border! rounded-lg! shadow-lg!" style={{ width: 180, height: 120 }} pannable zoomable data-testid="story-graph-minimap" />
-        {/* Node Search Bar */}
+        {/* Stats bar and search bar */}
         <NodeSearchWrapper
           nodes={initialNodes}
           isHalloween={isHalloween}
           onHighlightChange={handleHighlightChange}
+          stats={stats}
         />
         {children}
       </ReactFlow>
@@ -370,11 +344,8 @@ export function GraphCanvas({
         <NodePreviewPanel
           nodeId={hoverState.nodeId}
           nodePosition={hoverState.screenPosition}
-          containerRect={containerRect}
-          onEdit={handleEditFromPreview}
           onDelete={handleDeleteFromPreview}
           onClose={closePreview}
-          onGoToSetup={handleGoToSetupFromPreview}
         />
       )}
     </div>

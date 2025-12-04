@@ -28,6 +28,7 @@ interface OutlineTreeProps {
   onDragEnd: () => void
   onDrop: (e: React.DragEvent, dropIndex: number) => void
   highlightedCardId?: string | null
+  onDeleteCard?: (cardId: string) => void
 }
 
 export const OutlineTree = forwardRef<HTMLDivElement, OutlineTreeProps>(
@@ -48,6 +49,7 @@ export const OutlineTree = forwardRef<HTMLDivElement, OutlineTreeProps>(
       onDragEnd,
       onDrop,
       highlightedCardId,
+      onDeleteCard,
     },
     ref
   ) {
@@ -111,6 +113,7 @@ export const OutlineTree = forwardRef<HTMLDivElement, OutlineTreeProps>(
                 onDragEnd={onDragEnd}
                 onDrop={onDrop}
                 isCommandHighlighted={highlightedCardId === card.id}
+                onDeleteCard={onDeleteCard}
               />
             )
           })}

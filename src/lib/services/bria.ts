@@ -114,10 +114,15 @@ export class BriaService {
    * Create a new project for character training
    * API Reference: https://docs.bria.ai/tailored-generation/training-endpoints/create-project
    */
-  async createProject(name: string, medium: 'illustration' | 'photography' = 'illustration'): Promise<string> {
+  async createProject(
+    name: string,
+    ipName: string,
+    medium: 'illustration' | 'photography' = 'illustration'
+  ): Promise<string> {
     const result = await this.request<BriaProject>('/tailored-gen/projects', 'POST', {
       project_name: name,
       ip_type: 'defined_character',
+      ip_name: ipName,
       ip_medium: medium,
     })
     return result.id
@@ -130,7 +135,7 @@ export class BriaService {
   async createDataset(projectId: string, name: string): Promise<string> {
     const result = await this.request<BriaDataset>('/tailored-gen/datasets', 'POST', {
       project_id: projectId,
-      dataset_name: name,
+      name: name,
     })
     return result.id
   }
@@ -372,7 +377,7 @@ export class BriaTrainingOrchestrator {
     // Step 2: Create project
     const projectName = `Character_${characterName}_${characterId.slice(0, 8)}`
     console.log(`[Bria] Creating project: ${projectName}`)
-    const projectId = await this.bria.createProject(projectName)
+    const projectId = await this.bria.createProject(projectName, characterName)
 
     // Step 3: Create dataset
     const datasetName = `${characterName}_training`

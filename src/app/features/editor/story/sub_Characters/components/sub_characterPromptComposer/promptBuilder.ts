@@ -7,7 +7,8 @@ import {
   CharacterDimension,
   CharacterPromptOption,
   MAX_PROMPT_LENGTH,
-} from './promptVariables';
+  AVATAR_STYLE_PROMPTS,
+} from '@/app/prompts/character'
 
 /**
  * Create a custom prompt option for user input
@@ -130,29 +131,18 @@ export function composeAvatarPrompt(
   style: string = 'pixel',
   storyArtStyle?: string
 ): string {
-  const MAX_AVATAR_PROMPT_LENGTH = 1500;
-  
-  const stylePrompts: Record<string, string> = {
-    pixel: `16-bit pixel art character face portrait. Square 1:1 frame, head and shoulders only. Limited color palette, clean pixelated edges. Classic SNES/GBA aesthetic.`,
-    chibi: `Chibi style character face portrait. Square 1:1 frame, large expressive head. Exaggerated cute proportions, big eyes. Soft rounded features, bright colors.`,
-    portrait: `Detailed character face portrait bust. Square 1:1 frame, head and upper shoulders. Painterly illustrated style. Focus on face, eyes, and expression.`,
-    rpg: `Modern RPG videogame character portrait. Square 1:1 frame, head and shoulders. High-quality digital art like Dragon Age or Baldur's Gate 3. Dramatic lighting, detailed facial features.`,
-    cartoon: `Stylized tactical cartoon character face portrait. Square 1:1 frame, head and shoulders. Thick clean outlines, smooth cel-shaded coloring. Muted tactical colors, clean flat tones. Serious stylized proportions.`,
-    handdrawn: `Elegantly detailed artisan sketch character face portrait. Square 1:1 frame, head and shoulders. Delicate pencil gradients with confident ink strokes. Layered cross-hatching, nuanced shading, subtle grainy paper texture. Traditional pencil-and-ink artistry.`,
-    gothic: `Grimdark baroque digital painting character face portrait. Square 1:1 frame, head and shoulders. Heavy brushwork, dramatic chiaroscuro lighting. Warm candlelight glow, oppressive dark atmosphere. Gothic ornate detailing.`,
-    story: `Character face portrait in the story's art style. Square 1:1 frame, head and shoulders. Consistent with the story's visual aesthetic.`,
-  };
+  const MAX_AVATAR_PROMPT_LENGTH = 1500
 
-  const parts: string[] = [];
-  const isStoryStyle = style === 'story';
-  
+  const parts: string[] = []
+  const isStoryStyle = style === 'story'
+
   // For "story" style, use the actual story art style directly as the primary rendering style
   if (isStoryStyle && storyArtStyle) {
-    parts.push(storyArtStyle);
-    parts.push(`Adapt for character face portrait. Square 1:1 frame, head and shoulders.`);
+    parts.push(storyArtStyle)
+    parts.push(`Adapt for character face portrait. Square 1:1 frame, head and shoulders.`)
   } else {
-    // Add style-specific prompt
-    parts.push(stylePrompts[style] || stylePrompts.rpg);
+    // Add style-specific prompt from shared templates
+    parts.push(AVATAR_STYLE_PROMPTS[style] || AVATAR_STYLE_PROMPTS.rpg)
     
     // Add story art style as additional rendering technique (for non-story styles)
     if (storyArtStyle) {

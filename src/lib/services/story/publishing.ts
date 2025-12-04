@@ -31,7 +31,8 @@ export class PublishingService {
         throw new DatabaseError('Cannot publish story with no cards')
       }
 
-      const slug = await this.generateSlug(stack.name)
+      // Use the story ID directly as slug for guaranteed uniqueness
+      const slug = id
 
       const updateData: any = {
         is_published: true,

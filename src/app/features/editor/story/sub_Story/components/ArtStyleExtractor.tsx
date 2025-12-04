@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Sparkles, RefreshCw, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { ImageUploadArea } from './shared'
 
@@ -30,6 +29,7 @@ export function ArtStyleExtractor({
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [isHalloweenTheme, setIsHalloweenTheme] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Check for halloween theme class on document
   useEffect(() => {
@@ -44,6 +44,15 @@ export function ArtStyleExtractor({
 
     return () => observer.disconnect()
   }, [])
+
+  // Auto-resize textarea to show all content
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = `${Math.max(150, textarea.scrollHeight)}px`
+    }
+  }, [customPrompt])
 
   const handleCopyToClipboard = async () => {
     if (!customPrompt) return
@@ -192,12 +201,18 @@ export function ArtStyleExtractor({
               aria-hidden="true"
             />
           )}
-          <Textarea
+          <textarea
+            ref={textareaRef}
             value={customPrompt || ''}
             onChange={(e) => onCustomPromptChange(e.target.value)}
             placeholder="Describe the visual art style you want for all images in this story..."
             className={cn(
-              'min-h-[270px] text-xs resize-none relative z-10',
+              'w-full min-h-[150px] px-3 py-2 text-xs rounded-md relative z-10',
+              'bg-background border border-input',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              'placeholder:text-muted-foreground',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              'resize-none overflow-hidden',
               isHalloweenTheme && 'bg-transparent'
             )}
             disabled={disabled || isExtracting}

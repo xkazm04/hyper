@@ -6,6 +6,7 @@ import { ArrowLeft, Upload, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { SyncStatus } from '@/components/ui/SyncStatus'
+import { YouTubeRadio } from '@/components/YouTubeRadio'
 
 interface StoryEditorToolbarProps {
   onPublish: () => void
@@ -39,12 +40,6 @@ export default function StoryEditorToolbar({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h1 className="text-sm sm:text-lg font-bold tracking-tight truncate">{storyStack.name}</h1>
-            {storyStack.isPublished && (
-              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold bg-[hsl(var(--green-100))] text-[hsl(var(--green-800))] border border-[hsl(var(--green-500))] rounded shrink-0">
-                <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                <span className="hidden sm:inline">Published</span>
-              </span>
-            )}
           </div>
           {storyStack.description && (
             <p className="text-xs text-muted-foreground truncate hidden sm:block" title={storyStack.description}>
@@ -60,6 +55,8 @@ export default function StoryEditorToolbar({
           <span className="text-xs text-muted-foreground mr-1 sm:mr-2 hidden sm:inline">Saving...</span>
         )}
 
+        <YouTubeRadio />
+        <div className="hidden sm:block w-px h-6 bg-border" />
         <SyncStatus />
         <ThemeToggle />
 

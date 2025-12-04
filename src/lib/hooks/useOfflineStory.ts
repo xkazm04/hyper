@@ -42,7 +42,7 @@ export function useStoryStacks(userId?: string) {
   return useQuery({
     queryKey: storyKeys.list(userId || 'all'),
     queryFn: () => sync.fetchStacksWithSync(userId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 1000, // 1 minute (reduced from 5 min)
   })
 }
 

@@ -223,19 +223,22 @@ function StandaloneChoiceEditor({
   }
 
   const handleDeleteChoice = async (choiceId: string) => {
-    if (!confirm('Are you sure you want to delete this choice?')) return
+    // Immediate deletion without confirmation
     setIsSaving(true)
+    // Optimistically remove from UI first
+    setChoices(choices.filter(c => c.id !== choiceId))
     try {
       const response = await fetch(
         `/api/stories/${storyStackId}/cards/${currentCardId}/choices/${choiceId}`,
         { method: 'DELETE' }
       )
       if (!response.ok) throw new Error('Failed to delete choice')
-      setChoices(choices.filter(c => c.id !== choiceId))
       success('Choice deleted')
     } catch (error) {
       console.error('Error deleting choice:', error)
       showError('Failed to delete choice')
+      // Revert optimistic update on error
+      setChoices(choices)
     } finally {
       setIsSaving(false)
     }

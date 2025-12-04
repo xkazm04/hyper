@@ -22,8 +22,19 @@ export function StoryStackCard({ story, onDelete, index }: StoryStackCardProps) 
       whileHover={{ scale: 1.02, transition: { duration: 0.15 } }}
       whileTap={{ scale: 0.98, transition: { duration: 0.1 } }}
     >
-      <Card className="border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-150 relative group bg-card h-full touch-manipulation animate-story-card-hover">
-        <CardHeader className="p-4 sm:p-6">
+      <Card className="border-4 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-150 relative group bg-card h-full touch-manipulation animate-story-card-hover overflow-hidden">
+        {/* Cover image overlay - visible on hover */}
+        {story.coverImageUrl && (
+          <div
+            className="absolute inset-0 z-0 opacity-0 group-hover:opacity-30 transition-opacity duration-300 pointer-events-none"
+            style={{
+              backgroundImage: `url(${story.coverImageUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        )}
+        <CardHeader className="p-4 sm:p-6 relative z-10">
           <div className="flex items-start justify-between gap-2">
             <Link href={`/editor/${story.id}`} className="flex-1 min-w-0">
               <CardTitle className="hover:text-blue-600 transition-colors text-lg sm:text-xl flex items-center gap-2">
@@ -44,7 +55,7 @@ export function StoryStackCard({ story, onDelete, index }: StoryStackCardProps) 
             </CardDescription>
           )}
         </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
+        <CardContent className="p-4 sm:p-6 pt-0 relative z-10">
           <div className="flex justify-between items-center gap-2">
             <div className="text-[10px] sm:text-xs text-muted-foreground font-mono space-y-0.5 sm:space-y-1">
               <div>Updated: {new Date(story.updatedAt).toLocaleDateString()}</div>

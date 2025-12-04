@@ -1,8 +1,8 @@
 'use client'
 
-import { User, ImageIcon, Sparkles, FileText } from 'lucide-react'
+import { ImageIcon, Sparkles, FileText } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { TabSwitcher, TabItem } from '@/components/ui/TabSwitcher'
 import { Character, StoryStack } from '@/lib/types'
 import { DetailSection } from '../DetailSection'
 import { ImageGeneratorSection } from '../ImageGeneratorSection'
@@ -51,6 +51,14 @@ interface CharacterFormProps {
   onRemoveAvatar: () => Promise<void>
 }
 
+type CharacterTab = 'preview' | 'images' | 'avatar'
+
+const characterTabs: TabItem<CharacterTab>[] = [
+  { id: 'preview', label: 'Detail', icon: <FileText className="w-4 h-4" /> },
+  { id: 'images', label: 'Image Generator', icon: <ImageIcon className="w-4 h-4" /> },
+  { id: 'avatar', label: 'Avatar Generator', icon: <Sparkles className="w-4 h-4" /> },
+]
+
 export function CharacterForm({
   character,
   storyStack,
@@ -64,44 +72,21 @@ export function CharacterForm({
   onRemoveAvatar,
 }: CharacterFormProps) {
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={onTabChange}
+    <div
       className="flex-1 flex flex-col overflow-hidden"
       data-testid="character-editor-tabs"
     >
-      <TabsList
-        className="flex-shrink-0 w-full max-w-3xl mx-auto p-3 sm:p-4 bg-transparent justify-start gap-2"
-        aria-label="Character editor tabs"
-      >
-        <TabsTrigger
-          value="preview"
-          className="flex items-center gap-2 px-4 data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
-          data-testid="character-editor-tab-preview"
-        >
-          <FileText className="w-4 h-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Detail</span>
-          <span className="sr-only sm:hidden">Detail</span>
-        </TabsTrigger>
-        <TabsTrigger
-          value="images"
-          className="flex items-center gap-2 px-4 data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
-          data-testid="character-editor-tab-images"
-        >
-          <ImageIcon className="w-4 h-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Image Generator</span>
-          <span className="sr-only sm:hidden">Image Generator</span>
-        </TabsTrigger>
-        <TabsTrigger
-          value="avatar"
-          className="flex items-center gap-2 px-4 data-[state=active]:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
-          data-testid="character-editor-tab-avatar"
-        >
-          <Sparkles className="w-4 h-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Avatar Generator</span>
-          <span className="sr-only sm:hidden">Avatar Generator</span>
-        </TabsTrigger>
-      </TabsList>
+      {/* Tab Switcher */}
+      <div className="flex-shrink-0 w-full max-w-3xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4">
+        <TabSwitcher
+          tabs={characterTabs}
+          activeTab={activeTab as CharacterTab}
+          onTabChange={(tab) => onTabChange(tab)}
+          variant="pills"
+          size="sm"
+          fullWidth={false}
+        />
+      </div>
 
       {/* Tab Content with 3D Flip Animation */}
       <div className="flex-1 overflow-y-auto">
@@ -127,19 +112,12 @@ export function CharacterForm({
                 className="will-change-transform rounded-lg"
                 data-testid="character-editor-panel-preview"
               >
-                <TabsContent
-                  value="preview"
-                  className="mt-0"
-                  tabIndex={-1}
-                  forceMount
-                >
-                  <DetailSection
-                    character={character}
-                    storyStackId={storyStack.id}
-                    isSaving={isSaving}
-                    onUpdateCharacter={onUpdateCharacter}
-                  />
-                </TabsContent>
+                <DetailSection
+                  character={character}
+                  storyStackId={storyStack.id}
+                  isSaving={isSaving}
+                  onUpdateCharacter={onUpdateCharacter}
+                />
               </motion.div>
             )}
 
@@ -159,20 +137,13 @@ export function CharacterForm({
                 className="will-change-transform rounded-lg"
                 data-testid="character-editor-panel-images"
               >
-                <TabsContent
-                  value="images"
-                  className="mt-0"
-                  tabIndex={-1}
-                  forceMount
-                >
-                  <ImageGeneratorSection
-                    character={character}
-                    storyStackId={storyStack.id}
-                    isSaving={isSaving}
-                    onAddImage={onAddImage}
-                    onRemoveImage={onRemoveImage}
-                  />
-                </TabsContent>
+                <ImageGeneratorSection
+                  character={character}
+                  storyStackId={storyStack.id}
+                  isSaving={isSaving}
+                  onAddImage={onAddImage}
+                  onRemoveImage={onRemoveImage}
+                />
               </motion.div>
             )}
 
@@ -192,25 +163,18 @@ export function CharacterForm({
                 className="will-change-transform rounded-lg"
                 data-testid="character-editor-panel-avatar"
               >
-                <TabsContent
-                  value="avatar"
-                  className="mt-0"
-                  tabIndex={-1}
-                  forceMount
-                >
-                  <AvatarGeneratorSection
-                    character={character}
-                    storyStackId={storyStack.id}
-                    isSaving={isSaving}
-                    onSetAvatar={onSetAvatar}
-                    onRemoveAvatar={onRemoveAvatar}
-                  />
-                </TabsContent>
+                <AvatarGeneratorSection
+                  character={character}
+                  storyStackId={storyStack.id}
+                  isSaving={isSaving}
+                  onSetAvatar={onSetAvatar}
+                  onRemoveAvatar={onRemoveAvatar}
+                />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
-    </Tabs>
+    </div>
   )
 }

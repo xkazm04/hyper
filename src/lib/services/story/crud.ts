@@ -111,6 +111,7 @@ export class StoryCrudService {
       if (input.isPublished !== undefined) updateData.is_published = input.isPublished
       if (input.slug !== undefined) updateData.slug = input.slug
       if (input.firstCardId !== undefined) updateData.first_card_id = input.firstCardId
+      if (input.coverImageUrl !== undefined) updateData.cover_image_url = input.coverImageUrl
 
       updateData.updated_at = new Date().toISOString()
 

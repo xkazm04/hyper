@@ -10,11 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Wrench,
-  ArrowRight,
-  MapPin,
   ExternalLink,
-  Sparkles,
 } from 'lucide-react'
 import {
   ValidationResult,
@@ -22,6 +18,7 @@ import {
   ValidationSeverity,
   FixAction,
 } from '../hooks/useGraphValidation'
+import { cn } from '@/lib/utils'
 
 // ============================================================================
 // Types
@@ -39,78 +36,17 @@ export interface ValidationDiagnosticsOverlayProps {
 // Sub-components
 // ============================================================================
 
-interface SeverityBadgeProps {
-  severity: ValidationSeverity
-  count?: number
-}
-
-function SeverityBadge({ severity, count }: SeverityBadgeProps) {
-  const config = {
-    error: {
-      icon: AlertCircle,
-      bg: 'bg-red-500/20',
-      border: 'border-red-500/50',
-      text: 'text-red-500',
-      label: 'Errors',
-    },
-    warning: {
-      icon: AlertTriangle,
-      bg: 'bg-amber-500/20',
-      border: 'border-amber-500/50',
-      text: 'text-amber-500',
-      label: 'Warnings',
-    },
-    info: {
-      icon: Info,
-      bg: 'bg-blue-500/20',
-      border: 'border-blue-500/50',
-      text: 'text-blue-400',
-      label: 'Info',
-    },
-  }[severity]
-
-  const Icon = config.icon
-
-  return (
-    <div
-      className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${config.bg} ${config.border}`}
-      data-testid={`severity-badge-${severity}`}
-    >
-      <Icon className={`w-3.5 h-3.5 ${config.text}`} />
-      {count !== undefined && (
-        <span className={`text-xs font-semibold ${config.text}`}>{count}</span>
-      )}
-    </div>
-  )
-}
-
-interface IssueCardProps {
+interface CompactIssueRowProps {
   issue: ValidationIssue
-  onApplyFix: (action: FixAction) => void
   onNavigateToCard: (cardId: string) => void
 }
 
-function IssueCard({ issue, onApplyFix, onNavigateToCard }: IssueCardProps) {
+function CompactIssueRow({ issue, onNavigateToCard }: CompactIssueRowProps) {
   const severityConfig = {
-    error: {
-      border: 'border-l-red-500',
-      bg: 'hover:bg-red-500/5',
-    },
-    warning: {
-      border: 'border-l-amber-500',
-      bg: 'hover:bg-amber-500/5',
-    },
-    info: {
-      border: 'border-l-blue-500',
-      bg: 'hover:bg-blue-500/5',
-    },
+    error: { icon: AlertCircle, color: 'text-red-500', dot: 'bg-red-500' },
+    warning: { icon: AlertTriangle, color: 'text-amber-500', dot: 'bg-amber-500' },
+    info: { icon: Info, color: 'text-blue-400', dot: 'bg-blue-400' },
   }[issue.severity]
-
-  const handleFixClick = useCallback(() => {
-    if (issue.fix) {
-      onApplyFix(issue.fix.action)
-    }
-  }, [issue.fix, onApplyFix])
 
   const handleNavigate = useCallback(() => {
     if (issue.cardId) {
@@ -118,107 +54,82 @@ function IssueCard({ issue, onApplyFix, onNavigateToCard }: IssueCardProps) {
     }
   }, [issue.cardId, onNavigateToCard])
 
-  const getFixIcon = () => {
-    if (!issue.fix) return null
-    switch (issue.fix.type) {
-      case 'auto':
-        return <Sparkles className="w-3 h-3" />
-      case 'navigate':
-        return <ArrowRight className="w-3 h-3" />
-      case 'manual':
-        return <Wrench className="w-3 h-3" />
-    }
-  }
+  const Icon = severityConfig.icon
 
   return (
     <div
-      className={`p-3 bg-card/50 rounded-lg border-l-4 ${severityConfig.border} ${severityConfig.bg} transition-colors`}
-      data-testid={`issue-card-${issue.id}`}
+      className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/50 transition-colors group"
+      data-testid={`issue-row-${issue.id}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <SeverityBadge severity={issue.severity} />
-            <h4 className="text-sm font-semibold text-foreground truncate">{issue.title}</h4>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{issue.message}</p>
-        </div>
-
-        {issue.cardId && (
-          <button
-            onClick={handleNavigate}
-            className="shrink-0 p-1.5 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
-            title="Go to scene"
-            data-testid={`issue-navigate-${issue.id}`}
-          >
-            <ExternalLink className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {issue.fix && (
+      <Icon className={cn('w-3.5 h-3.5 shrink-0', severityConfig.color)} />
+      <span className="flex-1 text-xs text-foreground truncate" title={issue.message}>
+        {issue.title}
+      </span>
+      {issue.cardId && (
         <button
-          onClick={handleFixClick}
-          className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30 transition-colors w-full justify-center"
-          data-testid={`issue-fix-${issue.id}`}
+          onClick={handleNavigate}
+          className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+          title="Go to scene"
+          data-testid={`issue-goto-${issue.id}`}
         >
-          {getFixIcon()}
-          {issue.fix.label}
+          <ExternalLink className="w-3 h-3" />
         </button>
       )}
     </div>
   )
 }
 
-interface SummaryHeaderProps {
+interface CompactSummaryProps {
   stats: ValidationResult['stats']
   isValid: boolean
   isExpanded: boolean
   onToggleExpand: () => void
 }
 
-function SummaryHeader({ stats, isValid, isExpanded, onToggleExpand }: SummaryHeaderProps) {
+function CompactSummary({ stats, isValid, isExpanded, onToggleExpand }: CompactSummaryProps) {
   const hasIssues = stats.errorsCount + stats.warningsCount + stats.infosCount > 0
 
   return (
     <button
       onClick={onToggleExpand}
-      className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors rounded-t-lg"
-      data-testid="validation-summary-header"
+      className="w-full flex items-center justify-between px-2 py-1.5 hover:bg-muted/50 transition-colors"
+      data-testid="validation-summary"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {isValid && !hasIssues ? (
           <>
-            <div className="p-1.5 rounded-full bg-emerald-500/20">
-              <CheckCircle className="w-4 h-4 text-emerald-500" />
-            </div>
-            <span className="text-sm font-semibold text-emerald-500">All checks passed</span>
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-xs font-medium text-emerald-500">All good</span>
           </>
         ) : (
-          <>
-            <div className="p-1.5 rounded-full bg-muted">
-              <AlertCircle className="w-4 h-4 text-foreground" />
-            </div>
-            <div className="flex items-center gap-2">
-              {stats.errorsCount > 0 && (
-                <SeverityBadge severity="error" count={stats.errorsCount} />
-              )}
-              {stats.warningsCount > 0 && (
-                <SeverityBadge severity="warning" count={stats.warningsCount} />
-              )}
-              {stats.infosCount > 0 && (
-                <SeverityBadge severity="info" count={stats.infosCount} />
-              )}
-            </div>
-          </>
+          <div className="flex items-center gap-1.5">
+            {stats.errorsCount > 0 && (
+              <div className="flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                <span className="text-xs font-semibold text-red-500">{stats.errorsCount}</span>
+              </div>
+            )}
+            {stats.warningsCount > 0 && (
+              <div className="flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-xs font-semibold text-amber-500">{stats.warningsCount}</span>
+              </div>
+            )}
+            {stats.infosCount > 0 && (
+              <div className="flex items-center gap-1">
+                <Info className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-xs font-semibold text-blue-400">{stats.infosCount}</span>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <span className="text-xs">
-          {stats.reachableCards}/{stats.totalCards} reachable
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <span className="text-[10px]">
+          {stats.reachableCards}/{stats.totalCards}
         </span>
-        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
       </div>
     </button>
   )
@@ -258,32 +169,28 @@ export function ValidationDiagnosticsOverlay({
   const hasIssues = issues.length > 0
 
   return (
-    <Panel
-      position="bottom-left"
-      className="w-80 max-h-[70vh] overflow-hidden"
-    >
+    <Panel position="bottom-left" className="w-64 max-h-[50vh] overflow-hidden">
       <div
-        className="bg-card/95 border-2 border-border rounded-lg shadow-lg backdrop-blur-sm flex flex-col"
+        className="bg-card/95 border border-border rounded-lg shadow-md backdrop-blur-sm flex flex-col"
         data-testid="validation-diagnostics-overlay"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-bold text-foreground">Graph Diagnostics</h3>
-          </div>
+        {/* Compact Header */}
+        <div className="flex items-center justify-between px-2 py-1 border-b border-border/50">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Diagnostics
+          </span>
           <button
             onClick={onToggleVisibility}
-            className="p-1 rounded-md hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
-            title="Close diagnostics"
+            className="p-0.5 rounded hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors"
+            title="Close"
             data-testid="validation-close-btn"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Summary */}
-        <SummaryHeader
+        {/* Summary Row */}
+        <CompactSummary
           stats={stats}
           isValid={isValid}
           isExpanded={isExpanded}
@@ -293,17 +200,16 @@ export function ValidationDiagnosticsOverlay({
         {/* Expanded Issue List */}
         {isExpanded && hasIssues && (
           <>
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 px-3 pb-2 border-b border-border">
-              <FilterTab
+            {/* Compact Filter Pills */}
+            <div className="flex items-center gap-1 px-2 py-1 border-t border-border/50">
+              <FilterPill
                 label="All"
                 count={issues.length}
                 isActive={severityFilter === 'all'}
                 onClick={() => setSeverityFilter('all')}
               />
               {stats.errorsCount > 0 && (
-                <FilterTab
-                  label="Errors"
+                <FilterPill
                   count={stats.errorsCount}
                   isActive={severityFilter === 'error'}
                   onClick={() => setSeverityFilter('error')}
@@ -311,8 +217,7 @@ export function ValidationDiagnosticsOverlay({
                 />
               )}
               {stats.warningsCount > 0 && (
-                <FilterTab
-                  label="Warnings"
+                <FilterPill
                   count={stats.warningsCount}
                   isActive={severityFilter === 'warning'}
                   onClick={() => setSeverityFilter('warning')}
@@ -320,8 +225,7 @@ export function ValidationDiagnosticsOverlay({
                 />
               )}
               {stats.infosCount > 0 && (
-                <FilterTab
-                  label="Info"
+                <FilterPill
                   count={stats.infosCount}
                   isActive={severityFilter === 'info'}
                   onClick={() => setSeverityFilter('info')}
@@ -330,13 +234,12 @@ export function ValidationDiagnosticsOverlay({
               )}
             </div>
 
-            {/* Issue List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 max-h-[40vh]">
+            {/* Compact Issue List */}
+            <div className="flex-1 overflow-y-auto max-h-[30vh] divide-y divide-border/30">
               {filteredIssues.map((issue) => (
-                <IssueCard
+                <CompactIssueRow
                   key={issue.id}
                   issue={issue}
-                  onApplyFix={onApplyFix}
                   onNavigateToCard={onNavigateToCard}
                 />
               ))}
@@ -346,11 +249,9 @@ export function ValidationDiagnosticsOverlay({
 
         {/* Empty state when expanded but no issues */}
         {isExpanded && !hasIssues && (
-          <div className="p-6 text-center">
-            <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Your story graph looks great!
-            </p>
+          <div className="py-3 text-center">
+            <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+            <p className="text-[10px] text-muted-foreground">Story graph is valid</p>
           </div>
         )}
       </div>
@@ -359,40 +260,48 @@ export function ValidationDiagnosticsOverlay({
 }
 
 // ============================================================================
-// Filter Tab Component
+// Filter Pill Component
 // ============================================================================
 
-interface FilterTabProps {
-  label: string
+interface FilterPillProps {
+  label?: string
   count: number
   isActive: boolean
   onClick: () => void
   severity?: ValidationSeverity
 }
 
-function FilterTab({ label, count, isActive, onClick, severity }: FilterTabProps) {
-  const getColorClass = () => {
-    if (!severity) return 'text-foreground'
+function FilterPill({ label, count, isActive, onClick, severity }: FilterPillProps) {
+  const getColor = () => {
+    if (!severity) return { text: 'text-foreground', bg: 'bg-muted' }
     return {
-      error: 'text-red-500',
-      warning: 'text-amber-500',
-      info: 'text-blue-400',
+      error: { text: 'text-red-500', bg: 'bg-red-500/20' },
+      warning: { text: 'text-amber-500', bg: 'bg-amber-500/20' },
+      info: { text: 'text-blue-400', bg: 'bg-blue-400/20' },
     }[severity]
   }
+
+  const colors = getColor()
+  const Icon = severity ? {
+    error: AlertCircle,
+    warning: AlertTriangle,
+    info: Info,
+  }[severity] : null
 
   return (
     <button
       onClick={onClick}
-      className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+      className={cn(
+        'flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded transition-colors',
         isActive
-          ? 'bg-primary/20 text-primary border border-primary/30'
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-      }`}
-      data-testid={`filter-tab-${severity || 'all'}`}
+          ? 'bg-primary/20 text-primary'
+          : cn('hover:bg-muted/50', severity ? colors.text : 'text-muted-foreground')
+      )}
+      data-testid={`filter-pill-${severity || 'all'}`}
     >
-      <span className={isActive ? '' : getColorClass()}>
-        {label} ({count})
-      </span>
+      {Icon && <Icon className="w-2.5 h-2.5" />}
+      {label && <span>{label}</span>}
+      <span>{count}</span>
     </button>
   )
 }
@@ -425,28 +334,29 @@ export function ValidationToggleButton({
     <Panel position="bottom-left">
       <button
         onClick={onToggle}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all backdrop-blur-sm ${
+        className={cn(
+          'flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all backdrop-blur-sm text-xs',
           hasIssues
-            ? 'bg-card/95 border-amber-500/50 hover:border-amber-500 shadow-md'
-            : 'bg-card/95 border-border hover:border-primary/50 shadow-sm'
-        }`}
+            ? 'bg-card/95 border-amber-500/50 hover:border-amber-500 shadow-sm'
+            : 'bg-card/95 border-border hover:border-primary/50'
+        )}
         title="Show diagnostics"
         data-testid="validation-toggle-btn"
       >
         {isValid && !hasIssues ? (
-          <CheckCircle className="w-4 h-4 text-emerald-500" />
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
         ) : stats.errorsCount > 0 ? (
-          <AlertCircle className="w-4 h-4 text-red-500" />
+          <AlertCircle className="w-3.5 h-3.5 text-red-500" />
         ) : stats.warningsCount > 0 ? (
-          <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
         ) : (
-          <Info className="w-4 h-4 text-blue-400" />
+          <Info className="w-3.5 h-3.5 text-blue-400" />
         )}
 
-        <span className="text-xs font-medium text-foreground">
+        <span className="font-medium text-foreground">
           {stats.errorsCount + stats.warningsCount + stats.infosCount > 0
-            ? `${stats.errorsCount + stats.warningsCount + stats.infosCount} issues`
-            : 'Valid'}
+            ? `${stats.errorsCount + stats.warningsCount + stats.infosCount}`
+            : 'OK'}
         </span>
       </button>
     </Panel>

@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { cn } from '@/lib/utils'
 import { Palette } from 'lucide-react'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
 import { ArtStylePresetSelector } from './ArtStylePresetSelector'
 import { ArtStyleExtractor } from './ArtStyleExtractor'
-import { StoryDescription } from './StoryDescription'
 import { SaveButton } from './shared'
 import { getArtStyleDetails } from '../lib/artStyleService'
+import { TabSwitcher, TabItem } from '@/components/ui/TabSwitcher'
 
 interface ArtStyleEditorProps {
   onSave?: () => void
@@ -96,12 +95,7 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
     (activeTab === 'custom' && (customPrompt !== storyStack.customArtStylePrompt || artStyleSource !== storyStack.artStyleSource))
 
   return (
-    <div className="space-y-8">
-      {/* Story Description Section */}
-      <StoryDescription />
-
-      {/* Art Style Section */}
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3 pb-4 border-b border-border">
         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -125,37 +119,23 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
           </div>
         </div>
         {currentStyleDetails.prompt && (
-          <p className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border border-border line-clamp-5">
+          <p className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border border-border whitespace-pre-wrap">
             {currentStyleDetails.prompt}
           </p>
         )}
       </div>
 
       {/* Tab Switcher */}
-      <div className="flex border-b border-border">
-        <button
-          onClick={() => setActiveTab('preset')}
-          className={cn(
-            'flex-1 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all',
-            activeTab === 'preset'
-              ? 'border-primary text-primary bg-primary/10'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-          )}
-        >
-          Preset Styles
-        </button>
-        <button
-          onClick={() => setActiveTab('custom')}
-          className={cn(
-            'flex-1 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all',
-            activeTab === 'custom'
-              ? 'border-primary text-primary bg-primary/10'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-          )}
-        >
-          Custom Style
-        </button>
-      </div>
+      <TabSwitcher
+        tabs={[
+          { id: 'preset', label: 'Preset Styles' },
+          { id: 'custom', label: 'Custom Style' },
+        ] as TabItem<'preset' | 'custom'>[]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        variant="underline"
+        size="sm"
+      />
 
         {/* Tab Content */}
         <div className="min-h-[200px]">
@@ -177,15 +157,14 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
           )}
         </div>
 
-        {/* Save Button */}
-        <SaveButton
-          onSave={handleSave}
-          isSaving={isSaving}
-          hasChanges={hasChanges}
-          label="Save Style"
-          savingLabel="Saving..."
-        />
-      </div>
+      {/* Save Button */}
+      <SaveButton
+        onSave={handleSave}
+        isSaving={isSaving}
+        hasChanges={hasChanges}
+        label="Save Style"
+        savingLabel="Saving..."
+      />
     </div>
   )
 }

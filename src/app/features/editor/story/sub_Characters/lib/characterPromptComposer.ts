@@ -31,4 +31,4 @@ export {
   // AI-powered prompt composer
   composeCharacterPromptWithAI,
   composeCharacterPromptWithAIResult,
-} from './sub_characterPromptComposer';
+} from '../components/sub_characterPromptComposer';

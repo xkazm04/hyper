@@ -35,7 +35,7 @@ import {
 import { computeHiddenNodes, computeHiddenDescendantCounts } from './hiddenNodesUtils'
 import { computeBatchNodeDimensions, NodeDimensions } from './nodeDimensions'
 import { computeGraphLayout } from '../actions/computeLayout'
-import { getGraphStreamHub, GraphMutationEvent } from './graphStreamHub'
+import { getGraphStreamHub, GraphMutationEvent, NodeUpdateEvent } from './graphStreamHub'
 import {
   createChoiceSignature,
   getSessionLayoutCache,
@@ -87,6 +87,12 @@ export interface StoryGraphState {
   setUseServerLayout: (enabled: boolean) => void
   setUseWorkerLayout: (enabled: boolean) => void
   applyServerPositions: (positions: Record<string, { x: number; y: number }>, structureHash: string) => void
+  /**
+   * Update a single node's data properties without layout recalculation.
+   * Used for property changes like imageUrl, audioUrl, content that affect
+   * completion indicators but not graph structure.
+   */
+  updateNodeData: (cardId: string, updates: Partial<StoryCard>) => void
 }
 
 export interface SyncData {
@@ -208,6 +214,7 @@ function computeNodesAndEdges(
     const hasContent = !!(card.content && card.content.trim().length > 0)
     const hasImage = !!card.imageUrl
     const hasTitle = !!(card.title && card.title.trim().length > 0 && card.title !== 'Untitled Card')
+    const hasAudio = !!card.audioUrl
 
     return {
       id: card.id,
@@ -226,6 +233,7 @@ function computeNodesAndEdges(
         hasContent,
         hasTitle,
         hasChoices: choiceCount > 0,
+        hasAudio,
         choiceCount,
         characters: presentCharacters,
         depth: nodeDepth,
@@ -364,6 +372,7 @@ function computeNodesAndEdgesWithPositions(
     const hasContent = !!(card.content && card.content.trim().length > 0)
     const hasImage = !!card.imageUrl
     const hasTitle = !!(card.title && card.title.trim().length > 0 && card.title !== 'Untitled Card')
+    const hasAudio = !!card.audioUrl
 
     return {
       id: card.id,
@@ -382,6 +391,7 @@ function computeNodesAndEdgesWithPositions(
         hasContent,
         hasTitle,
         hasChoices: choiceCount > 0,
+        hasAudio,
         choiceCount,
         characters: presentCharacters,
         depth: nodeDepth,
@@ -770,6 +780,65 @@ export const useStoryGraphStore = create<StoryGraphState>()(
         _positions: positionsMap,
         _lastServerLayoutHash: structureHash,
         _serverLayoutPending: false,
+      })
+    },
+
+    /**
+     * Update a single node's data properties without layout recalculation.
+     * This is an O(1) operation that only updates the affected node's StoryNodeData,
+     * preserving all positions and avoiding re-renders of other nodes.
+     *
+     * Used for property changes that affect completion indicators:
+     * - imageUrl → hasImage
+     * - audioUrl → hasAudio
+     * - content → hasContent
+     * - title → hasTitle, label
+     */
+    updateNodeData: (cardId: string, updates: Partial<StoryCard>) => {
+      const state = get()
+
+      // Find the node to update
+      const nodeIndex = state.nodes.findIndex(n => n.id === cardId)
+      if (nodeIndex === -1) return
+
+      // Also update the card in storyCards array
+      const cardIndex = state.storyCards.findIndex(c => c.id === cardId)
+      if (cardIndex === -1) return
+
+      const existingCard = state.storyCards[cardIndex]
+      const updatedCard = { ...existingCard, ...updates, updatedAt: new Date().toISOString() }
+
+      // Compute new completion status from the updated card
+      const hasContent = !!(updatedCard.content && updatedCard.content.trim().length > 0)
+      const hasImage = !!updatedCard.imageUrl
+      const hasTitle = !!(updatedCard.title && updatedCard.title.trim().length > 0 && updatedCard.title !== 'Untitled Card')
+      const hasAudio = !!updatedCard.audioUrl
+
+      // Create updated node with new data (preserving position and everything else)
+      const existingNode = state.nodes[nodeIndex]
+      const updatedNode = {
+        ...existingNode,
+        data: {
+          ...existingNode.data,
+          label: updatedCard.title || 'Untitled',
+          hasContent,
+          hasImage,
+          hasTitle,
+          hasAudio,
+        },
+      }
+
+      // Update storyCards array
+      const updatedStoryCards = [...state.storyCards]
+      updatedStoryCards[cardIndex] = updatedCard
+
+      // Update nodes array - only change the affected node
+      const updatedNodes = [...state.nodes]
+      updatedNodes[nodeIndex] = updatedNode
+
+      set({
+        storyCards: updatedStoryCards,
+        nodes: updatedNodes,
       })
     },
 
@@ -1349,10 +1418,29 @@ export function initializeStreamSubscription(): () => void {
     }
   })
 
+  // Subscribe to node:update events for property changes (imageUrl, audioUrl, content, title)
+  // These updates don't affect graph structure, so we use the direct stream (no debounce)
+  // for immediate visual feedback on completion indicators
+  const nodeUpdateSub = hub.nodeEvents$.subscribe((event: GraphMutationEvent) => {
+    if (event.type === 'node:update') {
+      const { cardId, updates } = (event as NodeUpdateEvent).payload
+      // Only update if the change affects visual properties
+      if (
+        updates.imageUrl !== undefined ||
+        updates.audioUrl !== undefined ||
+        updates.content !== undefined ||
+        updates.title !== undefined
+      ) {
+        store().updateNodeData(cardId, updates)
+      }
+    }
+  })
+
   // Combine subscriptions
   streamSubscription = new Subscription()
   streamSubscription.add(structuralSub)
   streamSubscription.add(selectionSub)
+  streamSubscription.add(nodeUpdateSub)
 
   return () => {
     streamSubscription?.unsubscribe()

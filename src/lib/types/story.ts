@@ -17,6 +17,8 @@ export interface StoryStack {
   customArtStylePrompt: string | null  // Custom art style prompt text
   artStyleSource: 'preset' | 'custom' | 'extracted'  // Source of the art style
   extractedStyleImageUrl: string | null  // URL of image used for extraction
+  // Cover image
+  coverImageUrl: string | null  // AI-generated or uploaded cover image
   // Preview theme for consistent card styling
   previewTheme: PreviewTheme | null
   createdAt: string
@@ -33,6 +35,7 @@ export interface StoryCard {
   imageUrl: string | null  // AI-generated or uploaded image
   imagePrompt: string | null  // Prompt used to generate the image
   imageDescription: string | null  // Visual description for image generation (separate from story content)
+  audioUrl: string | null  // ElevenLabs-generated audio narration URL
   message: string | null  // Character/narrator dialogue displayed on card
   speaker: string | null  // Who is speaking (character name, narrator, etc.)
   speakerType: 'character' | 'narrator' | 'system' | null  // Type of speaker for styling
@@ -87,6 +90,7 @@ export interface UpdateStoryStackInput {
   isPublished?: boolean
   slug?: string | null
   firstCardId?: string | null
+  coverImageUrl?: string | null
 }
 
 export interface CreateStoryCardInput {
@@ -97,6 +101,7 @@ export interface CreateStoryCardInput {
   imageUrl?: string | null
   imagePrompt?: string | null
   imageDescription?: string | null
+  audioUrl?: string | null
   message?: string | null
   speaker?: string | null
   speakerType?: 'character' | 'narrator' | 'system' | null
@@ -110,6 +115,7 @@ export interface UpdateStoryCardInput {
   imageUrl?: string | null
   imagePrompt?: string | null
   imageDescription?: string | null
+  audioUrl?: string | null
   message?: string | null
   speaker?: string | null
   speakerType?: 'character' | 'narrator' | 'system' | null
