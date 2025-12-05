@@ -45,6 +45,52 @@ export function getArtStyleConfig(stack: StoryStack): ArtStyleConfig {
   }
 }
 
+export interface ArtStyleDetails {
+  icon: string
+  label: string
+  description?: string
+}
+
+/**
+ * Get display details for a story's art style (icon, label)
+ */
+export function getArtStyleDetails(stack: StoryStack): ArtStyleDetails {
+  // For extracted/custom styles, show a generic indicator
+  if (stack.artStyleSource === 'extracted') {
+    return {
+      icon: '🎨',
+      label: 'Extracted Style',
+      description: 'Style extracted from uploaded image'
+    }
+  }
+
+  if (stack.artStyleSource === 'custom') {
+    return {
+      icon: '✏️',
+      label: 'Custom Style',
+      description: 'Custom art style prompt'
+    }
+  }
+
+  // For preset styles, get details from the style definition
+  const style = getArtStyleById(stack.artStyleId || 'adventure_journal')
+  if (style) {
+    return {
+      icon: style.icon,
+      label: style.label,
+      description: style.description
+    }
+  }
+
+  // Fallback to default
+  const defaultStyle = getDefaultArtStyle()
+  return {
+    icon: defaultStyle.icon,
+    label: defaultStyle.label,
+    description: defaultStyle.description
+  }
+}
+
 
 /**
  * Get all available preset art styles
