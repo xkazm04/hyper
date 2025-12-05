@@ -28,31 +28,39 @@ export function NodeActions({
 
   return (
     <>
-      {/* Collapse/Expand Toggle Button */}
-      <button
-        onClick={onCollapseToggle}
-        className={cn(
-          "absolute -right-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center transition-all",
-          "border-2 shadow-sm hover:scale-110 active:scale-95",
-          isHalloween
-            ? isCollapsed
-              ? "bg-orange-500 border-orange-400 text-white hover:bg-orange-400"
-              : "bg-purple-900/80 border-purple-500/50 text-purple-300 hover:bg-purple-800"
-            : isCollapsed
-              ? "bg-primary border-primary text-primary-foreground hover:bg-primary/90"
-              : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-        )}
-        data-testid={`collapse-toggle-${nodeId}`}
-        aria-label={isCollapsed ? `Expand branch (${hiddenDescendantCount} hidden scenes)` : 'Collapse branch'}
-        aria-expanded={!isCollapsed}
-        title={isCollapsed ? `Expand (${hiddenDescendantCount} hidden)` : 'Collapse branch'}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="w-3 h-3" />
-        ) : (
-          <ChevronDown className="w-3 h-3" />
-        )}
-      </button>
+      {/* Collapse/Expand Toggle Button - 44px touch target with compact visual */}
+      <div className="absolute -right-6 top-1/2 -translate-y-1/2">
+        {/* Invisible 44px touch target */}
+        <button
+          onClick={onCollapseToggle}
+          className="relative w-11 h-11 flex items-center justify-center touch-manipulation"
+          data-testid={`collapse-toggle-${nodeId}`}
+          aria-label={isCollapsed ? `Expand branch (${hiddenDescendantCount} hidden scenes)` : 'Collapse branch'}
+          aria-expanded={!isCollapsed}
+          title={isCollapsed ? `Expand (${hiddenDescendantCount} hidden)` : 'Collapse branch'}
+        >
+          {/* Visible 20px button centered within 44px touch target */}
+          <span
+            className={cn(
+              "w-5 h-5 rounded-full flex items-center justify-center transition-all",
+              "border-2 shadow-sm hover:scale-110 active:scale-95",
+              isHalloween
+                ? isCollapsed
+                  ? "bg-orange-500 border-orange-400 text-white hover:bg-orange-400"
+                  : "bg-purple-900/80 border-purple-500/50 text-purple-300 hover:bg-purple-800"
+                : isCollapsed
+                  ? "bg-primary border-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )}
+          </span>
+        </button>
+      </div>
 
       {/* Collapsed indicator badge */}
       {isCollapsed && hiddenDescendantCount > 0 && (

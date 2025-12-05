@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getLLMCompletion } from '@/lib/services/llmClient'
 import { getAICompletion } from '@/lib/services/anthropic'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import { v4 as uuidv4 } from 'uuid'
 
 /**

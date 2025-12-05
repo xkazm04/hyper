@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import { StoryStack, CreateStoryStackInput, UpdateStoryStackInput } from '@/lib/types'
 import { useAuth } from '@/lib/auth/AuthContext'
 

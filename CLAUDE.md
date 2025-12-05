@@ -382,7 +382,7 @@ const subscription = hub.events$.subscribe(event => {
 
 TypeScript configured with path alias:
 ```typescript
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 ```
 `@/` maps to `src/` directory (see `tsconfig.json`).
 

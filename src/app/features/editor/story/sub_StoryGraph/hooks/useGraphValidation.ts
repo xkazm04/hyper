@@ -11,7 +11,7 @@
 
 import { useMemo, useCallback, useState } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import { createClient } from '@/lib/supabase/client'
 import { StoryStack, StoryCard, Choice } from '@/lib/types'
 
@@ -153,19 +153,28 @@ const checkFirstCardSet: ValidationRule = (ctx) => {
 }
 
 /**
- * Rule: Check for orphaned cards (not reachable from first card)
+ * Rule: Check for orphaned cards (no incoming links from other cards)
+ *
+ * A card is orphaned if:
+ * - It is not the first card AND
+ * - No other card has a choice pointing to it
+ *
+ * This matches the logic in useGraphOperations for consistency with StatsOverview.
  */
 const checkOrphanedCards: ValidationRule = (ctx) => {
   const issues: ValidationIssue[] = []
 
   for (const card of ctx.storyCards) {
-    // Skip the first card - it's always reachable
+    // Skip the first card - it's the entry point
     if (card.id === ctx.storyStack.firstCardId) continue
 
-    if (!ctx.reachableCardIds.has(card.id)) {
-      // Find cards that could link to this orphan
+    // Check if any choice targets this card
+    const hasIncomingLink = (ctx.incomingChoicesCount.get(card.id) ?? 0) > 0
+
+    if (!hasIncomingLink) {
+      // Find cards that could link to this orphan (any card with outgoing choices)
       const potentialParents = ctx.storyCards.filter(
-        (c) => c.id !== card.id && ctx.reachableCardIds.has(c.id)
+        (c) => c.id !== card.id
       )
       const suggestedParent = potentialParents[0]
 
@@ -176,7 +185,7 @@ const checkOrphanedCards: ValidationRule = (ctx) => {
         cardId: card.id,
         choiceId: null,
         title: 'Orphaned scene',
-        message: `"${card.title || 'Untitled'}" is not reachable from the story start.`,
+        message: `"${card.title || 'Untitled'}" has no incoming links from other scenes.`,
         fix: suggestedParent
           ? {
               type: 'navigate',

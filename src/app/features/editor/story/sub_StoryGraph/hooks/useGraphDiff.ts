@@ -64,6 +64,8 @@ export function createGraphSnapshot(
   const choiceHashes = new Map<string, string>()
   const edgeSignatures = new Map<string, string>()
   const childrenMap = new Map<string, string[]>()
+  // Track unique children per source using Sets for O(1) lookup during construction
+  const childrenSets = new Map<string, Set<string>>()
 
   // Build card hashes
   cards.forEach(card => {
@@ -80,12 +82,22 @@ export function createGraphSnapshot(
       existing.push(choice.targetCardId)
       edgesBySource.set(choice.storyCardId, existing)
 
-      // Build children map
-      const children = childrenMap.get(choice.storyCardId) || []
-      if (!children.includes(choice.targetCardId)) {
-        childrenMap.set(choice.storyCardId, [...children, choice.targetCardId])
+      // Build children map using Set for O(1) deduplication
+      let childrenSet = childrenSets.get(choice.storyCardId)
+      if (!childrenSet) {
+        childrenSet = new Set<string>()
+        childrenSets.set(choice.storyCardId, childrenSet)
+      }
+      // O(1) lookup instead of O(n) array.includes()
+      if (!childrenSet.has(choice.targetCardId)) {
+        childrenSet.add(choice.targetCardId)
       }
     }
+  })
+
+  // Convert Sets to arrays for the final childrenMap
+  childrenSets.forEach((childSet, sourceId) => {
+    childrenMap.set(sourceId, Array.from(childSet))
   })
 
   // Create sorted edge signatures for each source

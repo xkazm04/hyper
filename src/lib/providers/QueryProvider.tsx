@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactNode, useState, useEffect } from 'react'
-import { syncService } from '@/lib/services/sync'
+import { syncService } from '@/lib/services/sync/index'
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(

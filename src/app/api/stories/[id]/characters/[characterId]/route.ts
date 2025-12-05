@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { StoryService } from '@/lib/services/story'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { CharacterNotFoundError } from '@/lib/types'
+import { NextRequest } from 'next/server'
+import { StoryService } from '@/lib/services/story/index'
+import {
+  authenticateRequest,
+  handleApiError,
+  errorResponse,
+  successResponse,
+} from '@/lib/api/auth'
 
 /**
  * GET /api/stories/[id]/characters/[characterId]
@@ -13,25 +17,24 @@ export async function GET(
 ) {
   try {
     const { characterId } = await params
-    const supabase = await createServerSupabaseClient()
-    const storyService = new StoryService(supabase)
 
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
+
+    const { supabase } = auth
+    const storyService = new StoryService(supabase)
     const character = await storyService.getCharacter(characterId)
 
     if (!character) {
-      return NextResponse.json(
-        { error: 'Character not found' },
-        { status: 404 }
-      )
+      return errorResponse('Character not found', 404)
     }
 
-    return NextResponse.json({ character })
+    return successResponse({ character })
   } catch (error) {
-    console.error('Error fetching character:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch character' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error fetching character',
+      fallbackMessage: 'Failed to fetch character',
+    })
   }
 }
 
@@ -45,8 +48,12 @@ export async function PATCH(
 ) {
   try {
     const { characterId } = await params
+
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
+
+    const { supabase } = auth
     const body = await request.json()
-    const supabase = await createServerSupabaseClient()
     const storyService = new StoryService(supabase)
 
     const character = await storyService.updateCharacter(characterId, {
@@ -59,19 +66,12 @@ export async function PATCH(
       orderIndex: body.orderIndex,
     })
 
-    return NextResponse.json({ character })
+    return successResponse({ character })
   } catch (error) {
-    if (error instanceof CharacterNotFoundError) {
-      return NextResponse.json(
-        { error: 'Character not found' },
-        { status: 404 }
-      )
-    }
-    console.error('Error updating character:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update character' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error updating character',
+      fallbackMessage: 'Failed to update character',
+    })
   }
 }
 
@@ -85,17 +85,20 @@ export async function DELETE(
 ) {
   try {
     const { characterId } = await params
-    const supabase = await createServerSupabaseClient()
+
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
+
+    const { supabase } = auth
     const storyService = new StoryService(supabase)
 
     await storyService.deleteCharacter(characterId)
 
-    return NextResponse.json({ success: true })
+    return successResponse({})
   } catch (error) {
-    console.error('Error deleting character:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to delete character' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error deleting character',
+      fallbackMessage: 'Failed to delete character',
+    })
   }
 }

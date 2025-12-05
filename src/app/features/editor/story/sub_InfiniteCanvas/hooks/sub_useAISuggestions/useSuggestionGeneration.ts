@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
-import { aiPredictionService } from '@/lib/services/ai-prediction'
+import { aiPredictionService } from '@/lib/services/prediction/index'
 import {
   SuggestedCard,
   AIPredictionRequest,

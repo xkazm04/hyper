@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { MarketplaceService } from '@/lib/services/marketplace'
+import { MarketplaceService } from '@/lib/services/marketplace/index'
 import { DatabaseError, InvalidApiKeyError, RateLimitExceededError, AssetNotFoundError } from '@/lib/types'
 
 interface RouteParams {

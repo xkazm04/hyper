@@ -1,9 +1,9 @@
 'use client'
 
-import { Loader2, Network, Eye, Activity } from 'lucide-react'
+import { Loader2, Network, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type SectionType = 'content' | 'image' | 'script' | 'graph' | 'preview' | 'analytics'
+type SectionType = 'content' | 'image' | 'script' | 'graph' | 'preview'
 
 interface SectionLoadingFallbackProps {
   section?: SectionType
@@ -16,7 +16,6 @@ const sectionIcons: Record<SectionType, typeof Loader2 | null> = {
   script: null,
   graph: Network,
   preview: Eye,
-  analytics: Activity,
 }
 
 const sectionLabels: Record<SectionType, string> = {
@@ -25,7 +24,6 @@ const sectionLabels: Record<SectionType, string> = {
   script: 'Script',
   graph: 'Story Graph',
   preview: 'Preview',
-  analytics: 'Analytics',
 }
 
 export function SectionLoadingFallback({ section, fullHeight }: SectionLoadingFallbackProps) {

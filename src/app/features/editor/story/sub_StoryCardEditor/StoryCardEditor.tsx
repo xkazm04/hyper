@@ -17,9 +17,6 @@ const ContentSection = lazy(() =>
 // and are only needed when their respective tabs are selected
 const StoryGraph = lazy(() => import('../sub_StoryGraph/StoryGraph'))
 const CardPreview = lazy(() => import('../CardPreview'))
-const PathAnalyzer = lazy(() =>
-  import('../sub_PathAnalyzer').then(mod => ({ default: mod.PathAnalyzer }))
-)
 
 interface StoryCardEditorProps {
   registerSwitchToGraph?: (fn: SwitchToGraphFn) => void
@@ -41,20 +38,10 @@ export default function StoryCardEditor({ registerSwitchToGraph }: StoryCardEdit
     }
   }, [registerSwitchToGraph, switchToGraph])
 
-  // Handle card click from analytics - navigate to card and switch to content
-  const handleAnalyticsCardClick = useCallback((cardId: string) => {
-    setCurrentCardId(cardId)
-    setViewMode('content')
-  }, [setCurrentCardId])
 
   // Early returns for loading/empty states
   if (!storyStack) {
     return null
-  }
-
-  // For analytics view, we don't need a current card
-  if (!currentCard && viewMode !== 'analytics' && viewMode !== 'graph') {
-    return <EmptyState />
   }
 
   // Show AI companion for content and graph views
@@ -81,14 +68,6 @@ export default function StoryCardEditor({ registerSwitchToGraph }: StoryCardEdit
           <Suspense fallback={<SectionLoadingFallback section="preview" fullHeight />}>
             <CardPreview />
           </Suspense>
-        ) : viewMode === 'analytics' ? (
-          <div className="h-full overflow-y-auto p-4 sm:p-6">
-            <div className="max-w-4xl mx-auto">
-              <Suspense fallback={<SectionLoadingFallback section="analytics" fullHeight />}>
-                <PathAnalyzer onCardClick={handleAnalyticsCardClick} />
-              </Suspense>
-            </div>
-          </div>
         ) : currentCard ? (
           <div className="h-full overflow-y-auto pb-20">
             <div className="max-w-7xl mx-auto p-4 sm:p-6">

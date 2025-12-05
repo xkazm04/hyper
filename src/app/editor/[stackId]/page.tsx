@@ -30,7 +30,7 @@ import {
   StoryPathPreviewProvider,
 } from '@/app/features/editor/story/sub_StoryPathPreview'
 import { UndoRedoProvider } from '@/app/features/editor/undo-redo'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
 

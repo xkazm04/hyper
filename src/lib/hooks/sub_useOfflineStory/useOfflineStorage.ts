@@ -15,7 +15,7 @@ import {
   deleteStoryCardsForStack,
   deleteChoicesForCard,
   isIndexedDBAvailable,
-} from '@/lib/services/indexeddb'
+} from '@/lib/services/indexeddb/index'
 import { StoryStack, StoryCard, Choice } from '@/lib/types'
 
 /**

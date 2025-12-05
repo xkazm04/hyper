@@ -1,8 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
-import { useEditor } from '@/contexts/EditorContext'
-import { Play, AlertTriangle, AlertCircle, Minimize2, Maximize2 } from 'lucide-react'
+import { Play, AlertTriangle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface GraphStats {
@@ -27,24 +25,6 @@ interface StatsOverviewProps {
  * Positioned at top-center, above the search bar
  */
 export function StatsOverview({ stats, isHalloween = false }: StatsOverviewProps) {
-  const { collapsedNodes, setCollapsedNodes, choices, storyStack } = useEditor()
-
-  const handleExpandAll = useCallback(() => {
-    setCollapsedNodes(new Set())
-  }, [setCollapsedNodes])
-
-  const handleCollapseAll = useCallback(() => {
-    const nodesWithChildren = new Set<string>()
-    choices.forEach(choice => {
-      if (choice.targetCardId) nodesWithChildren.add(choice.storyCardId)
-    })
-    if (storyStack?.firstCardId && nodesWithChildren.has(storyStack.firstCardId)) {
-      setCollapsedNodes(new Set([storyStack.firstCardId]))
-    } else {
-      setCollapsedNodes(nodesWithChildren)
-    }
-  }, [choices, storyStack?.firstCardId, setCollapsedNodes])
-
   const completionPercent = stats.total > 0 ? Math.round((stats.complete / stats.total) * 100) : 0
 
   return (
@@ -104,48 +84,6 @@ export function StatsOverview({ stats, isHalloween = false }: StatsOverviewProps
         </>
       )}
 
-      {/* Hidden nodes indicator */}
-      {stats.hidden > 0 && (
-        <>
-          <div className="w-px h-4 bg-border/50" />
-          <span className="text-[10px] text-muted-foreground">
-            {stats.hidden} hidden
-          </span>
-        </>
-      )}
-
-      {/* Expand/Collapse controls */}
-      {stats.total > 1 && (
-        <>
-          <div className="w-px h-4 bg-border/50" />
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleExpandAll}
-              disabled={stats.collapsed === 0}
-              className={cn(
-                "p-1 rounded transition-colors",
-                "hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              )}
-              title="Expand all"
-              aria-label="Expand all collapsed branches"
-            >
-              <Maximize2 className="w-3 h-3 text-muted-foreground" />
-            </button>
-            <button
-              onClick={handleCollapseAll}
-              disabled={stats.collapsed > 0 && stats.hidden > 0}
-              className={cn(
-                "p-1 rounded transition-colors",
-                "hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              )}
-              title="Collapse all"
-              aria-label="Collapse all branches"
-            >
-              <Minimize2 className="w-3 h-3 text-muted-foreground" />
-            </button>
-          </div>
-        </>
-      )}
     </div>
   )
 }

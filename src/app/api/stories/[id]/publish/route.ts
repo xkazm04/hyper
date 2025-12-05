@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { StoryService } from '@/lib/services/story'
-import { DatabaseError, StoryNotFoundError } from '@/lib/types'
+import { NextRequest } from 'next/server'
+import { StoryService } from '@/lib/services/story/index'
+import {
+  authenticateRequest,
+  handleApiError,
+  errorResponse,
+  successResponse,
+} from '@/lib/api/auth'
 
 /**
  * POST /api/stories/[id]/publish
@@ -14,73 +18,37 @@ export async function POST(
   try {
     const { id } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Verify ownership
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (existingStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to publish this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to publish this story stack', 403)
     }
 
-    // Validate that story has at least one card
     const cards = await storyService.getStoryCards(id)
     if (cards.length === 0) {
-      return NextResponse.json(
-        { error: 'Cannot publish story with no cards' },
-        { status: 400 }
-      )
+      return errorResponse('Cannot publish story with no cards', 400)
     }
 
-    // Publish story stack
     const storyStack = await storyService.publishStoryStack(id)
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       storyStack,
       shareableUrl: `/play/${storyStack.slug}`,
     })
   } catch (error) {
-    console.error('Error publishing story stack:', error)
-
-    if (error instanceof StoryNotFoundError) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
-    }
-
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to publish story stack' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error publishing story stack',
+      fallbackMessage: 'Failed to publish story stack',
+    })
   }
 }
 
@@ -95,63 +63,31 @@ export async function DELETE(
   try {
     const { id } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Verify ownership
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (existingStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to unpublish this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to unpublish this story stack', 403)
     }
 
-    // Unpublish story stack
     const storyStack = await storyService.unpublishStoryStack(id)
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       storyStack,
       message: 'Story stack unpublished successfully',
     })
   } catch (error) {
-    console.error('Error unpublishing story stack:', error)
-
-    if (error instanceof StoryNotFoundError) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
-    }
-
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to unpublish story stack' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error unpublishing story stack',
+      fallbackMessage: 'Failed to unpublish story stack',
+    })
   }
 }

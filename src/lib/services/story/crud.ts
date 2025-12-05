@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import type { StoryStackRow, StoryStackUpdate } from '@/lib/supabase/database.types'
 import {
   StoryStack,
   CreateStoryStackInput,
@@ -84,8 +85,8 @@ export class StoryCrudService {
       const { data: { user } } = await this.supabase.auth.getUser()
       if (!user) throw new DatabaseError('Not authenticated')
 
-      const { data, error } = await (this.supabase
-        .from('story_stacks') as any)
+      const { data, error } = await this.supabase
+        .from('story_stacks')
         .insert({
           owner_id: user.id,
           name: input.name,
@@ -104,8 +105,10 @@ export class StoryCrudService {
 
   async updateStoryStack(id: string, input: UpdateStoryStackInput): Promise<StoryStack> {
     try {
-      const updateData: any = {}
-      
+      const updateData: StoryStackUpdate = {
+        updated_at: new Date().toISOString(),
+      }
+
       if (input.name !== undefined) updateData.name = input.name
       if (input.description !== undefined) updateData.description = input.description
       if (input.isPublished !== undefined) updateData.is_published = input.isPublished
@@ -113,10 +116,8 @@ export class StoryCrudService {
       if (input.firstCardId !== undefined) updateData.first_card_id = input.firstCardId
       if (input.coverImageUrl !== undefined) updateData.cover_image_url = input.coverImageUrl
 
-      updateData.updated_at = new Date().toISOString()
-
-      const { data, error } = await (this.supabase
-        .from('story_stacks') as any)
+      const { data, error } = await this.supabase
+        .from('story_stacks')
         .update(updateData)
         .eq('id', id)
         .select()

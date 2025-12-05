@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import { StoryStack, StoryCard, CreateStoryCardInput, Choice } from '@/lib/types'
 
 // Query key factory for consistent cache keys

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { useToast } from '@/lib/context/ToastContext'
 import { v4 as uuidv4 } from 'uuid'
@@ -31,6 +31,9 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     addChoice,
     updateCard: updateCardContext,
     setChoices,
+    getPredecessors,
+    getSuccessors,
+    getChoicesForCard,
   } = useEditor()
 
   const { success, error: showError } = useToast()
@@ -45,7 +48,17 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
     architectPlan: null,
   })
 
+  // Build a Map of cardId -> StoryCard for O(1) lookups
+  const cardsById = useMemo(() => {
+    const map = new Map<string, typeof storyCards[number]>()
+    for (const card of storyCards) {
+      map.set(card.id, card)
+    }
+    return map
+  }, [storyCards])
+
   // Build story context from editor state
+  // Uses pre-computed graph indices for O(1) predecessor/successor lookups
   const buildStoryContext = useCallback((): StoryContext | null => {
     if (!storyStack) return null
 
@@ -59,11 +72,11 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
         }
       : undefined
 
-    // Find predecessors (cards that lead to current card)
-    const predecessors = choices
-      .filter((c) => c.targetCardId === currentCardId)
-      .map((c) => {
-        const sourceCard = storyCards.find((card) => card.id === c.storyCardId)
+    // O(1) lookup using pre-computed predecessorsByCardId Map
+    const predecessorRefs = currentCardId ? getPredecessors(currentCardId) : []
+    const predecessors = predecessorRefs
+      .map((ref) => {
+        const sourceCard = cardsById.get(ref.cardId)
         return sourceCard
           ? {
               card: {
@@ -73,17 +86,17 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
                 message: sourceCard.message,
                 speaker: sourceCard.speaker,
               },
-              choiceLabel: c.label,
+              choiceLabel: ref.choiceLabel,
             }
           : null
       })
       .filter(Boolean) as StoryContext['predecessors']
 
-    // Find successors (cards that current card leads to)
-    const successors = choices
-      .filter((c) => c.storyCardId === currentCardId)
-      .map((c) => {
-        const targetCard = storyCards.find((card) => card.id === c.targetCardId)
+    // O(1) lookup using pre-computed successorsByCardId Map
+    const successorRefs = currentCardId ? getSuccessors(currentCardId) : []
+    const successors = successorRefs
+      .map((ref) => {
+        const targetCard = cardsById.get(ref.cardId)
         return targetCard
           ? {
               card: {
@@ -93,7 +106,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
                 message: targetCard.message,
                 speaker: targetCard.speaker,
               },
-              choiceLabel: c.label,
+              choiceLabel: ref.choiceLabel,
             }
           : null
       })
@@ -121,7 +134,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
       })),
       characters: characters?.map((c) => ({ name: c.name, appearance: c.appearance })),
     }
-  }, [storyStack, storyCards, choices, currentCard, currentCardId, characters])
+  }, [storyStack, storyCards, choices, currentCard, currentCardId, characters, cardsById, getPredecessors, getSuccessors])
 
   // Generate content variants for current card (with 1-4 choices each)
   const generateContentVariants = useCallback(async () => {
@@ -330,13 +343,13 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
               updatedAt: now,
             })
 
-            // Create the choice
+            // Create the choice - use O(1) lookup for existing choices count
             addChoice({
               id: uuidv4(),
               storyCardId: currentCard.id,
               targetCardId: newCardId,
               label: choice.label,
-              orderIndex: choices.filter((c) => c.storyCardId === currentCard.id).length + i,
+              orderIndex: getChoicesForCard(currentCard.id).length + i,
               createdAt: now,
               updatedAt: now,
             })
@@ -358,7 +371,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
         showError('Failed to apply content')
       }
     },
-    [currentCard, storyStack, storyCards, choices, updateCardContext, addCard, addChoice, success, showError]
+    [currentCard, storyStack, storyCards, updateCardContext, addCard, addChoice, success, showError, getChoicesForCard]
   )
 
   // Accept a next step suggestion - create new card and choice, persist to database
@@ -401,7 +414,8 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
               body: JSON.stringify({
                 label: suggestion.choiceLabel,
                 targetCardId: savedCard.id,
-                orderIndex: choices.filter((c) => c.storyCardId === suggestion.sourceCardId).length,
+                // O(1) lookup for existing choices count
+                orderIndex: getChoicesForCard(suggestion.sourceCardId).length,
               }),
             }
           )
@@ -431,7 +445,7 @@ export function useAICompanion(options: UseAICompanionOptions = {}) {
         showError(message)
       }
     },
-    [storyStack, storyCards, choices, addCard, addChoice, success, showError]
+    [storyStack, storyCards, addCard, addChoice, success, showError, getChoicesForCard]
   )
 
   // Decline a suggestion

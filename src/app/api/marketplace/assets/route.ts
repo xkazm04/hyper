@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { MarketplaceService } from '@/lib/services/marketplace'
-import { DatabaseError } from '@/lib/types'
+import { MarketplaceService } from '@/lib/services/marketplace/index'
+import {
+  authenticateRequest,
+  handleApiError,
+  errorResponse,
+  successResponse,
+} from '@/lib/api/auth'
 
 // GET /api/marketplace/assets - Search/list marketplace assets
 export async function GET(request: NextRequest) {
@@ -30,37 +35,33 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, ...result })
   } catch (error) {
-    if (error instanceof DatabaseError) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    return NextResponse.json({ error: 'Failed to search assets' }, { status: 500 })
+    return handleApiError(error, {
+      logPrefix: 'Error searching assets',
+      fallbackMessage: 'Failed to search assets',
+    })
   }
 }
 
 // POST /api/marketplace/assets - Create a new asset
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    const { supabase } = auth
     const body = await request.json()
 
-    // Validate required fields
     if (!body.name || typeof body.name !== 'string' || body.name.trim().length < 2) {
-      return NextResponse.json({ error: 'Name is required (min 2 characters)' }, { status: 400 })
+      return errorResponse('Name is required (min 2 characters)', 400)
     }
     if (!body.description || typeof body.description !== 'string') {
-      return NextResponse.json({ error: 'Description is required' }, { status: 400 })
+      return errorResponse('Description is required', 400)
     }
     if (!body.assetType) {
-      return NextResponse.json({ error: 'Asset type is required' }, { status: 400 })
+      return errorResponse('Asset type is required', 400)
     }
     if (!body.category) {
-      return NextResponse.json({ error: 'Category is required' }, { status: 400 })
+      return errorResponse('Category is required', 400)
     }
 
     const marketplaceService = new MarketplaceService(supabase)
@@ -80,11 +81,11 @@ export async function POST(request: NextRequest) {
       royaltyPercentage: body.royaltyPercentage,
     })
 
-    return NextResponse.json({ success: true, asset }, { status: 201 })
+    return successResponse({ asset }, 201)
   } catch (error) {
-    if (error instanceof DatabaseError) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    return NextResponse.json({ error: 'Failed to create asset' }, { status: 500 })
+    return handleApiError(error, {
+      logPrefix: 'Error creating asset',
+      fallbackMessage: 'Failed to create asset',
+    })
   }
 }

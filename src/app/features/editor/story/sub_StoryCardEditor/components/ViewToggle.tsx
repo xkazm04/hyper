@@ -1,9 +1,9 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { FileText, Network, Eye, Activity } from 'lucide-react'
+import { FileText, Network, Eye } from 'lucide-react'
 
-export type ViewMode = 'content' | 'graph' | 'preview' | 'analytics'
+export type ViewMode = 'content' | 'graph' | 'preview' 
 
 interface ViewToggleProps {
   viewMode: ViewMode
@@ -23,7 +23,6 @@ const viewModes: Array<{
   { id: 'content', label: 'Edit Scene', shortLabel: 'Edit', icon: FileText, title: 'Edit scene content and generate image', group: 'edit' },
   { id: 'graph', label: 'Story Graph', shortLabel: 'Graph', icon: Network, title: 'View story structure with AI tools', group: 'view' },
   { id: 'preview', label: 'Preview', shortLabel: 'Preview', icon: Eye, title: 'Preview final card', group: 'view' },
-  { id: 'analytics', label: 'Analytics', shortLabel: 'Stats', icon: Activity, title: 'Analyze story paths and metrics', group: 'view' },
 ]
 
 export function ViewToggle({
@@ -72,7 +71,7 @@ export function ViewToggle({
       {/* Separator */}
       <div className="w-px h-6 bg-border" />
 
-      {/* View modes group (Graph, Preview, Analytics) */}
+      {/* View modes group (Graph, Preview) */}
       <div className="flex bg-muted rounded-lg p-0.5 border border-border">
         {viewModeOptions.map(({ id, label, shortLabel, icon: Icon, title }) => {
           const isActive = viewMode === id

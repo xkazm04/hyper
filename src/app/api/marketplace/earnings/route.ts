@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { MarketplaceService } from '@/lib/services/marketplace'
+import { MarketplaceService } from '@/lib/services/marketplace/index'
 import { DatabaseError } from '@/lib/types'
 
 // GET /api/marketplace/earnings - Get creator's earnings and balance

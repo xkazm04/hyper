@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { StoryService } from '@/lib/services/story'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { StoryService } from '@/lib/services/story/index'
+import {
+  authenticateRequest,
+  handleApiError,
+  successResponse,
+} from '@/lib/api/auth'
 
 /**
  * GET /api/stories/[id]/characters
@@ -12,18 +16,20 @@ export async function GET(
 ) {
   try {
     const { id: stackId } = await params
-    const supabase = await createServerSupabaseClient()
-    const storyService = new StoryService(supabase)
 
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
+
+    const { supabase } = auth
+    const storyService = new StoryService(supabase)
     const characters = await storyService.getCharacters(stackId)
 
-    return NextResponse.json({ characters })
+    return successResponse({ characters })
   } catch (error) {
-    console.error('Error fetching characters:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch characters' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error fetching characters',
+      fallbackMessage: 'Failed to fetch characters',
+    })
   }
 }
 
@@ -37,8 +43,12 @@ export async function POST(
 ) {
   try {
     const { id: stackId } = await params
+
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
+
+    const { supabase } = auth
     const body = await request.json()
-    const supabase = await createServerSupabaseClient()
     const storyService = new StoryService(supabase)
 
     const character = await storyService.createCharacter({
@@ -52,12 +62,11 @@ export async function POST(
       orderIndex: body.orderIndex,
     })
 
-    return NextResponse.json({ character }, { status: 201 })
+    return successResponse({ character }, 201)
   } catch (error) {
-    console.error('Error creating character:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create character' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error creating character',
+      fallbackMessage: 'Failed to create character',
+    })
   }
 }

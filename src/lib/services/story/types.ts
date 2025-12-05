@@ -31,6 +31,19 @@ import {
   StaleVersionError,
 } from '@/lib/types'
 
+import type {
+  StoryStackRow,
+  StoryCardRow,
+  ChoiceRow,
+  CharacterRow,
+  CharacterCardRow,
+  StoryStackUpdate,
+  StoryCardUpdate,
+  ChoiceUpdate,
+  CharacterUpdate,
+  CharacterCardUpdate,
+} from '@/lib/supabase/database.types'
+
 // Re-export types for convenience
 export type {
   StoryStack,
@@ -52,6 +65,17 @@ export type {
   ValidationResult,
   ValidationError,
   ValidationWarning,
+  // Database row types
+  StoryStackRow,
+  StoryCardRow,
+  ChoiceRow,
+  CharacterRow,
+  CharacterCardRow,
+  StoryStackUpdate,
+  StoryCardUpdate,
+  ChoiceUpdate,
+  CharacterUpdate,
+  CharacterCardUpdate,
 }
 
 export {
@@ -64,8 +88,8 @@ export {
   StaleVersionError,
 }
 
-// Mapping utilities
-export function mapStoryStack(data: any): StoryStack {
+// Mapping utilities - convert database rows to application types
+export function mapStoryStack(data: StoryStackRow): StoryStack {
   return {
     id: data.id,
     ownerId: data.owner_id,
@@ -80,17 +104,17 @@ export function mapStoryStack(data: any): StoryStack {
     artStyleSource: data.art_style_source || 'preset',
     extractedStyleImageUrl: data.extracted_style_image_url || null,
     coverImageUrl: data.cover_image_url || null,
-    previewTheme: data.preview_theme || null,
+    previewTheme: data.preview_theme as PreviewTheme | null,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   }
 }
 
-export function mapStoryStacks(data: any[]): StoryStack[] {
+export function mapStoryStacks(data: StoryStackRow[]): StoryStack[] {
   return data.map(d => mapStoryStack(d))
 }
 
-export function mapStoryCard(data: any): StoryCard {
+export function mapStoryCard(data: StoryCardRow): StoryCard {
   return {
     id: data.id,
     storyStackId: data.story_stack_id,
@@ -103,7 +127,7 @@ export function mapStoryCard(data: any): StoryCard {
     audioUrl: data.audio_url || null,
     message: data.message || null,
     speaker: data.speaker || null,
-    speakerType: data.speaker_type || null,
+    speakerType: (data.speaker_type as 'character' | 'narrator' | 'system') || null,
     orderIndex: data.order_index,
     version: data.version ?? 1,
     createdAt: data.created_at,
@@ -111,27 +135,27 @@ export function mapStoryCard(data: any): StoryCard {
   }
 }
 
-export function mapStoryCards(data: any[]): StoryCard[] {
+export function mapStoryCards(data: StoryCardRow[]): StoryCard[] {
   return data.map(d => mapStoryCard(d))
 }
 
-export function mapChoice(data: any): Choice {
+export function mapChoice(data: ChoiceRow): Choice {
   return {
     id: data.id,
     storyCardId: data.story_card_id,
     label: data.label,
-    targetCardId: data.target_card_id,
+    targetCardId: data.target_card_id ?? '',
     orderIndex: data.order_index,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   }
 }
 
-export function mapChoices(data: any[]): Choice[] {
+export function mapChoices(data: ChoiceRow[]): Choice[] {
   return data.map(d => mapChoice(d))
 }
 
-export function mapCharacter(data: any): Character {
+export function mapCharacter(data: CharacterRow): Character {
   return {
     id: data.id,
     storyStackId: data.story_stack_id,
@@ -156,11 +180,11 @@ export function mapCharacter(data: any): Character {
   }
 }
 
-export function mapCharacters(data: any[]): Character[] {
+export function mapCharacters(data: CharacterRow[]): Character[] {
   return data.map(d => mapCharacter(d))
 }
 
-export function mapCharacterCard(data: any): CharacterCard {
+export function mapCharacterCard(data: CharacterCardRow): CharacterCard {
   return {
     id: data.id,
     storyStackId: data.story_stack_id,
@@ -175,6 +199,6 @@ export function mapCharacterCard(data: any): CharacterCard {
   }
 }
 
-export function mapCharacterCards(data: any[]): CharacterCard[] {
+export function mapCharacterCards(data: CharacterCardRow[]): CharacterCard[] {
   return data.map(d => mapCharacterCard(d))
 }

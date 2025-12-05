@@ -7,16 +7,20 @@
  * When no card is selected, shows a prompt to open Story Graph.
  * Right-click context menu for card deletion.
  *
- * Halloween Effect: spider-web-corner decoration
+ * Features:
+ * - Visual reactivity on card hover and click
+ * - Switches to 'cards' tab when clicking a card
+ * - Halloween effect: spider-web-corner decoration
  */
 
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { cn } from '@/lib/utils'
-import { StoryCard } from '@/lib/types'
 import { OutlineActions } from './components'
-import { Network, ChevronUp, ChevronDown, MousePointerClick, Trash2, Type, FileText, ImageIcon, GitBranch, Volume2 } from 'lucide-react'
+import { OutlineCard } from './OutlineCard'
+import { Network, ChevronUp, ChevronDown, MousePointerClick, Trash2 } from 'lucide-react'
 import { useToast } from '@/lib/context/ToastContext'
+import { useSidebarNavigationStore, selectSwitchToCards } from '../lib/sidebarNavigationStore'
 
 interface ContextMenuState {
   isOpen: boolean
@@ -38,6 +42,7 @@ export default function OutlineSidebar({
   const { storyCards, storyStack, currentCardId, setCurrentCardId, choices, deleteCard } = useEditor()
   const { success, error: showError } = useToast()
   const contextMenuRef = useRef<HTMLDivElement>(null)
+  const switchToCards = useSidebarNavigationStore(selectSwitchToCards)
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -128,17 +133,13 @@ export default function OutlineSidebar({
   }, [choices, storyCards, currentCardId])
 
   // Calculate the level (depth) of the current card from the start
-  // Level 1 = first card (no predecessors pointing to it via story flow)
-  // We use BFS to find the shortest path from any root card to current card
   const currentLevel = useMemo(() => {
     if (!currentCardId || storyCards.length === 0) return null
 
-    // Find the first card (entry point)
     const sortedCards = [...storyCards].sort((a, b) => a.orderIndex - b.orderIndex)
     const firstCardId = sortedCards[0]?.id
     if (!firstCardId) return null
 
-    // If current card is the first card, it's level 1
     if (currentCardId === firstCardId) return 1
 
     // BFS to find shortest path from first card to current card
@@ -148,8 +149,6 @@ export default function OutlineSidebar({
 
     while (queue.length > 0) {
       const { cardId, level } = queue.shift()!
-
-      // Get all cards this card points to (successors)
       const cardChoices = choices.filter(c => c.storyCardId === cardId)
       for (const choice of cardChoices) {
         if (choice.targetCardId === currentCardId) {
@@ -162,93 +161,14 @@ export default function OutlineSidebar({
       }
     }
 
-    // If not reachable from first card, it might be an orphan - show as "?"
-    return null
+    return null // Orphan
   }, [currentCardId, storyCards, choices])
 
+  // Handle card selection - also switches to cards tab
   const handleSelectCard = useCallback((cardId: string) => {
     setCurrentCardId(cardId)
-  }, [setCurrentCardId])
-
-  // Get choices for a card
-  const getCardChoices = useCallback((cardId: string) => {
-    return choices.filter(c => c.storyCardId === cardId)
-  }, [choices])
-
-  // Render a single card item with context menu support and completion indicators
-  const renderCardItem = (card: StoryCard, isSelected: boolean = false) => {
-    const hasTitle = Boolean(card.title && card.title.trim())
-    const hasContent = Boolean(card.content && card.content.trim())
-    const hasImage = Boolean(card.imageUrl)
-    const hasAudio = Boolean(card.audioUrl)
-    const cardChoices = getCardChoices(card.id)
-    const hasChoices = cardChoices.length > 0
-
-    return (
-      <button
-        key={card.id}
-        onClick={() => handleSelectCard(card.id)}
-        onContextMenu={(e) => handleContextMenu(e, card.id)}
-        className={cn(
-          'w-full text-left px-3 py-2 rounded-md transition-all duration-150',
-          'border text-xs',
-          isSelected
-            ? 'bg-primary/10 border-primary text-primary font-medium'
-            : 'bg-card border-border hover:bg-muted hover:border-muted-foreground/30'
-        )}
-      >
-        <span className="line-clamp-1">{card.title || 'Untitled Card'}</span>
-        {/* Completion Indicators Row */}
-        <div className="flex items-center gap-1 mt-1.5">
-          <div
-            className={cn(
-              'w-3 h-3 rounded flex items-center justify-center',
-              hasTitle ? 'bg-emerald-500/20 text-emerald-600' : 'bg-muted text-muted-foreground/40'
-            )}
-            title={`Title: ${hasTitle ? 'Done' : 'Missing'}`}
-          >
-            <Type className="w-2 h-2" />
-          </div>
-          <div
-            className={cn(
-              'w-3 h-3 rounded flex items-center justify-center',
-              hasContent ? 'bg-emerald-500/20 text-emerald-600' : 'bg-muted text-muted-foreground/40'
-            )}
-            title={`Content: ${hasContent ? 'Done' : 'Missing'}`}
-          >
-            <FileText className="w-2 h-2" />
-          </div>
-          <div
-            className={cn(
-              'w-3 h-3 rounded flex items-center justify-center',
-              hasImage ? 'bg-emerald-500/20 text-emerald-600' : 'bg-muted text-muted-foreground/40'
-            )}
-            title={`Image: ${hasImage ? 'Done' : 'Missing'}`}
-          >
-            <ImageIcon className="w-2 h-2" />
-          </div>
-          <div
-            className={cn(
-              'w-3 h-3 rounded flex items-center justify-center',
-              hasAudio ? 'bg-emerald-500/20 text-emerald-600' : 'bg-muted text-muted-foreground/40'
-            )}
-            title={`Audio: ${hasAudio ? 'Done' : 'Missing'}`}
-          >
-            <Volume2 className="w-2 h-2" />
-          </div>
-          <div
-            className={cn(
-              'w-3 h-3 rounded flex items-center justify-center',
-              hasChoices ? 'bg-emerald-500/20 text-emerald-600' : 'bg-muted text-muted-foreground/40'
-            )}
-            title={`Choices: ${hasChoices ? `${cardChoices.length}` : 'None'}`}
-          >
-            <GitBranch className="w-2 h-2" />
-          </div>
-        </div>
-      </button>
-    )
-  }
+    switchToCards()
+  }, [setCurrentCardId, switchToCards])
 
   // Empty state - no cards exist
   if (storyCards.length === 0) {
@@ -302,7 +222,7 @@ export default function OutlineSidebar({
               onClick={onOpenStoryGraph}
               className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
             >
-              <Network className="w-3 h-3" />
+              <Network className="w-5 h-5" />
               Open Story Graph
             </button>
           )}
@@ -331,13 +251,22 @@ export default function OutlineSidebar({
         <div className="space-y-2">
           {/* Predecessors Section */}
           {predecessors.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-1 px-2 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                <ChevronUp className="w-3 h-3" />
+                <ChevronUp className="w-4 h-4" />
                 <span>From ({predecessors.length})</span>
               </div>
-              <div className="space-y-1">
-                {predecessors.map(card => renderCardItem(card, false))}
+              <div className="space-y-1.5">
+                {predecessors.map(card => (
+                  <OutlineCard
+                    key={card.id}
+                    card={card}
+                    isSelected={false}
+                    choices={choices}
+                    onClick={handleSelectCard}
+                    onContextMenu={handleContextMenu}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -350,7 +279,7 @@ export default function OutlineSidebar({
           )}
 
           {/* Current Card - Highlighted */}
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between px-2 text-[10px] uppercase tracking-wider text-primary font-semibold">
               <span>Selected</span>
               {currentLevel !== null ? (
@@ -363,7 +292,13 @@ export default function OutlineSidebar({
                 </span>
               )}
             </div>
-            {renderCardItem(currentCard, true)}
+            <OutlineCard
+              card={currentCard}
+              isSelected={true}
+              choices={choices}
+              onClick={handleSelectCard}
+              onContextMenu={handleContextMenu}
+            />
           </div>
 
           {/* Connection line to successors */}
@@ -375,13 +310,22 @@ export default function OutlineSidebar({
 
           {/* Successors Section */}
           {successors.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-1 px-2 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className="w-4 h-4" />
                 <span>To ({successors.length})</span>
               </div>
-              <div className="space-y-1">
-                {successors.map(card => renderCardItem(card, false))}
+              <div className="space-y-1.5">
+                {successors.map(card => (
+                  <OutlineCard
+                    key={card.id}
+                    card={card}
+                    isSelected={false}
+                    choices={choices}
+                    onClick={handleSelectCard}
+                    onContextMenu={handleContextMenu}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -397,7 +341,7 @@ export default function OutlineSidebar({
                   onClick={onOpenStoryGraph}
                   className="mt-2 text-xs text-primary hover:underline font-medium flex items-center gap-1 mx-auto"
                 >
-                  <Network className="w-3 h-3" />
+                  <Network className="w-5 h-5" />
                   Open Story Graph to connect
                 </button>
               )}

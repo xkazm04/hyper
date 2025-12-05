@@ -1,4 +1,12 @@
 import { StoryService } from '../story'
+import type {
+  CreateStoryStackInput,
+  UpdateStoryStackInput,
+  CreateStoryCardInput,
+  UpdateStoryCardInput,
+  CreateChoiceInput,
+  UpdateChoiceInput,
+} from '@/lib/types'
 import {
   saveStoryStack,
   saveStoryCards,
@@ -11,6 +19,7 @@ import {
   SyncQueueItem,
   SyncOperation,
 } from '../indexeddb'
+import type { SyncData } from './types'
 
 export class OperationsService {
   private storyService: StoryService
@@ -38,16 +47,16 @@ export class OperationsService {
   private async processStoryStackSync(
     id: string,
     operation: SyncOperation,
-    data?: any
+    data?: SyncData
   ): Promise<void> {
     switch (operation) {
       case 'create':
-        const newStack = await this.storyService.createStoryStack(data)
+        const newStack = await this.storyService.createStoryStack(data as CreateStoryStackInput)
         await saveStoryStack(newStack)
         await deleteStoryStackFromDB(id)
         break
       case 'update':
-        const updatedStack = await this.storyService.updateStoryStack(id, data)
+        const updatedStack = await this.storyService.updateStoryStack(id, data as UpdateStoryStackInput)
         await saveStoryStack(updatedStack)
         break
       case 'delete':
@@ -61,16 +70,16 @@ export class OperationsService {
   private async processStoryCardSync(
     id: string,
     operation: SyncOperation,
-    data?: any
+    data?: SyncData
   ): Promise<void> {
     switch (operation) {
       case 'create':
-        const newCard = await this.storyService.createStoryCard(data)
+        const newCard = await this.storyService.createStoryCard(data as CreateStoryCardInput)
         await saveStoryCards([newCard])
         await deleteStoryCardFromDB(id)
         break
       case 'update':
-        const updatedCard = await this.storyService.updateStoryCard(id, data)
+        const updatedCard = await this.storyService.updateStoryCard(id, data as UpdateStoryCardInput)
         await saveStoryCards([updatedCard])
         break
       case 'delete':
@@ -84,16 +93,16 @@ export class OperationsService {
   private async processChoiceSync(
     id: string,
     operation: SyncOperation,
-    data?: any
+    data?: SyncData
   ): Promise<void> {
     switch (operation) {
       case 'create':
-        const newChoice = await this.storyService.createChoice(data)
+        const newChoice = await this.storyService.createChoice(data as CreateChoiceInput)
         await saveChoices([newChoice])
         await deleteChoiceFromDB(id)
         break
       case 'update':
-        const updatedChoice = await this.storyService.updateChoice(id, data)
+        const updatedChoice = await this.storyService.updateChoice(id, data as UpdateChoiceInput)
         await saveChoices([updatedChoice])
         break
       case 'delete':

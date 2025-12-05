@@ -21,7 +21,6 @@ import { BranchDepthProgressBar } from './components/BranchDepthProgressBar'
 import { PathProgressBar } from './components/PathProgressBar'
 import { OrphanAttachmentHelper } from './components/OrphanAttachmentHelper'
 import { ValidationDiagnosticsOverlay } from './components/ValidationDiagnosticsOverlay'
-import { BranchNavigator } from './components/BranchNavigator'
 import { GraphToolsSidebar, PumpkinOverlay } from './components/GraphToolsSidebar'
 
 /**
@@ -237,12 +236,6 @@ export default function StoryGraph() {
         onToggleVisibility={toggleDiagnosticsVisibility}
       />
 
-      {/* BranchNavigator - positioned at left, vertically centered to avoid AI Companion at bottom */}
-      <Panel position="top-left" className="mt-24">
-        <BranchNavigator
-          onCardClick={setCurrentCardId}
-        />
-      </Panel>
     </GraphCanvas>
   )
 }

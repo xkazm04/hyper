@@ -14,6 +14,21 @@ import {
   CreatorBalance,
 } from '@/lib/types'
 
+import type {
+  CharacterAssetRow,
+  CuratedCollectionRow,
+  AssetDownloadRow,
+  AssetReviewRow,
+  MarketplaceApiKeyRow,
+  AssetPurchaseRow,
+  AssetVersionRow,
+  PayoutRequestRow,
+  CreatorEarningRow,
+  CharacterAssetUpdate,
+  CuratedCollectionUpdate,
+  AssetReviewUpdate,
+} from '@/lib/supabase/database.types'
+
 // Re-export types for convenience
 export type {
   CharacterAsset,
@@ -43,6 +58,22 @@ export type {
   CompatibilityInfo,
 } from '@/lib/types'
 
+// Re-export database row types
+export type {
+  CharacterAssetRow,
+  CuratedCollectionRow,
+  AssetDownloadRow,
+  AssetReviewRow,
+  MarketplaceApiKeyRow,
+  AssetPurchaseRow,
+  AssetVersionRow,
+  PayoutRequestRow,
+  CreatorEarningRow,
+  CharacterAssetUpdate,
+  CuratedCollectionUpdate,
+  AssetReviewUpdate,
+}
+
 export {
   AssetNotFoundError,
   CollectionNotFoundError,
@@ -62,8 +93,8 @@ export abstract class MarketplaceModule {
   }
 }
 
-// Mapping utilities
-export function mapCharacterAsset(data: any): CharacterAsset {
+// Mapping utilities - convert database rows to application types
+export function mapCharacterAsset(data: CharacterAssetRow): CharacterAsset {
   return {
     id: data.id,
     creatorId: data.creator_id,
@@ -73,17 +104,17 @@ export function mapCharacterAsset(data: any): CharacterAsset {
     assetType: data.asset_type,
     thumbnailUrl: data.thumbnail_url,
     previewImages: data.preview_images || [],
-    characterData: data.character_data,
-    promptTemplate: data.prompt_template,
-    storyTemplateData: data.story_template_data,
+    characterData: data.character_data as CharacterAsset['characterData'],
+    promptTemplate: data.prompt_template as CharacterAsset['promptTemplate'],
+    storyTemplateData: data.story_template_data as CharacterAsset['storyTemplateData'],
     tags: data.tags || [],
     category: data.category,
     licenseType: data.license_type,
     isFree: data.is_free,
-    price: parseFloat(data.price) || 0,
-    royaltyPercentage: parseFloat(data.royalty_percentage) || 0,
+    price: data.price,
+    royaltyPercentage: data.royalty_percentage,
     downloads: data.downloads,
-    rating: parseFloat(data.rating) || 0,
+    rating: data.rating,
     ratingCount: data.rating_count,
     viewCount: data.view_count,
     isPublished: data.is_published,
@@ -104,15 +135,15 @@ export function mapCharacterAsset(data: any): CharacterAsset {
     // Additional metadata
     demoUrl: data.demo_url,
     documentation: data.documentation,
-    compatibilityInfo: data.compatibility_info,
+    compatibilityInfo: data.compatibility_info as CharacterAsset['compatibilityInfo'],
   }
 }
 
-export function mapCharacterAssets(data: any[]): CharacterAsset[] {
+export function mapCharacterAssets(data: CharacterAssetRow[]): CharacterAsset[] {
   return data.map(d => mapCharacterAsset(d))
 }
 
-export function mapCuratedCollection(data: any): CuratedCollection {
+export function mapCuratedCollection(data: CuratedCollectionRow): CuratedCollection {
   return {
     id: data.id,
     curatorId: data.curator_id,
@@ -128,11 +159,11 @@ export function mapCuratedCollection(data: any): CuratedCollection {
   }
 }
 
-export function mapCuratedCollections(data: any[]): CuratedCollection[] {
+export function mapCuratedCollections(data: CuratedCollectionRow[]): CuratedCollection[] {
   return data.map(d => mapCuratedCollection(d))
 }
 
-export function mapAssetReview(data: any): AssetReview {
+export function mapAssetReview(data: AssetReviewRow): AssetReview {
   return {
     id: data.id,
     assetId: data.asset_id,
@@ -144,11 +175,11 @@ export function mapAssetReview(data: any): AssetReview {
   }
 }
 
-export function mapAssetReviews(data: any[]): AssetReview[] {
+export function mapAssetReviews(data: AssetReviewRow[]): AssetReview[] {
   return data.map(d => mapAssetReview(d))
 }
 
-export function mapApiKey(data: any): MarketplaceApiKey {
+export function mapApiKey(data: MarketplaceApiKeyRow): MarketplaceApiKey {
   return {
     id: data.id,
     userId: data.user_id,
@@ -163,11 +194,11 @@ export function mapApiKey(data: any): MarketplaceApiKey {
   }
 }
 
-export function mapApiKeys(data: any[]): MarketplaceApiKey[] {
+export function mapApiKeys(data: MarketplaceApiKeyRow[]): MarketplaceApiKey[] {
   return data.map(d => mapApiKey(d))
 }
 
-export function mapAssetDownload(data: any): AssetDownload {
+export function mapAssetDownload(data: AssetDownloadRow): AssetDownload {
   return {
     id: data.id,
     assetId: data.asset_id,
@@ -177,55 +208,55 @@ export function mapAssetDownload(data: any): AssetDownload {
   }
 }
 
-export function mapAssetDownloads(data: any[]): AssetDownload[] {
+export function mapAssetDownloads(data: AssetDownloadRow[]): AssetDownload[] {
   return data.map(d => mapAssetDownload(d))
 }
 
-export function mapAssetPurchase(data: any): AssetPurchase {
+export function mapAssetPurchase(data: AssetPurchaseRow): AssetPurchase {
   return {
     id: data.id,
     assetId: data.asset_id,
     userId: data.user_id,
-    pricePaid: parseFloat(data.price_paid) || 0,
-    currency: data.currency || 'USD',
-    creatorAmount: parseFloat(data.creator_amount) || 0,
-    platformAmount: parseFloat(data.platform_amount) || 0,
-    paymentProvider: data.payment_provider || 'stripe',
+    pricePaid: data.price_paid,
+    currency: data.currency,
+    creatorAmount: data.creator_amount,
+    platformAmount: data.platform_amount,
+    paymentProvider: data.payment_provider,
     paymentIntentId: data.payment_intent_id,
     paymentStatus: data.payment_status,
-    licenseType: data.license_type,
+    licenseType: data.license_type as AssetPurchase['licenseType'],
     licenseKey: data.license_key,
     createdAt: data.created_at,
     completedAt: data.completed_at,
   }
 }
 
-export function mapAssetPurchases(data: any[]): AssetPurchase[] {
+export function mapAssetPurchases(data: AssetPurchaseRow[]): AssetPurchase[] {
   return data.map(d => mapAssetPurchase(d))
 }
 
-export function mapAssetVersion(data: any): AssetVersion {
+export function mapAssetVersion(data: AssetVersionRow): AssetVersion {
   return {
     id: data.id,
     assetId: data.asset_id,
     version: data.version,
     versionNotes: data.version_notes,
-    assetData: data.asset_data,
+    assetData: data.asset_data as Record<string, unknown>,
     createdBy: data.created_by,
     createdAt: data.created_at,
   }
 }
 
-export function mapAssetVersions(data: any[]): AssetVersion[] {
+export function mapAssetVersions(data: AssetVersionRow[]): AssetVersion[] {
   return data.map(d => mapAssetVersion(d))
 }
 
-export function mapPayoutRequest(data: any): PayoutRequest {
+export function mapPayoutRequest(data: PayoutRequestRow): PayoutRequest {
   return {
     id: data.id,
     creatorId: data.creator_id,
-    amount: parseFloat(data.amount) || 0,
-    currency: data.currency || 'USD',
+    amount: data.amount,
+    currency: data.currency,
     payoutMethod: data.payout_method,
     payoutDetails: data.payout_details,
     status: data.status,
@@ -238,17 +269,17 @@ export function mapPayoutRequest(data: any): PayoutRequest {
   }
 }
 
-export function mapPayoutRequests(data: any[]): PayoutRequest[] {
+export function mapPayoutRequests(data: PayoutRequestRow[]): PayoutRequest[] {
   return data.map(d => mapPayoutRequest(d))
 }
 
-export function mapCreatorEarning(data: any): CreatorEarning {
+export function mapCreatorEarning(data: CreatorEarningRow): CreatorEarning {
   return {
     id: data.id,
     creatorId: data.creator_id,
     assetId: data.asset_id,
-    amount: parseFloat(data.amount) || 0,
-    currency: data.currency || 'USD',
+    amount: data.amount,
+    currency: data.currency,
     status: data.status,
     paidAt: data.paid_at,
     payoutReference: data.payout_reference,
@@ -256,6 +287,6 @@ export function mapCreatorEarning(data: any): CreatorEarning {
   }
 }
 
-export function mapCreatorEarnings(data: any[]): CreatorEarning[] {
+export function mapCreatorEarnings(data: CreatorEarningRow[]): CreatorEarning[] {
   return data.map(d => mapCreatorEarning(d))
 }

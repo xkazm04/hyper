@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { syncService, SyncStatus, SyncEvent } from '@/lib/services/sync'
+import { syncService, SyncStatus, SyncEvent } from '@/lib/services/sync/index'
 
 /**
  * Hook to get the current sync status

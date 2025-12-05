@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { MarketplaceService } from '@/lib/services/marketplace'
+import { MarketplaceService } from '@/lib/services/marketplace/index'
 import { authenticateApiKey, logApiRequest } from '@/lib/services/api-auth'
 import { DatabaseError } from '@/lib/types'
 

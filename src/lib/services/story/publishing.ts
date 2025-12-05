@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import type { StoryStackUpdate } from '@/lib/supabase/database.types'
 import {
   StoryStack,
   StoryCard,
@@ -34,15 +35,15 @@ export class PublishingService {
       // Use the story ID directly as slug for guaranteed uniqueness
       const slug = id
 
-      const updateData: any = {
+      const updateData: StoryStackUpdate = {
         is_published: true,
         slug,
         published_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
 
-      const { data, error } = await (this.supabase
-        .from('story_stacks') as any)
+      const { data, error } = await this.supabase
+        .from('story_stacks')
         .update(updateData)
         .eq('id', id)
         .select()
@@ -62,14 +63,14 @@ export class PublishingService {
 
   async unpublishStoryStack(id: string): Promise<StoryStack> {
     try {
-      const updateData: any = {
+      const updateData: StoryStackUpdate = {
         is_published: false,
         published_at: null,
         updated_at: new Date().toISOString(),
       }
 
-      const { data, error } = await (this.supabase
-        .from('story_stacks') as any)
+      const { data, error } = await this.supabase
+        .from('story_stacks')
         .update(updateData)
         .eq('id', id)
         .select()
@@ -133,7 +134,7 @@ export class PublishingService {
       }
 
       const cards = await this.getStoryCards(storyStackId)
-      
+
       if (cards.length === 0) {
         errors.push({
           type: 'missing_first_card',
@@ -150,7 +151,7 @@ export class PublishingService {
       }
 
       const cardsWithIncomingLinks = new Set<string>()
-      
+
       if (stack.firstCardId) {
         cardsWithIncomingLinks.add(stack.firstCardId)
       }
@@ -171,7 +172,7 @@ export class PublishingService {
 
       for (const card of cards) {
         const cardChoices = allChoices.filter(c => c.storyCardId === card.id)
-        
+
         if (cardChoices.length === 0) {
           warnings.push({
             type: 'no_choices',

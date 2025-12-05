@@ -45,40 +45,6 @@ export function getArtStyleConfig(stack: StoryStack): ArtStyleConfig {
   }
 }
 
-/**
- * Get art style details for display
- */
-export function getArtStyleDetails(stack: StoryStack): {
-  label: string
-  description: string
-  icon: string
-  imageUrl: string | null
-  prompt: string
-  isCustom: boolean
-} {
-  if (stack.artStyleSource === 'custom' || stack.artStyleSource === 'extracted') {
-    return {
-      label: stack.artStyleSource === 'extracted' ? 'Extracted Style' : 'Custom Style',
-      description: stack.artStyleSource === 'extracted' 
-        ? 'Art style extracted from uploaded image'
-        : 'Your custom art style prompt',
-      icon: stack.artStyleSource === 'extracted' ? '🎨' : '✏️',
-      imageUrl: stack.extractedStyleImageUrl || null,
-      prompt: stack.customArtStylePrompt || '',
-      isCustom: true
-    }
-  }
-
-  const style = getArtStyleById(stack.artStyleId || 'adventure_journal') || getDefaultArtStyle()
-  return {
-    label: style.label,
-    description: style.description,
-    icon: style.icon,
-    imageUrl: style.imageUrl,
-    prompt: style.stylePrompt,
-    isCustom: false
-  }
-}
 
 /**
  * Get all available preset art styles

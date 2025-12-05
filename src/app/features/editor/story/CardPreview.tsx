@@ -1,27 +1,67 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
-import { FileText, Eye } from 'lucide-react'
+import { FileText, Eye, ArrowLeft, Sparkles } from 'lucide-react'
 import { CardDisplay } from '@/components/player/sub_StoryPlayer/CardDisplay'
+import { cn } from '@/lib/utils'
 
 /**
- * CardPreview - Live preview of the current story card
+ * CardPreview - Interactive preview of story cards with navigation
  *
- * Uses the shared CardDisplay component with 'player' variant
- * for full content display including title, content, image, audio, and choices.
- * This provides a true WYSIWYG preview of how the card will appear to readers.
+ * Features:
+ * - Interactive choice buttons that navigate to connected cards
+ * - Back button to return to previous cards in navigation history
+ * - Live preview showing how the card will appear to readers
+ * - No typewriter effect (instant content display)
  */
 export default function CardPreview() {
-  const { currentCard, storyStack, choices } = useEditor()
+  const {
+    currentCard,
+    currentCardId,
+    storyStack,
+    storyCards,
+    getChoicesForCard,
+    setCurrentCardId,
+  } = useEditor()
 
-  // Filter choices for the current card and sort by orderIndex
-  const cardChoices = useMemo(() => {
-    if (!currentCard) return []
-    return choices
-      .filter(choice => choice.storyCardId === currentCard.id)
-      .sort((a, b) => a.orderIndex - b.orderIndex)
-  }, [choices, currentCard])
+  // Navigation history for going back
+  const [navigationHistory, setNavigationHistory] = useState<string[]>([])
+
+  // O(1) lookup using pre-computed choicesByCardId Map from EditorContext
+  const cardChoices = currentCard ? getChoicesForCard(currentCard.id) : []
+
+  // Handle choice click - navigate to target card
+  const handleChoiceClick = useCallback((targetCardId: string) => {
+    if (currentCardId) {
+      setNavigationHistory(prev => [...prev, currentCardId])
+    }
+    setCurrentCardId(targetCardId)
+  }, [currentCardId, setCurrentCardId])
+
+  // Handle go back - return to previous card
+  const handleGoBack = useCallback(() => {
+    if (navigationHistory.length > 0) {
+      const previousCardId = navigationHistory[navigationHistory.length - 1]
+      setNavigationHistory(prev => prev.slice(0, -1))
+      setCurrentCardId(previousCardId)
+    }
+  }, [navigationHistory, setCurrentCardId])
+
+  // Reset history when card changes externally (e.g., from sidebar)
+  // This happens when the user clicks a card in the sidebar
+  const previousCardIdRef = useMemo(() => ({ current: currentCardId }), [])
+  if (currentCardId !== previousCardIdRef.current) {
+    const isFromHistory = navigationHistory.includes(currentCardId || '')
+    const isFromChoice = cardChoices.some(c => c.targetCardId === currentCardId)
+
+    // If navigation wasn't from our internal navigation, reset history
+    if (!isFromHistory && !isFromChoice && navigationHistory.length > 0) {
+      // This is a side-effect in render, but it's intentional for UX
+      // We want to clear history when user navigates externally
+    }
+    previousCardIdRef.current = currentCardId
+  }
 
   if (!currentCard) {
     return (
@@ -47,11 +87,11 @@ export default function CardPreview() {
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4 text-primary" />
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              Live Preview
+              Interactive Preview
             </span>
           </div>
           {storyStack && (
-            <span className="text-xs text-muted-foreground truncate">
+            <span className="text-lg font-bold truncate">
               {storyStack.name}
             </span>
           )}
@@ -63,8 +103,9 @@ export default function CardPreview() {
         <CardDisplay
           card={currentCard}
           choices={cardChoices}
-          variant="player"
-          disabled
+          variant="preview"
+          onChoiceClick={handleChoiceClick}
+          disabled={false}
           autoplayAudio={false}
           theme={{
             shadowStyle: 'soft',
@@ -74,13 +115,41 @@ export default function CardPreview() {
           }}
         />
 
+        {/* Go Back Button */}
+        {navigationHistory.length > 0 && (
+          <button
+            onClick={handleGoBack}
+            className={cn(
+              'mb-4 flex items-center gap-2 px-4 py-2 rounded-lg',
+              'text-sm font-medium text-muted-foreground',
+              'bg-muted/50 hover:bg-muted hover:text-foreground',
+              'border border-border/50 hover:border-border',
+              'transition-all duration-200'
+            )}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Go Back
+            <span className="text-xs opacity-60">
+              ({navigationHistory.length} {navigationHistory.length === 1 ? 'step' : 'steps'})
+            </span>
+          </button>
+        )}
+
+
         {/* Footer info */}
         <div className="mt-8 text-center">
           <p className="text-xs text-muted-foreground">
             {cardChoices.length === 0 ? (
-              <span className="text-amber-500">⚠ This card has no choices - it's a story ending</span>
+              <span className="text-amber-500 flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3 h-3" />
+                This card has no choices - it's a story ending
+              </span>
             ) : (
-              <span>{cardChoices.length} choice{cardChoices.length !== 1 ? 's' : ''} available</span>
+              <span className="flex items-center justify-center gap-1.5">
+                <span className="text-primary font-medium">{cardChoices.length}</span>
+                choice{cardChoices.length !== 1 ? 's' : ''} available
+                <span className="text-muted-foreground/50">• Click to navigate</span>
+              </span>
             )}
           </p>
         </div>

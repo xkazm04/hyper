@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { StoryService } from '@/lib/services/story'
-import { DatabaseError } from '@/lib/types'
+import { NextRequest } from 'next/server'
+import { StoryService } from '@/lib/services/story/index'
+import {
+  authenticateRequest,
+  handleApiError,
+  errorResponse,
+  successResponse,
+} from '@/lib/api/auth'
 
 interface CardContext {
   id: string
@@ -26,47 +30,31 @@ export async function GET(
   try {
     const { id, cardId } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Verify ownership of story stack
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (storyStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to access this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to access this story stack', 403)
     }
 
-    // Get all cards and choices for this story
     const allCards = await storyService.getStoryCards(id)
-    
-    // Find predecessors: cards that have choices pointing to current card
+
     const predecessors: PredecessorInfo[] = []
-    
+
     for (const card of allCards) {
       if (card.id === cardId) continue
-      
+
       const choices = await storyService.getChoices(card.id)
       const choicesToCurrentCard = choices.filter(c => c.targetCardId === cardId)
-      
+
       for (const choice of choicesToCurrentCard) {
         predecessors.push({
           card: {
@@ -80,28 +68,17 @@ export async function GET(
       }
     }
 
-    // Check if current card is the first card (has no predecessors in graph but is entry point)
     const isFirstCard = storyStack.firstCardId === cardId
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       predecessors,
       isFirstCard,
       hasPredecessors: predecessors.length > 0 || isFirstCard,
     })
   } catch (error) {
-    console.error('Error fetching predecessors:', error)
-
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch predecessors' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error fetching predecessors',
+      fallbackMessage: 'Failed to fetch predecessors',
+    })
   }
 }

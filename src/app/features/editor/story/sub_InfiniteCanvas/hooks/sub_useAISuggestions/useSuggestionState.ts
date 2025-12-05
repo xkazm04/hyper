@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { aiPredictionService } from '@/lib/services/ai-prediction'
+import { aiPredictionService } from '@/lib/services/prediction/index'
 import { SuggestedCard, UserAIPreferences } from '@/lib/types/ai-canvas'
 
 interface UseSuggestionStateReturn {

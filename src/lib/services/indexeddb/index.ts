@@ -6,6 +6,8 @@ export type {
   EntityType,
   SyncQueueItem,
   MetadataEntry,
+  SyncData,
+  MetadataValue,
 } from './types'
 
 // Re-export connection utilities

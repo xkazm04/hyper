@@ -1,5 +1,15 @@
 import { DBSchema } from 'idb'
-import { StoryStack, StoryCard, Choice } from '@/lib/types'
+import {
+  StoryStack,
+  StoryCard,
+  Choice,
+  CreateStoryStackInput,
+  UpdateStoryStackInput,
+  CreateStoryCardInput,
+  UpdateStoryCardInput,
+  CreateChoiceInput,
+  UpdateChoiceInput,
+} from '@/lib/types'
 
 // Database schema interface
 export interface StoryDBSchema extends DBSchema {
@@ -34,21 +44,32 @@ export type SyncStatus = 'pending' | 'in_progress' | 'failed' | 'completed'
 export type SyncOperation = 'create' | 'update' | 'delete'
 export type EntityType = 'storyStack' | 'storyCard' | 'choice'
 
+// Typed sync data for different entity types and operations
+export type SyncData =
+  | CreateStoryStackInput
+  | UpdateStoryStackInput
+  | CreateStoryCardInput
+  | UpdateStoryCardInput
+  | CreateChoiceInput
+  | UpdateChoiceInput
+
 export interface SyncQueueItem {
   id: string
   entityType: EntityType
   entityId: string
   operation: SyncOperation
-  data?: any
+  data?: SyncData
   timestamp: number
   status: SyncStatus
   retryCount: number
   errorMessage?: string
 }
 
+export type MetadataValue = string | number | boolean | null | Record<string, unknown>
+
 export interface MetadataEntry {
   key: string
-  value: any
+  value: MetadataValue
   updatedAt: number
 }
 

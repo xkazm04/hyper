@@ -7,6 +7,7 @@ import {
   FileText,
   ImageIcon,
   GitBranch,
+  Volume2,
   CheckCircle2,
   Circle,
 } from 'lucide-react'
@@ -27,6 +28,7 @@ export interface CompletionIndicatorsProps {
   hasContent: boolean
   hasImage: boolean
   hasChoices: boolean
+  hasAudio?: boolean
   isHalloween?: boolean
 }
 
@@ -39,12 +41,14 @@ export function CompletionIndicators({
   hasContent,
   hasImage,
   hasChoices,
+  hasAudio = false,
   isHalloween = false,
 }: CompletionIndicatorsProps) {
   const indicators = [
     { done: hasTitle, icon: Type, label: 'Title' },
     { done: hasContent, icon: FileText, label: 'Content' },
     { done: hasImage, icon: ImageIcon, label: 'Image' },
+    { done: hasAudio, icon: Volume2, label: 'Audio' },
     { done: hasChoices, icon: GitBranch, label: 'Choices' },
   ]
 
@@ -65,7 +69,7 @@ export function CompletionIndicators({
           )}
           title={`${label}: ${done ? 'Done' : 'Missing'}`}
         >
-          <Icon className="w-2.5 h-2.5" />
+          <Icon className="w-4 h-4" />
         </div>
       ))}
     </div>
@@ -92,11 +96,11 @@ export function CompletionItem({
       done ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'
     )}>
       {done ? (
-        <CheckCircle2 className="w-3 h-3" />
+        <CheckCircle2 className="w-5 h-5" />
       ) : (
         <Circle className="w-3 h-3" />
       )}
-      <Icon className="w-3 h-3" />
+      <Icon className="w-4 h-4" />
       <span>{label}</span>
     </div>
   )

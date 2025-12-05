@@ -7,7 +7,6 @@ import { useToast } from '@/lib/context/ToastContext'
 import { ArtStylePresetSelector } from './ArtStylePresetSelector'
 import { ArtStyleExtractor } from './ArtStyleExtractor'
 import { SaveButton } from './shared'
-import { getArtStyleDetails } from '../lib/artStyleService'
 import { TabSwitcher, TabItem } from '@/components/ui/TabSwitcher'
 
 interface ArtStyleEditorProps {
@@ -89,7 +88,6 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
 
   if (!storyStack) return null
 
-  const currentStyleDetails = getArtStyleDetails(storyStack)
   const hasChanges =
     (activeTab === 'preset' && (selectedStyleId !== storyStack.artStyleId || storyStack.artStyleSource !== 'preset')) ||
     (activeTab === 'custom' && (customPrompt !== storyStack.customArtStylePrompt || artStyleSource !== storyStack.artStyleSource))
@@ -107,22 +105,6 @@ export function ArtStyleEditor({ onSave }: ArtStyleEditorProps) {
             This style applies to all card images in your story
           </p>
         </div>
-      </div>
-
-      {/* Current Style Preview */}
-      <div className="p-4 rounded-lg bg-muted/50 border border-border">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xl">{currentStyleDetails.icon}</span>
-          <div>
-            <p className="font-medium text-sm">{currentStyleDetails.label}</p>
-            <p className="text-xs text-muted-foreground">{currentStyleDetails.description}</p>
-          </div>
-        </div>
-        {currentStyleDetails.prompt && (
-          <p className="text-xs text-muted-foreground mt-2 p-2 bg-background rounded border border-border whitespace-pre-wrap">
-            {currentStyleDetails.prompt}
-          </p>
-        )}
       </div>
 
       {/* Tab Switcher */}

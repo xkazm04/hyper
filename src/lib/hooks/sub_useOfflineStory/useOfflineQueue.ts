@@ -1,6 +1,6 @@
 'use client'
 
-import { syncService } from '@/lib/services/sync'
+import { syncService } from '@/lib/services/sync/index'
 import {
   CreateStoryStackInput,
   UpdateStoryStackInput,

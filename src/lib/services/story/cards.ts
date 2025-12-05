@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import type { StoryCardInsert, StoryCardUpdate, ChoiceUpdate } from '@/lib/supabase/database.types'
 import {
   StoryCard,
   Choice,
@@ -74,14 +75,14 @@ export class CardsService {
         .limit(1)
         .maybeSingle()
 
-      const nextOrderIndex = input.orderIndex !== undefined 
-        ? input.orderIndex 
-        : maxOrderData 
-          ? (maxOrderData as any).order_index + 1 
+      const nextOrderIndex = input.orderIndex !== undefined
+        ? input.orderIndex
+        : maxOrderData
+          ? maxOrderData.order_index + 1
           : 0
 
-      // Build insert data - only include fields that are provided
-      const insertData: Record<string, any> = {
+      // Build insert data with proper typing
+      const insertData: StoryCardInsert = {
         story_stack_id: input.storyStackId,
         title: input.title || 'Untitled Card',
         content: input.content || '',
@@ -96,8 +97,8 @@ export class CardsService {
       if (input.message !== undefined) insertData.message = input.message
       if (input.speaker !== undefined) insertData.speaker = input.speaker
 
-      const { data, error } = await (this.supabase
-        .from('story_cards') as any)
+      const { data, error } = await this.supabase
+        .from('story_cards')
         .insert(insertData)
         .select()
         .single()
@@ -112,7 +113,9 @@ export class CardsService {
 
   async updateStoryCard(id: string, input: UpdateStoryCardInput): Promise<StoryCard> {
     try {
-      const updateData: any = {}
+      const updateData: StoryCardUpdate = {
+        updated_at: new Date().toISOString(),
+      }
 
       if (input.title !== undefined) updateData.title = input.title
       if (input.content !== undefined) updateData.content = input.content
@@ -123,10 +126,8 @@ export class CardsService {
       if (input.audioUrl !== undefined) updateData.audio_url = input.audioUrl
       if (input.message !== undefined) updateData.message = input.message
       if (input.speaker !== undefined) updateData.speaker = input.speaker
-      if ((input as any).speakerType !== undefined) updateData.speaker_type = (input as any).speakerType
+      if ((input as { speakerType?: string }).speakerType !== undefined) updateData.speaker_type = (input as { speakerType: string }).speakerType
       if (input.orderIndex !== undefined) updateData.order_index = input.orderIndex
-
-      updateData.updated_at = new Date().toISOString()
 
       // If version is provided, use optimistic concurrency control
       if (input.version !== undefined) {
@@ -148,8 +149,8 @@ export class CardsService {
         }
       }
 
-      const { data, error } = await (this.supabase
-        .from('story_cards') as any)
+      const { data, error } = await this.supabase
+        .from('story_cards')
         .update(updateData)
         .eq('id', id)
         .select()
@@ -211,14 +212,14 @@ export class CardsService {
         .limit(1)
         .maybeSingle()
 
-      const nextOrderIndex = input.orderIndex !== undefined 
-        ? input.orderIndex 
-        : maxOrderData 
-          ? (maxOrderData as any).order_index + 1 
+      const nextOrderIndex = input.orderIndex !== undefined
+        ? input.orderIndex
+        : maxOrderData
+          ? maxOrderData.order_index + 1
           : 0
 
-      const { data, error } = await (this.supabase
-        .from('choices') as any)
+      const { data, error } = await this.supabase
+        .from('choices')
         .insert({
           story_card_id: input.storyCardId,
           label: input.label,
@@ -238,16 +239,16 @@ export class CardsService {
 
   async updateChoice(id: string, input: UpdateChoiceInput): Promise<Choice> {
     try {
-      const updateData: any = {}
-      
+      const updateData: ChoiceUpdate = {
+        updated_at: new Date().toISOString(),
+      }
+
       if (input.label !== undefined) updateData.label = input.label
       if (input.targetCardId !== undefined) updateData.target_card_id = input.targetCardId
       if (input.orderIndex !== undefined) updateData.order_index = input.orderIndex
 
-      updateData.updated_at = new Date().toISOString()
-
-      const { data, error } = await (this.supabase
-        .from('choices') as any)
+      const { data, error } = await this.supabase
+        .from('choices')
         .update(updateData)
         .eq('id', id)
         .select()

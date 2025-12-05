@@ -1,11 +1,15 @@
 'use client'
 
-import { ReactNode, useState, useCallback, useRef } from 'react'
+import { ReactNode, useCallback, useRef, useEffect } from 'react'
 import { FileText, Users, Palette } from 'lucide-react'
 import { StorySettings } from './sub_Story'
 import { TabSwitcher, TabItem } from '@/components/ui/TabSwitcher'
-
-export type EditorTab = 'story' | 'cards' | 'characters'
+import {
+  useSidebarNavigationStore,
+  selectActiveTab,
+  selectSetActiveTab,
+  type EditorTab,
+} from './lib/sidebarNavigationStore'
 
 // Callback type for switching to graph view inside the card editor
 export type SwitchToGraphFn = () => void
@@ -26,14 +30,16 @@ export default function StoryEditorLayout({
   cardEditor,
   characterEditor,
 }: StoryEditorLayoutProps) {
-  const [activeEditorTab, setActiveEditorTab] = useState<EditorTab>('cards')
+  // Use Zustand store for tab state (shared with sidebars)
+  const activeEditorTab = useSidebarNavigationStore(selectActiveTab)
+  const setActiveEditorTab = useSidebarNavigationStore(selectSetActiveTab)
 
   // Store reference to the cardEditor's switchToGraph function
   const switchToGraphRef = useRef<SwitchToGraphFn | null>(null)
 
   const switchToCharactersTab = useCallback(() => {
     setActiveEditorTab('characters')
-  }, [])
+  }, [setActiveEditorTab])
 
   // Called by cardEditor to register its switchToGraph function
   const registerSwitchToGraph = useCallback((fn: SwitchToGraphFn) => {
@@ -49,7 +55,7 @@ export default function StoryEditorLayout({
     setTimeout(() => {
       switchToGraphRef.current?.()
     }, 0)
-  }, [])
+  }, [setActiveEditorTab])
 
   const tabs: TabItem<EditorTab>[] = [
     { id: 'story', label: 'Story', icon: <Palette className="w-4 h-4" /> },
@@ -141,3 +147,6 @@ export default function StoryEditorLayout({
     </div>
   )
 }
+
+// Re-export EditorTab type for external use
+export type { EditorTab }

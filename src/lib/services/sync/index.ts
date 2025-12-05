@@ -35,6 +35,8 @@ class SyncService {
   private listeners: Set<(event: SyncEvent) => void> = new Set()
   private _isOnline: boolean = true
   private _isSyncing: boolean = false
+  private _pendingSyncRequested: boolean = false
+  private _syncMutex: Promise<void> = Promise.resolve()
   private syncIntervalId: number | null = null
 
   constructor() {
@@ -133,13 +135,34 @@ class SyncService {
     return this.queueService.queueChoiceDelete(id)
   }
 
-  // Main sync function
+  // Main sync function with mutex guard to prevent concurrent execution
   async sync(): Promise<void> {
+    if (!this._isOnline) {
+      return
+    }
+
+    // If already syncing, mark that a sync is pending and return
+    // The pending sync will be processed after the current sync completes
+    if (this._isSyncing) {
+      this._pendingSyncRequested = true
+      return
+    }
+
+    // Use mutex to ensure only one sync operation runs at a time
+    // This prevents race conditions when multiple sync() calls happen in quick succession
+    this._syncMutex = this._syncMutex.then(() => this.executeSyncInternal())
+  }
+
+  // Internal sync execution - should only be called through the mutex
+  private async executeSyncInternal(): Promise<void> {
+    // Double-check we're online and not already syncing (belt and suspenders)
     if (!this._isOnline || this._isSyncing) {
       return
     }
 
     this._isSyncing = true
+    this._pendingSyncRequested = false
+
     this.emit({
       type: 'sync_started',
       timestamp: Date.now(),
@@ -156,7 +179,7 @@ class SyncService {
           this.emit({
             type: 'item_synced',
             timestamp: Date.now(),
-            data: { item },
+            data: { item, entityType: item.entityType },
           })
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -193,6 +216,13 @@ class SyncService {
       })
     } finally {
       this._isSyncing = false
+
+      // If a sync was requested while we were syncing, execute it now
+      if (this._pendingSyncRequested && this._isOnline) {
+        this._pendingSyncRequested = false
+        // Queue another sync through the mutex
+        this._syncMutex = this._syncMutex.then(() => this.executeSyncInternal())
+      }
     }
   }
 
@@ -217,9 +247,14 @@ class SyncService {
     }
   }
 
-  // Cleanup
+  // Cleanup - resets all state and removes event listeners
   destroy(): void {
     this.stopAutoSync()
+
+    // Reset pending sync state to prevent any queued syncs from executing
+    this._pendingSyncRequested = false
+    this._isSyncing = false
+    this._syncMutex = Promise.resolve()
 
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', this.handleOnline)

@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import {
   exportStoryGraph,
   downloadExport,

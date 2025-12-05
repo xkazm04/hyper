@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import type { CharacterUpdate } from '@/lib/supabase/database.types'
 import {
   Character,
   CreateCharacterInput,
@@ -66,11 +67,11 @@ export class CharactersService {
       const nextOrderIndex = input.orderIndex !== undefined
         ? input.orderIndex
         : maxOrderData
-          ? (maxOrderData as any).order_index + 1
+          ? maxOrderData.order_index + 1
           : 0
 
-      const { data, error } = await (this.supabase
-        .from('characters') as any)
+      const { data, error } = await this.supabase
+        .from('characters')
         .insert({
           story_stack_id: input.storyStackId,
           name: input.name,
@@ -94,7 +95,9 @@ export class CharactersService {
 
   async updateCharacter(id: string, input: UpdateCharacterInput): Promise<Character> {
     try {
-      const updateData: any = {}
+      const updateData: CharacterUpdate = {
+        updated_at: new Date().toISOString(),
+      }
 
       if (input.name !== undefined) updateData.name = input.name
       if (input.appearance !== undefined) updateData.appearance = input.appearance
@@ -113,10 +116,8 @@ export class CharactersService {
       if (input.briaTrainingCompletedAt !== undefined) updateData.bria_training_completed_at = input.briaTrainingCompletedAt
       if (input.briaErrorMessage !== undefined) updateData.bria_error_message = input.briaErrorMessage
 
-      updateData.updated_at = new Date().toISOString()
-
-      const { data, error } = await (this.supabase
-        .from('characters') as any)
+      const { data, error } = await this.supabase
+        .from('characters')
         .update(updateData)
         .eq('id', id)
         .select()

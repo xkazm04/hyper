@@ -132,8 +132,9 @@ export class ImageServiceServer {
       }
 
       return imageUrl
-    } catch (error: any) {
-      throw new ImageGenerationError(`OpenAI generation failed: ${error.message}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      throw new ImageGenerationError(`OpenAI generation failed: ${message}`)
     }
   }
 

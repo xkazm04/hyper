@@ -85,8 +85,8 @@ export function ThemeToggle() {
         aria-label={`Switch to ${nextTheme.label} theme. Current theme: ${currentTheme.label}`}
         data-testid="theme-toggle-btn"
         className={cn(
-          // Base styles - retro aesthetic
-          'relative inline-flex items-center justify-center',
+          // Base styles - retro aesthetic with WCAG 44px touch target
+          'relative inline-flex items-center justify-center touch-manipulation',
           'min-w-[44px] min-h-[44px] w-11 h-11',
           'rounded-md',
           // Retro border and shadow effects

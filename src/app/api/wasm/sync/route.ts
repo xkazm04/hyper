@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import { serializeStory } from '@/app/features/wasm-runtime/lib/serializer'
 import { generateChecksum } from '@/app/features/wasm-runtime/lib/utils'
 

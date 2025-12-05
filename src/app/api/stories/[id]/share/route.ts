@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import { SharedBundlesService } from '@/lib/services/story/sharedBundles'
 import type { CompiledStoryBundle } from '@/app/features/wasm-runtime/lib/types'
+import {
+  authenticateRequest,
+  handleApiError,
+  errorResponse,
+  successResponse,
+} from '@/lib/api/auth'
 
 /**
  * POST /api/stories/[id]/share
@@ -15,47 +20,28 @@ export async function POST(
   try {
     const { id } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Parse the request body
+    const { user, supabase } = auth
     const body = await request.json()
     const { bundle } = body as { bundle: CompiledStoryBundle }
 
     if (!bundle) {
-      return NextResponse.json(
-        { error: 'Bundle data is required' },
-        { status: 400 }
-      )
+      return errorResponse('Bundle data is required', 400)
     }
 
-    // Verify ownership of the story
     const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (existingStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to share this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to share this story stack', 403)
     }
 
-    // Create the shared bundle
     const sharedBundlesService = new SharedBundlesService(supabase)
     const sharedBundle = await sharedBundlesService.createSharedBundle({
       storyStackId: id,
@@ -70,12 +56,10 @@ export async function POST(
       characterCount: bundle.metadata.characterCount,
     })
 
-    // Generate the share URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
     const shareUrl = `${baseUrl}/shared/${sharedBundle.shareCode}`
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       shareCode: sharedBundle.shareCode,
       shareUrl,
       sharedBundle: {
@@ -87,11 +71,10 @@ export async function POST(
       },
     })
   } catch (error) {
-    console.error('Error creating shared bundle:', error)
-    return NextResponse.json(
-      { error: 'Failed to create shared bundle' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error creating shared bundle',
+      fallbackMessage: 'Failed to create shared bundle',
+    })
   }
 }
 
@@ -106,36 +89,21 @@ export async function GET(
   try {
     const { id } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify ownership of the story
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (existingStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to view shared bundles for this story' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to view shared bundles for this story', 403)
     }
 
-    // Get shared bundles
     const sharedBundlesService = new SharedBundlesService(supabase)
     const sharedBundles = await sharedBundlesService.getStorySharedBundles(id)
 
@@ -155,11 +123,10 @@ export async function GET(
       })),
     })
   } catch (error) {
-    console.error('Error getting shared bundles:', error)
-    return NextResponse.json(
-      { error: 'Failed to get shared bundles' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error getting shared bundles',
+      fallbackMessage: 'Failed to get shared bundles',
+    })
   }
 }
 
@@ -177,54 +144,32 @@ export async function DELETE(
     const bundleId = searchParams.get('bundleId')
 
     if (!bundleId) {
-      return NextResponse.json(
-        { error: 'Bundle ID is required' },
-        { status: 400 }
-      )
+      return errorResponse('Bundle ID is required', 400)
     }
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify ownership of the story
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const existingStack = await storyService.getStoryStack(id)
 
     if (!existingStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (existingStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete shared bundles for this story' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to delete shared bundles for this story', 403)
     }
 
-    // Delete the shared bundle
     const sharedBundlesService = new SharedBundlesService(supabase)
     await sharedBundlesService.deleteSharedBundle(bundleId)
 
-    return NextResponse.json({
-      success: true,
-      message: 'Shared bundle deleted successfully',
-    })
+    return successResponse({ message: 'Shared bundle deleted successfully' })
   } catch (error) {
-    console.error('Error deleting shared bundle:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete shared bundle' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error deleting shared bundle',
+      fallbackMessage: 'Failed to delete shared bundle',
+    })
   }
 }

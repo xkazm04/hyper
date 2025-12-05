@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react'
 import { StoryStack } from '@/lib/types'
-import { StoryService } from '@/lib/services/story'
+import { StoryService } from '@/lib/services/story/index'
 import StoryPlayer from '@/components/player/StoryPlayer'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { MarketplaceService } from '@/lib/services/marketplace'
+import { MarketplaceService } from '@/lib/services/marketplace/index'
 import { AssetNotFoundError, DatabaseError } from '@/lib/types'
 
 // GET /api/marketplace/admin/review - Get assets pending review

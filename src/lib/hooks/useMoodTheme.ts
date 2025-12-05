@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { getMoodColors, defaultMoodColors, MoodColors } from '@/lib/services/mood'
+import { getMoodColors, defaultMoodColors, MoodColors } from '@/lib/services/mood/index'
 import { StoryCard, StoryStack } from '@/lib/types'
 
 /**

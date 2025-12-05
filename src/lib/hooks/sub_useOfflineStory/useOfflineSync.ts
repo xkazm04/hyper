@@ -1,7 +1,7 @@
 'use client'
 
-import { syncService } from '@/lib/services/sync'
-import { StoryService } from '@/lib/services/story'
+import { syncService } from '@/lib/services/sync/index'
+import { StoryService } from '@/lib/services/story/index'
 import { StoryStack, StoryCard, Choice } from '@/lib/types'
 import { OfflineStorage } from './useOfflineStorage'
 

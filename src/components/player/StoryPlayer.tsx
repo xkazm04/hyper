@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { StoryStack, StoryCard, Choice } from '@/lib/types'
-import { StoryService } from '@/lib/services/story'
+import { StoryStack } from '@/lib/types'
 import { useCardContrastRef } from '@/app/features/accessibility'
+import { useLazyCardLoader } from './sub_StoryPlayer/useLazyCardLoader'
 import {
   PlayerControls,
   KeyboardHelpTooltip,
@@ -17,82 +17,101 @@ interface StoryPlayerProps {
   stack: StoryStack
 }
 
+/**
+ * StoryPlayer - Interactive story player with lazy card loading
+ *
+ * Performance optimizations:
+ * - Loads only the current card + choices on initial load (not all cards)
+ * - Prefetches 1-2 cards ahead based on choice targets
+ * - Caches visited cards in memory for instant back-navigation
+ *
+ * This enables smooth playback of stories with 100+ cards without
+ * loading megabytes of content the user may never see.
+ */
 export default function StoryPlayer({ stack }: StoryPlayerProps) {
-  const [currentCard, setCurrentCard] = useState<StoryCard | null>(null)
-  const [choices, setChoices] = useState<Choice[]>([])
-  const [cards, setCards] = useState<StoryCard[]>([])
-  const [loading, setLoading] = useState(true)
+  // Lazy card loader with caching and prefetching
+  const {
+    currentCardData,
+    loading,
+    error,
+    loadCard,
+    loadFirstCard,
+    prefetchChoiceTargets,
+    getCachedCard,
+    cacheSize
+  } = useLazyCardLoader()
+
+  // Navigation history for back button
   const [history, setHistory] = useState<string[]>([])
+
+  // Keyboard navigation state
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState(0)
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
-  const storyService = new StoryService()
+
+  // Refs
   const containerRef = useRef<HTMLDivElement>(null)
   const storyCardRef = useCardContrastRef<HTMLDivElement>()
 
+  // Extract current card and choices from lazy loader
+  const currentCard = currentCardData?.card ?? null
+  const choices = currentCardData?.choices ?? []
+
+  // Load first card on mount
   useEffect(() => {
-    loadStoryData()
-  }, [stack.id])
+    loadFirstCard(stack.id, stack.firstCardId)
+  }, [stack.id, stack.firstCardId, loadFirstCard])
 
-  const loadStoryData = async () => {
-    try {
-      setLoading(true)
-      const allCards = await storyService.getStoryCards(stack.id)
-      setCards(allCards)
-
-      const firstCard = stack.firstCardId 
-        ? allCards.find(c => c.id === stack.firstCardId) || allCards[0]
-        : allCards[0]
-
-      if (firstCard) {
-        await loadCard(firstCard.id, allCards)
-      }
-    } catch (error) {
-      console.error('Failed to load story:', error)
-    } finally {
-      setLoading(false)
+  // Prefetch choice targets when current card changes
+  useEffect(() => {
+    if (choices.length > 0) {
+      prefetchChoiceTargets(choices)
     }
-  }
+  }, [choices, prefetchChoiceTargets])
 
-  const loadCard = async (cardId: string, allCards?: StoryCard[]) => {
-    try {
-      const cardsList = allCards || cards
-      const card = cardsList.find(c => c.id === cardId) || await storyService.getStoryCard(cardId)
-      if (!card) return
+  // Reset selected choice index when choices change
+  useEffect(() => {
+    setSelectedChoiceIndex(0)
+  }, [choices])
 
-      setCurrentCard(card)
-      const cardChoices = await storyService.getChoices(cardId)
-      setChoices(cardChoices)
-    } catch (error) {
-      console.error('Failed to load card:', error)
-    }
-  }
-
-  const handleChoiceClick = (targetCardId: string) => {
+  // Handle choice click - navigate to target card
+  const handleChoiceClick = useCallback((targetCardId: string) => {
     if (currentCard) {
+      // Add current card to history for back navigation
       setHistory(prev => [...prev, currentCard.id])
+
+      // Update browser history for shareable URLs
       window.history.pushState(
         { cardId: targetCardId, previousCardId: currentCard.id },
         '',
         `#card-${targetCardId}`
       )
     }
+
+    // Load the target card (may be from cache if prefetched)
     loadCard(targetCardId)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  }, [currentCard, loadCard])
 
-  const handleBack = () => {
+  // Handle back button - navigate to previous card
+  const handleBack = useCallback(() => {
     if (history.length === 0) return
+
     const previousCardId = history[history.length - 1]
     setHistory(prev => prev.slice(0, -1))
+
+    // Previous card should be in cache for instant navigation
     loadCard(previousCardId)
     window.history.back()
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  }, [history, loadCard])
 
+  // Handle browser back/forward navigation
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       if (event.state?.cardId) {
         loadCard(event.state.cardId)
+
+        // Update history based on navigation direction
         if (event.state.previousCardId) {
           setHistory(prev => {
             const index = prev.indexOf(event.state.previousCardId)
@@ -101,15 +120,14 @@ export default function StoryPlayer({ stack }: StoryPlayerProps) {
         }
       }
     }
+
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [cards])
+  }, [loadCard])
 
-  useEffect(() => {
-    setSelectedChoiceIndex(0)
-  }, [choices])
-
+  // Keyboard navigation handler
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Don't capture if user is typing in an input
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
       return
     }
@@ -121,16 +139,19 @@ export default function StoryPlayer({ stack }: StoryPlayerProps) {
           setSelectedChoiceIndex(prev => prev > 0 ? prev - 1 : choices.length - 1)
         }
         break
+
       case 'ArrowDown':
         event.preventDefault()
         if (choices.length > 0) {
           setSelectedChoiceIndex(prev => prev < choices.length - 1 ? prev + 1 : 0)
         }
         break
+
       case 'ArrowLeft':
         event.preventDefault()
         if (history.length > 0) handleBack()
         break
+
       case 'ArrowRight':
       case ' ':
       case 'Enter':
@@ -139,51 +160,77 @@ export default function StoryPlayer({ stack }: StoryPlayerProps) {
           handleChoiceClick(choices[selectedChoiceIndex].targetCardId)
         }
         break
+
       case 'Home':
         event.preventDefault()
-        if (cards.length > 0) {
-          const firstCard = stack.firstCardId
-            ? cards.find(c => c.id === stack.firstCardId) || cards[0]
-            : cards[0]
-          if (firstCard && currentCard?.id !== firstCard.id) {
-            setHistory([])
-            loadCard(firstCard.id)
-            window.history.pushState({ cardId: firstCard.id }, '', `#card-${firstCard.id}`)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
+        // Go to first card
+        if (currentCard?.id !== stack.firstCardId) {
+          setHistory([])
+          loadFirstCard(stack.id, stack.firstCardId)
+          if (stack.firstCardId) {
+            window.history.pushState({ cardId: stack.firstCardId }, '', `#card-${stack.firstCardId}`)
           }
+          window.scrollTo({ top: 0, behavior: 'smooth' })
         }
         break
+
       case 'End':
         event.preventDefault()
+        // If at a dead end (no choices), restart
         if (choices.length === 0 && history.length > 0) {
-          const firstCard = stack.firstCardId
-            ? cards.find(c => c.id === stack.firstCardId) || cards[0]
-            : cards[0]
-          if (firstCard) {
-            setHistory([])
-            loadCard(firstCard.id)
-            window.history.pushState({ cardId: firstCard.id }, '', `#card-${firstCard.id}`)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
+          setHistory([])
+          loadFirstCard(stack.id, stack.firstCardId)
+          if (stack.firstCardId) {
+            window.history.pushState({ cardId: stack.firstCardId }, '', `#card-${stack.firstCardId}`)
           }
+          window.scrollTo({ top: 0, behavior: 'smooth' })
         }
         break
+
       case '?':
         event.preventDefault()
         setShowKeyboardHelp(prev => !prev)
         break
+
       case 'Escape':
         event.preventDefault()
         setShowKeyboardHelp(false)
         break
     }
-  }, [choices, selectedChoiceIndex, history, cards, currentCard, stack.firstCardId])
+  }, [choices, selectedChoiceIndex, history, currentCard, stack.id, stack.firstCardId, handleBack, handleChoiceClick, loadFirstCard])
 
+  // Attach keyboard listener
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  if (loading) return <LoadingState />
+  // Loading state
+  if (loading && !currentCard) return <LoadingState />
+
+  // Error state
+  if (error) {
+    return (
+      <div
+        className="min-h-screen bg-gradient-theme flex items-center justify-center p-4"
+        data-testid="story-player-error"
+      >
+        <div className="text-center text-destructive">
+          <p className="text-lg font-semibold mb-2">Failed to load story</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+          <button
+            onClick={() => loadFirstCard(stack.id, stack.firstCardId)}
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            data-testid="retry-load-btn"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Empty state (no cards)
   if (!currentCard) return <EmptyState />
 
   return (
@@ -217,6 +264,16 @@ export default function StoryPlayer({ stack }: StoryPlayerProps) {
           onBack={handleBack}
         />
       </div>
+
+      {/* Debug info in development - shows cache stats */}
+      {process.env.NODE_ENV === 'development' && (
+        <div
+          className="fixed bottom-4 left-4 text-xs text-muted-foreground/50 bg-background/80 px-2 py-1 rounded"
+          data-testid="cache-debug-info"
+        >
+          Cache: {cacheSize} cards
+        </div>
+      )}
     </div>
   )
 }

@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { StoryService } from '@/lib/services/story'
-import { DatabaseError, CardNotFoundError, StaleVersionError } from '@/lib/types'
+import { NextRequest } from 'next/server'
+import { StoryService } from '@/lib/services/story/index'
+import {
+  authenticateRequest,
+  handleApiError,
+  errorResponse,
+  successResponse,
+} from '@/lib/api/auth'
 
 /**
  * GET /api/stories/[id]/cards/[cardId]
@@ -14,71 +18,37 @@ export async function GET(
   try {
     const { id, cardId } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Verify ownership of story stack
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (storyStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to access this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to access this story stack', 403)
     }
 
-    // Get story card
     const storyCard = await storyService.getStoryCard(cardId)
 
     if (!storyCard) {
-      return NextResponse.json(
-        { error: 'Story card not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story card not found', 404)
     }
 
-    // Verify card belongs to the story stack
     if (storyCard.storyStackId !== id) {
-      return NextResponse.json(
-        { error: 'Card does not belong to this story stack' },
-        { status: 400 }
-      )
+      return errorResponse('Card does not belong to this story stack', 400)
     }
 
-    return NextResponse.json({
-      success: true,
-      storyCard,
-    })
+    return successResponse({ storyCard })
   } catch (error) {
-    console.error('Error fetching story card:', error)
-
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch story card' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error fetching story card',
+      fallbackMessage: 'Failed to fetch story card',
+    })
   }
 }
 
@@ -93,57 +63,34 @@ export async function PATCH(
   try {
     const { id, cardId } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Verify ownership of story stack
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (storyStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to modify this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to modify this story stack', 403)
     }
 
-    // Verify card exists and belongs to story stack
     const existingCard = await storyService.getStoryCard(cardId)
 
     if (!existingCard) {
-      return NextResponse.json(
-        { error: 'Story card not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story card not found', 404)
     }
 
     if (existingCard.storyStackId !== id) {
-      return NextResponse.json(
-        { error: 'Card does not belong to this story stack' },
-        { status: 400 }
-      )
+      return errorResponse('Card does not belong to this story stack', 400)
     }
 
-    // Parse request body
     const body = await request.json()
     const { title, content, script, imageUrl, imagePrompt, imageDescription, audioUrl, message, speaker, speakerType, orderIndex, version } = body
 
-    // Update story card with version for optimistic concurrency control
     const storyCard = await storyService.updateStoryCard(cardId, {
       title,
       content,
@@ -159,44 +106,12 @@ export async function PATCH(
       version,
     })
 
-    return NextResponse.json({
-      success: true,
-      storyCard,
-    })
+    return successResponse({ storyCard })
   } catch (error) {
-    console.error('Error updating story card:', error)
-
-    if (error instanceof StaleVersionError) {
-      return NextResponse.json(
-        {
-          error: 'Card has been modified by another session',
-          code: 'STALE_VERSION',
-          message: error.message,
-          expectedVersion: error.expectedVersion,
-          actualVersion: error.actualVersion,
-        },
-        { status: 409 }
-      )
-    }
-
-    if (error instanceof CardNotFoundError) {
-      return NextResponse.json(
-        { error: 'Story card not found' },
-        { status: 404 }
-      )
-    }
-
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to update story card' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error updating story card',
+      fallbackMessage: 'Failed to update story card',
+    })
   }
 }
 
@@ -211,72 +126,38 @@ export async function DELETE(
   try {
     const { id, cardId } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Verify ownership of story stack
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (storyStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to modify this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to modify this story stack', 403)
     }
 
-    // Verify card exists and belongs to story stack
     const existingCard = await storyService.getStoryCard(cardId)
 
     if (!existingCard) {
-      return NextResponse.json(
-        { error: 'Story card not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story card not found', 404)
     }
 
     if (existingCard.storyStackId !== id) {
-      return NextResponse.json(
-        { error: 'Card does not belong to this story stack' },
-        { status: 400 }
-      )
+      return errorResponse('Card does not belong to this story stack', 400)
     }
 
-    // Delete story card
     await storyService.deleteStoryCard(cardId)
 
-    return NextResponse.json({
-      success: true,
-      message: 'Story card deleted successfully',
-    })
+    return successResponse({ message: 'Story card deleted successfully' })
   } catch (error) {
-    console.error('Error deleting story card:', error)
-
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to delete story card' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error deleting story card',
+      fallbackMessage: 'Failed to delete story card',
+    })
   }
 }

@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { StoryService } from '@/lib/services/story'
-import { DatabaseError } from '@/lib/types'
+import { NextRequest } from 'next/server'
+import { StoryService } from '@/lib/services/story/index'
+import {
+  authenticateRequest,
+  handleApiError,
+  errorResponse,
+  successResponse,
+} from '@/lib/api/auth'
 
 interface CardContext {
   id: string
@@ -26,45 +30,28 @@ export async function GET(
   try {
     const { id, cardId } = await params
 
-    // Check authentication
-    const supabase = await createServerSupabaseClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const auth = await authenticateRequest()
+    if (!auth.success) return auth.response
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Verify ownership of story stack
+    const { user, supabase } = auth
     const storyService = new StoryService(supabase)
     const storyStack = await storyService.getStoryStack(id)
 
     if (!storyStack) {
-      return NextResponse.json(
-        { error: 'Story stack not found' },
-        { status: 404 }
-      )
+      return errorResponse('Story stack not found', 404)
     }
 
     if (storyStack.ownerId !== user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to access this story stack' },
-        { status: 403 }
-      )
+      return errorResponse('Unauthorized to access this story stack', 403)
     }
 
-    // Get choices from current card
     const choices = await storyService.getChoices(cardId)
-    
-    // Get all cards to look up successor info
+
     const allCards = await storyService.getStoryCards(id)
     const cardMap = new Map(allCards.map(c => [c.id, c]))
-    
-    // Build successors list
+
     const successors: SuccessorInfo[] = []
-    
+
     for (const choice of choices) {
       const targetCard = cardMap.get(choice.targetCardId)
       if (targetCard) {
@@ -80,24 +67,14 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    return successResponse({
       successors,
       hasSuccessors: successors.length > 0,
     })
   } catch (error) {
-    console.error('Error fetching successors:', error)
-
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch successors' },
-      { status: 500 }
-    )
+    return handleApiError(error, {
+      logPrefix: 'Error fetching successors',
+      fallbackMessage: 'Failed to fetch successors',
+    })
   }
 }
