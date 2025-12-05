@@ -59,7 +59,7 @@ export const CardDisplay = forwardRef<HTMLDivElement, CardDisplayProps>(
     const hasAudio = !!card.audioUrl
 
     // Use custom audio hook with blob fetch
-    const { isPlaying, isLoading, isMuted, togglePlay, toggleMute } = useAudioPlayer(
+    const { isPlaying, isLoading, isMuted, autoplayBlocked, togglePlay, toggleMute } = useAudioPlayer(
       hasAudio ? card.audioUrl : null,
       autoplayAudio && !isPreview,
       onAudioEnd
@@ -109,12 +109,14 @@ export const CardDisplay = forwardRef<HTMLDivElement, CardDisplayProps>(
         animate={!isPreview ? { opacity: 1, y: 0 } : undefined}
         transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
         className={cn(
-          'bg-card overflow-hidden relative rounded-xl',
+          'bg-card overflow-hidden relative',
+          // Responsive border radius
+          'rounded-lg sm:rounded-xl',
           getShadowClass(mergedTheme.shadowStyle),
           // Elegant border glow effect
           'ring-1 ring-border/50',
-          // Ambient glow from card accent color
-          'shadow-[0_0_60px_-15px_hsl(var(--primary)/0.3)]',
+          // Ambient glow from card accent color - smaller on mobile
+          'shadow-[0_0_30px_-10px_hsl(var(--primary)/0.2)] sm:shadow-[0_0_60px_-15px_hsl(var(--primary)/0.3)]',
           className
         )}
         style={cardStyle as React.CSSProperties}
@@ -127,6 +129,7 @@ export const CardDisplay = forwardRef<HTMLDivElement, CardDisplayProps>(
             isPlaying={isPlaying}
             isLoading={isLoading}
             isMuted={isMuted}
+            autoplayBlocked={autoplayBlocked}
             onTogglePlay={togglePlay}
             onToggleMute={toggleMute}
           />

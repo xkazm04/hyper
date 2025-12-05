@@ -156,7 +156,6 @@ function StandaloneChoiceEditor({
       setChoices(data.choices || [])
     } catch (error) {
       console.error('Error fetching choices:', error)
-      showError('Failed to load choices')
     } finally {
       setIsLoading(false)
     }

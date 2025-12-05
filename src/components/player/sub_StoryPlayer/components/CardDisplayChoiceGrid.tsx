@@ -20,11 +20,17 @@ interface ChoiceGridProps {
 }
 
 export function ChoiceGrid({ choices, selectedIndex, onChoiceClick, disabled, style }: ChoiceGridProps) {
-  // Unified 2x2 grid for both variants with elegant button design
+  // Unified grid for both variants with elegant button design
   const gridChoices = choices.slice(0, 4) // Max 4 choices in grid
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-auto" data-testid="card-choices">
+    <div
+      className={cn(
+        // Stack vertically on mobile, 2-column on sm+
+        'grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 mt-auto',
+      )}
+      data-testid="card-choices"
+    >
       {gridChoices.map((choice, index) => (
         <motion.button
           key={choice.id}
@@ -38,18 +44,19 @@ export function ChoiceGrid({ choices, selectedIndex, onChoiceClick, disabled, st
           onClick={() => onChoiceClick?.(choice.targetCardId)}
           disabled={disabled}
           className={cn(
-            'group py-3 sm:py-4 px-3 sm:px-5 text-sm sm:text-base font-semibold',
-            'rounded-xl transition-all duration-300 ease-out',
+            'group py-2.5 sm:py-3 md:py-4 px-3 sm:px-4 md:px-5',
+            'text-sm sm:text-base font-semibold',
+            'rounded-lg sm:rounded-xl transition-all duration-300 ease-out',
             'hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]',
-            'touch-manipulation min-h-[52px] sm:min-h-[64px]',
+            'touch-manipulation min-h-[44px] sm:min-h-[52px] md:min-h-[64px]',
             'flex items-center justify-center text-center',
             index === selectedIndex && 'ring-2 ring-offset-2 ring-offset-card',
             // Subtle gradient overlay on hover
             'relative overflow-hidden',
-            // If only 1 choice, span full width
-            gridChoices.length === 1 && 'col-span-2',
-            // If 3 choices, last one spans full width
-            gridChoices.length === 3 && index === 2 && 'col-span-2',
+            // On sm+ screens: if only 1 choice, span full width
+            gridChoices.length === 1 && 'sm:col-span-2',
+            // On sm+ screens: if 3 choices, last one spans full width
+            gridChoices.length === 3 && index === 2 && 'sm:col-span-2',
             // Disabled state
             disabled && 'opacity-60 cursor-not-allowed'
           )}
@@ -61,8 +68,8 @@ export function ChoiceGrid({ choices, selectedIndex, onChoiceClick, disabled, st
         >
           {/* Hover shine effect */}
           <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-          {/* Choice number indicator */}
-          <span className="absolute top-1 left-2 text-[10px] opacity-40 font-mono">
+          {/* Choice number indicator - hidden on mobile for cleaner look */}
+          <span className="absolute top-1 left-2 text-[10px] opacity-40 font-mono hidden sm:block">
             {index + 1}
           </span>
           <span className="relative leading-tight">{choice.label}</span>

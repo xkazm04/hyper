@@ -66,7 +66,7 @@ export function useChoicesSection({
         const data = await fetchChoices(storyStackId, cardId)
         setChoices(data)
       } catch {
-        showError('Failed to load choices')
+        console.log('Failed to load choices')
       } finally {
         setIsLoading(false)
       }

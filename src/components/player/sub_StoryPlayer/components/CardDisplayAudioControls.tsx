@@ -11,6 +11,7 @@ interface AudioControlsProps {
   isPlaying: boolean
   isLoading: boolean
   isMuted: boolean
+  autoplayBlocked?: boolean
   onTogglePlay: () => void
   onToggleMute: () => void
 }
@@ -19,11 +20,24 @@ export function AudioControls({
   isPlaying,
   isLoading,
   isMuted,
+  autoplayBlocked = false,
   onTogglePlay,
   onToggleMute,
 }: AudioControlsProps) {
   return (
-    <div className="absolute top-2 right-2 z-20 flex items-center gap-0.5">
+    <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+      {/* Autoplay blocked hint */}
+      {autoplayBlocked && !isPlaying && !isLoading && (
+        <div
+          className={cn(
+            'px-2.5 py-1.5 rounded-full text-xs font-medium',
+            'bg-primary/90 text-primary-foreground',
+            'animate-pulse shadow-lg'
+          )}
+        >
+          Click to play audio
+        </div>
+      )}
       <button
         type="button"
         onClick={onTogglePlay}
@@ -32,7 +46,9 @@ export function AudioControls({
           'flex items-center justify-center w-11 h-11 rounded-full touch-manipulation',
           'bg-black/60 backdrop-blur-sm text-white',
           'hover:bg-black/80 transition-all duration-200',
-          'shadow-lg disabled:opacity-50'
+          'shadow-lg disabled:opacity-50',
+          // Highlight play button when autoplay is blocked
+          autoplayBlocked && !isPlaying && 'ring-2 ring-primary ring-offset-1 ring-offset-transparent'
         )}
         aria-label={isPlaying ? 'Pause narration' : 'Play narration'}
         data-testid="audio-play-btn"

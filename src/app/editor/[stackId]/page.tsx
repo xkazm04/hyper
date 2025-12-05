@@ -79,7 +79,7 @@ function EditorContentWithDSL({ stackId }: { stackId: string }) {
 }
 
 function EditorContent({ stackId }: { stackId: string }) {
-  const { story, cards, choices, loading, error, createCard } = useStoryEditor(stackId)
+  const { story, cards, choices, loading, error, createCard, updateStoryInCache } = useStoryEditor(stackId)
   const {
     setStoryStack,
     setStoryCards,
@@ -180,6 +180,8 @@ function EditorContent({ stackId }: { stackId: string }) {
 
     const published = await storyService.publishStoryStack(story.id)
     setStoryStack(published)
+    // Immediately update the React Query cache so the dialog shows the new URL
+    updateStoryInCache(published)
   }
 
   const handleUnpublish = async () => {
@@ -187,6 +189,8 @@ function EditorContent({ stackId }: { stackId: string }) {
 
     const unpublished = await storyService.unpublishStoryStack(story.id)
     setStoryStack(unpublished)
+    // Immediately update the React Query cache so the dialog closes with updated state
+    updateStoryInCache(unpublished)
   }
 
   // Initialize commands for the command palette (must be called before any early returns)

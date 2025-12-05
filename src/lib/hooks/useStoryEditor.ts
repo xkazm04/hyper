@@ -100,6 +100,20 @@ export function useStoryEditor(storyId: string) {
     queryClient.invalidateQueries({ queryKey: storyEditorKeys.data(storyId) })
   }, [queryClient, storyId])
 
+  // Directly update story in cache (for immediate updates without refetch)
+  const updateStoryInCache = useCallback((updatedStory: StoryStack) => {
+    queryClient.setQueryData<StoryEditorData>(
+      storyEditorKeys.data(storyId),
+      (oldData) => {
+        if (!oldData) return oldData
+        return {
+          ...oldData,
+          story: updatedStory,
+        }
+      }
+    )
+  }, [queryClient, storyId])
+
   return {
     story: data?.story ?? null,
     cards: data?.cards ?? [],
@@ -109,5 +123,6 @@ export function useStoryEditor(storyId: string) {
     createCard,
     refresh,
     invalidateCache,
+    updateStoryInCache,
   }
 }

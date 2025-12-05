@@ -1,0 +1,7 @@
+export { LandingBackground } from './LandingBackground'
+export { PacmanGhost } from './PacmanGhost'
+export { HeroSection } from './HeroSection'
+export { FeaturesSection } from './FeaturesSection'
+export { ShowcaseSection } from './ShowcaseSection'
+export { FooterSection } from './FooterSection'
+export { DecorativeSVGs } from './DecorativeSVGs'

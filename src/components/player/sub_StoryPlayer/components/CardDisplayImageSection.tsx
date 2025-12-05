@@ -68,17 +68,17 @@ export function ImageSection({
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted/80">
           <div className="text-center text-muted-foreground">
-            <FileText className="mx-auto mb-2 opacity-30 w-16 h-16" />
-            <p className="text-sm font-medium">Scene awaits...</p>
+            <FileText className="mx-auto mb-1.5 sm:mb-2 opacity-30 w-10 h-10 sm:w-16 sm:h-16" />
+            <p className="text-xs sm:text-sm font-medium">Scene awaits...</p>
           </div>
         </div>
       )}
 
       {/* Message bubble overlay - elegant glassmorphism */}
       {card.message && (
-        <div className="absolute left-4 right-4 bottom-4 sm:bottom-6">
+        <div className="absolute left-2 right-2 bottom-2 sm:left-4 sm:right-4 sm:bottom-6">
           <div
-            className="backdrop-blur-md p-4 sm:p-5 rounded-xl"
+            className="backdrop-blur-md p-3 sm:p-4 md:p-5 rounded-lg sm:rounded-xl"
             style={{
               ...messageStyle,
               backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -86,16 +86,16 @@ export function ImageSection({
             } as React.CSSProperties}
           >
             {card.speaker && (
-              <div className="flex items-center gap-1.5 mb-1.5 text-sm font-bold text-white/80">
+              <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-1.5 text-xs sm:text-sm font-bold text-white/80">
                 {getSpeakerIcon(card.speakerType)}
-                <span>{card.speaker}</span>
+                <span className="truncate">{card.speaker}</span>
               </div>
             )}
             <p
               className={cn(
-                'text-white text-base sm:text-lg leading-relaxed',
+                'text-white text-sm sm:text-base md:text-lg leading-relaxed',
                 card.speakerType === 'narrator' && 'italic',
-                card.speakerType === 'system' && 'font-mono text-sm'
+                card.speakerType === 'system' && 'font-mono text-xs sm:text-sm'
               )}
             >
               {card.message}

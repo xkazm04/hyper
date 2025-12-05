@@ -65,13 +65,13 @@ export default function CardPreview() {
 
   if (!currentCard) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/10" data-testid="card-preview-empty">
-        <div className="text-center p-8">
-          <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
-            <FileText className="w-10 h-10 text-muted-foreground/40" />
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/10 p-4" data-testid="card-preview-empty">
+        <div className="text-center p-4 sm:p-8">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground/40" />
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">No Card Selected</h3>
-          <p className="text-sm text-muted-foreground max-w-xs">
+          <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">No Card Selected</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-xs">
             Select a card from the sidebar or story graph to see the live preview
           </p>
         </div>
@@ -81,25 +81,25 @@ export default function CardPreview() {
 
   return (
     <div className="h-full overflow-auto bg-gradient-to-br from-background via-background to-muted/20" data-testid="card-preview">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Eye className="w-4 h-4 text-primary" />
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              Interactive Preview
+      {/* Header - responsive */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border px-3 sm:px-4 py-2 sm:py-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+            <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider sm:tracking-widest">
+              Preview
             </span>
           </div>
           {storyStack && (
-            <span className="text-lg font-bold truncate">
+            <span className="text-sm sm:text-lg font-bold truncate max-w-[150px] sm:max-w-none">
               {storyStack.name}
             </span>
           )}
         </div>
       </div>
 
-      {/* Card Display - Full player layout */}
-      <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 md:py-12">
+      {/* Card Display - Full player layout with responsive padding */}
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-8 lg:py-12">
         <CardDisplay
           card={currentCard}
           choices={cardChoices}
@@ -115,40 +115,39 @@ export default function CardPreview() {
           }}
         />
 
-        {/* Go Back Button */}
+        {/* Go Back Button - responsive */}
         {navigationHistory.length > 0 && (
           <button
             onClick={handleGoBack}
             className={cn(
-              'mb-4 flex items-center gap-2 px-4 py-2 rounded-lg',
-              'text-sm font-medium text-muted-foreground',
+              'mt-4 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg',
+              'text-xs sm:text-sm font-medium text-muted-foreground',
               'bg-muted/50 hover:bg-muted hover:text-foreground',
               'border border-border/50 hover:border-border',
               'transition-all duration-200'
             )}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Go Back
-            <span className="text-xs opacity-60">
-              ({navigationHistory.length} {navigationHistory.length === 1 ? 'step' : 'steps'})
+            <span className="text-[10px] sm:text-xs opacity-60">
+              ({navigationHistory.length})
             </span>
           </button>
         )}
 
-
-        {/* Footer info */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-muted-foreground">
+        {/* Footer info - responsive */}
+        <div className="mt-4 sm:mt-6 md:mt-8 text-center">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
             {cardChoices.length === 0 ? (
-              <span className="text-amber-500 flex items-center justify-center gap-1.5">
+              <span className="text-amber-500 flex items-center justify-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                This card has no choices - it's a story ending
+                Story ending
               </span>
             ) : (
-              <span className="flex items-center justify-center gap-1.5">
+              <span className="flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap">
                 <span className="text-primary font-medium">{cardChoices.length}</span>
-                choice{cardChoices.length !== 1 ? 's' : ''} available
-                <span className="text-muted-foreground/50">• Click to navigate</span>
+                choice{cardChoices.length !== 1 ? 's' : ''}
+                <span className="text-muted-foreground/50 hidden sm:inline">• Click to navigate</span>
               </span>
             )}
           </p>
